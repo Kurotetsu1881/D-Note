@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#2e7d32">
+<title>NotDefterim</title>
+<link rel="manifest" href="manifest.json">
+<link href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#222;background:#f5f5f5;height:100vh;height:100dvh}
+button{font:inherit;cursor:pointer}
+#login{display:none;height:100%;align-items:center;justify-content:center;flex-direction:column;gap:16px;text-align:center;padding:20px}
+#login button{background:#fff;border:1px solid #ccc;border-radius:8px;padding:12px 20px;font-size:16px}
+#app{display:none;height:100%;grid-template-columns:230px 300px 1fr}
+.pane{background:#fff;overflow:auto;border-right:1px solid #e0e0e0;display:flex;flex-direction:column;min-height:0}
+#folders{background:#263238;color:#eceff1}
+#folders h4{margin:14px 14px 6px;font-size:12px;text-transform:uppercase;opacity:.6}
+.item{padding:9px 14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+.item:hover{background:rgba(128,128,128,.15)}
+.item.active{background:#2e7d32;color:#fff}
+.item small{opacity:.6}
+.x{background:none;border:0;color:inherit;opacity:.5}
+.bar{padding:10px;display:flex;gap:8px;border-bottom:1px solid #e0e0e0}
+.bar input{flex:1;padding:8px;border:1px solid #ccc;border-radius:6px;min-width:0}
+.primary{background:#2e7d32;color:#fff;border:0;border-radius:6px;padding:8px 12px}
+.note{padding:12px;border-bottom:1px solid #eee;cursor:pointer}
+.note.active{background:#e8f5e9}
+.note b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.note span{font-size:13px;color:#666;display:block;max-height:2.6em;overflow:hidden}
+.note em{font-size:11px;color:#2e7d32;font-style:normal}
+#editorPane{border:0}
+#title{border:0;font-size:22px;font-weight:600;padding:12px 14px;outline:none;width:100%}
+#tags{border:0;border-top:1px solid #eee;border-bottom:1px solid #eee;padding:8px 14px;outline:none;width:100%;font-size:14px;color:#2e7d32}
+#editorWrap{flex:1;min-height:0;display:flex;flex-direction:column}
+#editor{flex:1;min-height:0;font-size:16px;overflow:auto}
+.ql-container{font-size:16px}
+#status{font-size:12px;color:#888;padding:4px 14px}
+.topbtns{display:flex;gap:8px;padding:8px 14px;align-items:center;flex-wrap:wrap}
+.topbtns select{padding:6px;border-radius:6px;border:1px solid #ccc;max-width:45%}
+.back{display:none;background:none;border:0;font-size:15px;color:#2e7d32}
+#empty{display:flex;align-items:center;justify-content:center;flex:1;color:#999}
+@media(max-width:850px){
+ #app{grid-template-columns:1fr}
+ .pane{display:none;border-right:0}
+ body[data-view=folders] #folders,body[data-view=list] #listPane,body[data-view=editor] #editorPane{display:flex}
+ .back{display:inline-block}
+}
+</style>
+</head>
+<body data-view="list">
+<div id="login">
+  <h1>📝 NotDefterim</h1>
+  <p>Notların bulutta güvende, internetsizken de çalışır.</p>
+  <button id="btnLogin">Google ile giriş yap</button>
+  <small id="loginErr" style="color:#c62828"></small>
+</div>
+
+<div id="app">
+  <div class="pane" id="folders">
+    <div class="item" style="font-weight:600" id="userLine"></div>
+    <div id="navMain"></div>
+    <h4>Defterler</h4>
+    <div id="navNotebooks"></div>
+    <div class="item" id="addNb" style="opacity:.8">＋ Yeni defter</div>
+    <h4>Etiketler</h4>
+    <div id="navTags"></div>
+    <div style="flex:1"></div>
+    <div class="item" id="btnLogout">Çıkış yap</div>
+  </div>
+
+  <div class="pane" id="listPane">
+    <div class="bar">
+      <button class="back" id="toFolders">☰</button>
+      <input id="search" placeholder="Notlarda ara…">
+      <button class="primary" id="newNote">＋ Not</button>
+    </div>
+    <div id="noteList"></div>
+  </div>
+
+  <div class="pane" id="editorPane">
+    <div id="empty">Bir not seçin veya yeni not oluşturun</div>
+    <div id="editorWrap" style="display:none">
+      <div class="topbtns">
+        <button class="back" id="toList">← Notlar</button>
+        <select id="nbSelect"></select>
+        <button id="pinBtn">📌</button>
+        <button id="delBtn">🗑️</button>
+        <button id="restoreBtn" style="display:none">♻️ Geri al</button>
+      </div>
+      <input id="title" placeholder="Başlık">
+      <input id="tags" placeholder="Etiketler (virgülle ayır: iş, fikir)">
+      <div id="editor"></div>
+      <div id="status"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut }
+  from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, doc, setDoc,
+  updateDoc, deleteDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+// ====== 1) BURAYI KENDİ FIREBASE BİLGİLERİNİNLE DEĞİŞTİR (README'de nereden alacağın yazıyor) ======
+const firebaseConfig = {
+  apiKey: "AIzaSyBaXikosGTvNvfyRasnaHBOwsD4OKmsW_A",
+  authDomain: "d-note-cb121.firebaseapp.com",
+  projectId: "d-note-cb121",
+  storageBucket: "d-note-cb121.firebasestorage.app",
+  messagingSenderId: "858098284296",
+  appId: "1:858098284296:web:19f2c95a03fa586fc8debd",
+  measurementId: "G-LDP3G3CMG2"
+};
+// ================================================================================================
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+// Çevrimdışı mod: veriler tarayıcıdaki yerel veritabanında (IndexedDB) saklanır, internet gelince otomatik eşitlenir
+const db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
+
+const $ = id => document.getElementById(id);
+const esc = s => (s || "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+let uid = null, notebooks = [], notes = [], unsubs = [];
+let view = { nb: "all", tag: null, q: "" };
+let curId = null, loadedId = null, saveTimer = null, pending = false;
+
+const quill = new Quill("#editor", {
+  theme: "snow", placeholder: "Yazmaya başla…",
+  modules: { toolbar: [[{ header: [1, 2, 3, false] }], ["bold", "italic", "underline"],
+    [{ list: "bullet" }, { list: "ordered" }], ["code-block", "link"], ["clean"]] }
+});
+
+const setView = v => document.body.dataset.view = v;
+
+// ---------- Giriş / Çıkış ----------
+$("btnLogin").onclick = async () => {
+  const p = new GoogleAuthProvider();
+  try { await signInWithPopup(auth, p); }
+  catch (e) {
+    if (["auth/popup-blocked", "auth/operation-not-supported-in-this-environment"].includes(e.code)) signInWithRedirect(auth, p);
+    else $("loginErr").textContent = "Giriş hatası: " + e.code;
+  }
+};
+$("btnLogout").onclick = () => signOut(auth);
+
+onAuthStateChanged(auth, user => {
+  unsubs.forEach(u => u()); unsubs = [];
+  if (!user) { uid = null; $("app").style.display = "none"; $("login").style.display = "flex"; return; }
+  uid = user.uid;
+  $("login").style.display = "none"; $("app").style.display = "grid";
+  $("userLine").textContent = "👤 " + (user.displayName || user.email);
+  const base = ["users", uid];
+  unsubs.push(onSnapshot(query(collection(db, ...base, "notebooks"), orderBy("createdAt")), s => {
+    notebooks = s.docs.map(d => ({ id: d.id, ...d.data() })); renderAll();
+  }));
+  unsubs.push(onSnapshot(query(collection(db, ...base, "notes"), orderBy("updatedAt", "desc")), { includeMetadataChanges: true }, s => {
+    pending = s.metadata.hasPendingWrites;
+    notes = s.docs.map(d => ({ id: d.id, ...d.data() })); renderAll(); updateStatus();
+  }));
+});
+
+// ---------- Yardımcılar ----------
+const noteRef = id => doc(db, "users", uid, "notes", id);
+const nbRef = id => doc(db, "users", uid, "notebooks", id);
+const newId = () => doc(collection(db, "users", uid, "notes")).id;
+
+function filtered() {
+  const q = view.q.trim().toLowerCase();
+  return notes.filter(n => {
+    if (view.nb === "trash") { if (!n.trashed) return false; }
+    else if (n.trashed) return false;
+    if (view.nb !== "all" && view.nb !== "trash" && n.notebookId !== view.nb) return false;
+    if (view.tag && !(n.tags || []).includes(view.tag)) return false;
+    if (q && !((n.title || "") + " " + (n.plain || "") + " " + (n.tags || []).join(" ")).toLowerCase().includes(q)) return false;
+    return true;
+  }).sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || b.updatedAt - a.updatedAt);
+}
+
+// ---------- Çizim ----------
+function renderAll() { renderNav(); renderList(); syncEditor(); }
+
+function renderNav() {
+  const live = notes.filter(n => !n.trashed);
+  const mk = (key, label, count, extra = "") =>
+    `<div class="item ${view.nb === key && !view.tag ? "active" : ""}" data-nb="${key}">${label}<span>${extra}<small>${count}</small></span></div>`;
+  $("navMain").innerHTML = mk("all", "📒 Tüm notlar", live.length) + mk("trash", "🗑️ Çöp", notes.filter(n => n.trashed).length);
+  $("navNotebooks").innerHTML = notebooks.map(nb =>
+    mk(nb.id, "📓 " + esc(nb.name), live.filter(n => n.notebookId === nb.id).length, `<button class="x" data-delnb="${nb.id}">✕</button>`)).join("");
+  const tags = {};
+  live.forEach(n => (n.tags || []).forEach(t => tags[t] = (tags[t] || 0) + 1));
+  $("navTags").innerHTML = Object.keys(tags).sort().map(t =>
+    `<div class="item ${view.tag === t ? "active" : ""}" data-tag="${esc(t)}">🏷️ ${esc(t)}<small>${tags[t]}</small></div>`).join("");
+}
+
+function renderList() {
+  const list = filtered();
+  $("noteList").innerHTML = list.length ? list.map(n => `
+    <div class="note ${n.id === curId ? "active" : ""}" data-id="${n.id}">
+      <b>${n.pinned ? "📌 " : ""}${esc(n.title) || "Başlıksız"}</b>
+      <span>${esc((n.plain || "").slice(0, 120))}</span>
+      <em>${(n.tags || []).map(t => "#" + esc(t)).join(" ")}</em>
+    </div>`).join("") : `<div style="padding:20px;color:#999">Not yok.</div>`;
+}
+
+function syncEditor() {
+  const n = notes.find(x => x.id === curId);
+  $("empty").style.display = n ? "none" : "flex";
+  $("editorWrap").style.display = n ? "flex" : "none";
+  if (!n) return;
+  if (loadedId !== n.id) {            // başka bir not açıldı → editörü doldur
+    loadedId = n.id;
+    $("title").value = n.title || "";
+    $("tags").value = (n.tags || []).join(", ");
+    quill.setContents(quill.clipboard.convert(n.content || ""), "silent");
+  }
+  $("nbSelect").innerHTML = `<option value="">Defter yok</option>` +
+    notebooks.map(nb => `<option value="${nb.id}" ${nb.id === n.notebookId ? "selected" : ""}>${esc(nb.name)}</option>`).join("");
+  $("pinBtn").style.opacity = n.pinned ? 1 : .4;
+  $("delBtn").style.display = n.trashed ? "none" : "";
+  $("restoreBtn").style.display = n.trashed ? "" : "none";
+}
+
+function updateStatus(txt) {
+  $("status").textContent = txt || (!navigator.onLine ? "⚠️ Çevrimdışı – internet gelince eşitlenecek"
+    : pending ? "☁️ Eşitleniyor…" : "✓ Buluta kaydedildi");
+}
+window.addEventListener("online", () => updateStatus());
+window.addEventListener("offline", () => updateStatus());
+
+// ---------- Otomatik kaydetme ----------
+function scheduleSave() {
+  if (!curId || loadedId !== curId) return;
+  updateStatus("Yazılıyor…");
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveNow, 700);
+}
+function saveNow() {
+  if (!curId) return;
+  const tags = $("tags").value.split(",").map(t => t.trim().toLowerCase()).filter(Boolean);
+  setDoc(noteRef(curId), {
+    title: $("title").value, content: quill.root.innerHTML, plain: quill.getText().trim(),
+    tags: [...new Set(tags)], updatedAt: Date.now()
+  }, { merge: true });   // yerel veritabanına anında yazar, bulutla arka planda eşitler
+}
+quill.on("text-change", (_, __, src) => { if (src === "user") scheduleSave(); });
+$("title").oninput = scheduleSave;
+$("tags").oninput = scheduleSave;
+
+// ---------- Olaylar ----------
+$("newNote").onclick = () => {
+  const id = newId();
+  curId = id; loadedId = null;
+  setDoc(noteRef(id), {
+    title: "", content: "", plain: "", tags: [], pinned: false, trashed: false,
+    notebookId: (view.nb !== "all" && view.nb !== "trash") ? view.nb : null,
+    createdAt: Date.now(), updatedAt: Date.now()
+  });
+  setView("editor");
+};
+$("noteList").onclick = e => {
+  const el = e.target.closest(".note"); if (!el) return;
+  clearTimeout(saveTimer); saveNow();
+  curId = el.dataset.id; loadedId = null; renderAll(); setView("editor");
+};
+$("search").oninput = e => { view.q = e.target.value; renderList(); };
+$("navMain").onclick = $("navNotebooks").onclick = e => {
+  const del = e.target.closest("[data-delnb]");
+  if (del) {
+    e.stopPropagation();
+    if (confirm("Defter silinsin mi? (Notlar silinmez, defterden çıkarılır)")) {
+      notes.filter(n => n.notebookId === del.dataset.delnb).forEach(n => updateDoc(noteRef(n.id), { notebookId: null }));
+      deleteDoc(nbRef(del.dataset.delnb)); view.nb = "all";
+    }
+    return;
+  }
+  const el = e.target.closest("[data-nb]"); if (!el) return;
+  view.nb = el.dataset.nb; view.tag = null; renderAll(); setView("list");
+};
+$("navTags").onclick = e => {
+  const el = e.target.closest("[data-tag]"); if (!el) return;
+  view.tag = view.tag === el.dataset.tag ? null : el.dataset.tag; view.nb = "all"; renderAll(); setView("list");
+};
+$("addNb").onclick = () => {
+  const name = prompt("Defter adı:"); if (!name) return;
+  const ref = doc(collection(db, "users", uid, "notebooks"));
+  setDoc(ref, { name: name.trim(), createdAt: Date.now() });
+};
+$("nbSelect").onchange = e => updateDoc(noteRef(curId), { notebookId: e.target.value || null, updatedAt: Date.now() });
+$("pinBtn").onclick = () => { const n = notes.find(x => x.id === curId); updateDoc(noteRef(curId), { pinned: !n.pinned }); };
+$("delBtn").onclick = () => { updateDoc(noteRef(curId), { trashed: true, updatedAt: Date.now() }); curId = null; setView("list"); };
+$("restoreBtn").onclick = () => updateDoc(noteRef(curId), { trashed: false, updatedAt: Date.now() });
+$("toFolders").onclick = () => setView("folders");
+$("toList").onclick = () => setView("list");
+
+// Çöpte "kalıcı sil" için: çöp görünümünde bir notu açıp başlığa uzun basmak yerine basit düğme
+const permDel = document.createElement("button");
+permDel.textContent = "❌ Kalıcı sil"; permDel.style.display = "none";
+$("restoreBtn").after(permDel);
+permDel.onclick = () => { if (confirm("Kalıcı olarak silinsin mi?")) { deleteDoc(noteRef(curId)); curId = null; setView("list"); } };
+new MutationObserver(() => { permDel.style.display = $("restoreBtn").style.display === "none" ? "none" : ""; })
+  .observe($("restoreBtn"), { attributes: true, attributeFilter: ["style"] });
+
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
+</script>
+</body>
+</html>
