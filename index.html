@@ -3,101 +3,286 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#2e7d32">
-<title>NotDefterim</title>
+<meta name="theme-color" content="#1f2421">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="D-Note">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>D-Note</title>
 <link rel="manifest" href="manifest.json">
-<link href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css" rel="stylesheet">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css" rel="stylesheet" crossorigin="anonymous">
+<script>
+// "Uygulamayı yükle" olayını erken yakala (sayfa yüklenmeden tetiklenebilir)
+window.__bip = null;
+window.addEventListener("beforeinstallprompt", function (e) {
+  e.preventDefault(); window.__bip = e; window.dispatchEvent(new Event("bip-ready"));
+});
+try { document.documentElement.dataset.theme = localStorage.getItem("dnote-theme") || "light"; }
+catch (e) { document.documentElement.dataset.theme = "light"; }
+</script>
 <style>
-*{box-sizing:border-box}
-body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#222;background:#f5f5f5;height:100vh;height:100dvh}
-button{font:inherit;cursor:pointer}
-#login{display:none;height:100%;align-items:center;justify-content:center;flex-direction:column;gap:16px;text-align:center;padding:20px}
-#login button{background:#fff;border:1px solid #ccc;border-radius:8px;padding:12px 20px;font-size:16px}
-#app{display:none;height:100%;grid-template-columns:230px 300px 1fr}
-.pane{background:#fff;overflow:auto;border-right:1px solid #e0e0e0;display:flex;flex-direction:column;min-height:0}
-#folders{background:#263238;color:#eceff1}
-#folders h4{margin:14px 14px 6px;font-size:12px;text-transform:uppercase;opacity:.6}
-.item{padding:9px 14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
-.item:hover{background:rgba(128,128,128,.15)}
-.item.active{background:#2e7d32;color:#fff}
-.item small{opacity:.6}
-.x{background:none;border:0;color:inherit;opacity:.5}
-.bar{padding:10px;display:flex;gap:8px;border-bottom:1px solid #e0e0e0}
-.bar input{flex:1;padding:8px;border:1px solid #ccc;border-radius:6px;min-width:0}
-.primary{background:#2e7d32;color:#fff;border:0;border-radius:6px;padding:8px 12px}
-.note{padding:12px;border-bottom:1px solid #eee;cursor:pointer}
-.note.active{background:#e8f5e9}
-.note b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.note span{font-size:13px;color:#666;display:block;max-height:2.6em;overflow:hidden}
-.note em{font-size:11px;color:#2e7d32;font-style:normal}
-#editorPane{border:0}
-#title{border:0;font-size:22px;font-weight:600;padding:12px 14px;outline:none;width:100%}
-#tags{border:0;border-top:1px solid #eee;border-bottom:1px solid #eee;padding:8px 14px;outline:none;width:100%;font-size:14px;color:#2e7d32}
-#editorWrap{flex:1;min-height:0;display:flex;flex-direction:column}
-#editor{flex:1;min-height:0;font-size:16px;overflow:auto}
-.ql-container{font-size:16px}
-#status{font-size:12px;color:#888;padding:4px 14px}
-.topbtns{display:flex;gap:8px;padding:8px 14px;align-items:center;flex-wrap:wrap}
-.topbtns select{padding:6px;border-radius:6px;border:1px solid #ccc;max-width:45%}
-.back{display:none;background:none;border:0;font-size:15px;color:#2e7d32}
-#empty{display:flex;align-items:center;justify-content:center;flex:1;color:#999}
-@media(max-width:850px){
- #app{grid-template-columns:1fr}
- .pane{display:none;border-right:0}
- body[data-view=folders] #folders,body[data-view=list] #listPane,body[data-view=editor] #editorPane{display:flex}
- .back{display:inline-block}
+:root{
+  --green:#00a82d;--green-d:#008c25;
+  --side:#1f2421;--side-2:#2b312d;--side-t:#d4dad6;--side-m:#8a948d;
+  --list:#f3f4f3;--card:#fff;--edit:#fff;--text:#1f2421;--muted:#6f7a73;--line:#e2e5e3;
+  --sel:#e7f6ea;--chip:#e8efea;--chip-t:#3d5446;--shadow:0 1px 2px rgba(0,0,0,.06);
+}
+[data-theme=dark]{
+  --side:#121514;--side-2:#1d2220;--list:#181b1a;--card:#212523;--edit:#1b1e1d;--text:#e6eae7;
+  --muted:#8d978f;--line:#2c3230;--sel:#1f3a27;--chip:#2a312d;--chip-t:#b7c6bb;--shadow:none;
+}
+[data-theme=sepia]{
+  --side:#3a2f22;--side-2:#4a3d2d;--side-t:#eadfca;--side-m:#b3a58b;--list:#efe4cc;--card:#f8f1e0;--edit:#f8f1e0;
+  --text:#43362a;--muted:#8a7a63;--line:#dccfb2;--sel:#e5dcb9;--chip:#e6d9ba;--chip-t:#5b4a33;--shadow:none;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+body{font-family:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;color:var(--text);background:var(--edit);overflow:hidden}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+input,select{font:inherit;color:inherit}
+.ic{display:inline-flex;width:18px;height:18px;flex:none}
+.ic svg{width:100%;height:100%}
+
+/* ---------- Giriş ---------- */
+#login{display:none;min-height:100%;align-items:center;justify-content:center;flex-direction:column;gap:14px;text-align:center;padding:24px;
+  background:linear-gradient(160deg,#1f2421 0%,#10321b 100%);color:#fff}
+#login .logo{width:92px;height:92px;filter:drop-shadow(0 8px 20px rgba(0,0,0,.35))}
+#login h1{margin:6px 0 0;font-size:34px;letter-spacing:.3px}
+#login p{margin:0 0 10px;color:#b9c7bd;max-width:320px;line-height:1.5}
+#btnLogin{display:flex;align-items:center;gap:12px;background:#fff;color:#222;border-radius:6px;padding:11px 20px;font-size:15px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+#btnLogin svg{width:20px;height:20px}
+#loginErr{color:#ff9d9d;min-height:18px}
+
+/* ---------- Ana yerleşim ---------- */
+#app{display:none;height:100%;grid-template-columns:248px 330px minmax(0,1fr)}
+.pane{min-height:0;display:flex;flex-direction:column;overflow:hidden}
+
+/* Kenar çubuğu */
+#side{background:var(--side);color:var(--side-t);padding-top:env(safe-area-inset-top)}
+.brand{display:flex;align-items:center;gap:10px;padding:16px 16px 6px;font-weight:700;font-size:18px;color:#fff}
+.brand img,.brand svg{width:28px;height:28px;border-radius:7px}
+#newNote{margin:12px 14px 8px;background:var(--green);color:#fff;border-radius:22px;padding:10px 16px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+#newNote:hover{background:var(--green-d)}
+#navScroll{flex:1;overflow:auto;padding:6px 8px}
+.sec{display:flex;align-items:center;justify-content:space-between;padding:16px 10px 6px;font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--side-m)}
+.sec button{color:var(--side-m);display:flex;padding:2px;border-radius:4px}
+.sec button:hover{color:#fff;background:var(--side-2)}
+.nav{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:6px;cursor:pointer;font-size:14px;position:relative}
+.nav .lbl{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nav small{color:var(--side-m);font-size:12px}
+.nav:hover{background:var(--side-2)}
+.nav.active{background:var(--side-2);color:#fff}
+.nav.active::before{content:"";position:absolute;left:-8px;top:6px;bottom:6px;width:4px;border-radius:0 4px 4px 0;background:var(--green)}
+.nav.active .ic:first-child{color:#3ddc6b}
+.nav .x{opacity:0;color:var(--side-m);display:flex;padding:2px}
+.nav:hover .x{opacity:1}
+.empty-side{padding:6px 12px;font-size:13px;color:var(--side-m)}
+.side-foot{border-top:1px solid rgba(255,255,255,.08);padding:10px 12px calc(10px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px}
+#installBtn{display:none;align-items:center;gap:10px;padding:8px 10px;border-radius:6px;background:rgba(0,168,45,.18);color:#6be68e;font-size:14px;font-weight:600}
+#installBtn:hover{background:rgba(0,168,45,.3)}
+.themes{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--side-m)}
+.themes span{flex:1}
+.sw{width:22px;height:22px;border-radius:50%;border:2px solid transparent;box-shadow:0 0 0 1px rgba(255,255,255,.25)}
+.sw[data-t=light]{background:linear-gradient(135deg,#fff 50%,#00a82d 50%)}
+.sw[data-t=dark]{background:linear-gradient(135deg,#222 50%,#00a82d 50%)}
+.sw[data-t=sepia]{background:linear-gradient(135deg,#efe4cc 50%,#8a6a3a 50%)}
+.sw.on{border-color:#fff}
+.userrow{display:flex;align-items:center;gap:10px}
+.avatar{width:30px;height:30px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;overflow:hidden;flex:none}
+.avatar img{width:100%;height:100%;object-fit:cover}
+#userName{flex:1;min-width:0;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff}
+#btnLogout{color:var(--side-m);display:flex;padding:6px;border-radius:6px}
+#btnLogout:hover{background:var(--side-2);color:#fff}
+
+/* Not listesi */
+#listPane{background:var(--list);border-right:1px solid var(--line)}
+.lhead{padding:16px 16px 8px;padding-top:calc(16px + env(safe-area-inset-top))}
+.lhead .row{display:flex;align-items:center;gap:8px}
+.lhead h2{margin:0;font-size:20px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lhead .cnt{font-size:12px;color:var(--muted);margin:2px 0 10px}
+.menu-btn{display:none;padding:6px;border-radius:6px;margin-left:-6px}
+.searchbox{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:0 10px;color:var(--muted)}
+.searchbox:focus-within{border-color:var(--green);box-shadow:0 0 0 3px rgba(0,168,45,.15)}
+.searchbox input{flex:1;border:0;outline:0;background:none;padding:9px 0;min-width:0}
+#noteList{flex:1;overflow:auto;padding:4px 10px 90px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin:8px 0;cursor:pointer;box-shadow:var(--shadow)}
+.card:hover{border-color:#b5c7bb}
+.card.active{background:var(--sel);border-color:var(--green)}
+.ct{font-weight:600;font-size:15px;display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ct .ic{width:14px;height:14px;color:var(--green)}
+.cs{font-size:13px;color:var(--muted);margin-top:5px;line-height:1.4;max-height:2.8em;overflow:hidden;word-break:break-word}
+.cm{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:9px;font-size:11px;color:var(--muted)}
+.chip{background:var(--chip);color:var(--chip-t);border-radius:10px;padding:2px 8px;font-size:11px}
+.none{padding:40px 20px;text-align:center;color:var(--muted);font-size:14px;line-height:1.6}
+#fab{display:none;position:fixed;right:18px;bottom:calc(20px + env(safe-area-inset-bottom));width:56px;height:56px;border-radius:50%;background:var(--green);color:#fff;
+  align-items:center;justify-content:center;box-shadow:0 6px 16px rgba(0,0,0,.3);z-index:5}
+#fab .ic{width:26px;height:26px}
+
+/* Editör */
+#editorPane{background:var(--edit)}
+#empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--muted);text-align:center;padding:20px}
+#empty img{width:84px;height:84px;opacity:.9}
+#editorWrap{flex:1;min-height:0;display:none;flex-direction:column}
+.etop{display:flex;align-items:center;gap:6px;padding:10px 18px;padding-top:calc(10px + env(safe-area-inset-top));border-bottom:1px solid var(--line)}
+.back{display:none;padding:6px;border-radius:6px;margin-left:-6px}
+.nbwrap{display:flex;align-items:center;gap:6px;color:var(--muted);min-width:0}
+#nbSelect{background:none;border:0;outline:0;color:var(--text);font-weight:600;font-size:14px;max-width:200px;cursor:pointer;text-overflow:ellipsis}
+#nbSelect option{color:#222}
+.spacer{flex:1}
+#status{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:5px;white-space:nowrap}
+#status .ic{width:15px;height:15px}
+#status.ok{color:var(--green)}
+.ibtn{display:flex;align-items:center;gap:6px;padding:7px;border-radius:6px;color:var(--muted)}
+.ibtn:hover{background:var(--list);color:var(--text)}
+.ibtn.on{color:var(--green)}
+.ibtn.txt{padding:6px 10px;font-size:13px}
+#toolbar.ql-toolbar.ql-snow{border:0;border-bottom:1px solid var(--line);padding:6px 14px;display:flex;align-items:center;flex-wrap:wrap;overflow-x:auto;background:var(--edit)}
+.ql-snow .ql-stroke{stroke:var(--text)}
+.ql-snow .ql-fill{fill:var(--text)}
+.ql-snow .ql-picker{color:var(--text)}
+.ql-snow .ql-picker-options{background:var(--card);border-color:var(--line)!important;color:var(--text)}
+.ql-snow.ql-toolbar button:hover .ql-stroke,.ql-snow.ql-toolbar button.ql-active .ql-stroke{stroke:var(--green)}
+.ql-snow.ql-toolbar button:hover .ql-fill,.ql-snow.ql-toolbar button.ql-active .ql-fill{fill:var(--green)}
+.ql-snow.ql-toolbar button.ql-active,.ql-snow.ql-toolbar .ql-picker-label.ql-active{color:var(--green)}
+#title{border:0;outline:0;background:none;font-size:30px;font-weight:700;padding:20px 32px 4px;width:100%;color:var(--text)}
+#title::placeholder{color:var(--muted);opacity:.6}
+#tagbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:4px 32px 10px;min-height:38px}
+#tagbar .chip{display:flex;align-items:center;gap:4px;font-size:12px;padding:3px 6px 3px 10px}
+#tagbar .chip button{display:flex;color:inherit;opacity:.6;padding:0}
+#tagbar .chip button:hover{opacity:1}
+#tagbar .chip .ic{width:12px;height:12px}
+#tagInput{border:0;outline:0;background:none;font-size:13px;min-width:120px;flex:1;color:var(--text)}
+#editor{flex:1;min-height:0;overflow:auto}
+#editor.ql-container.ql-snow{border:0;font-size:16px}
+#editor .ql-editor{padding:6px 32px 80px;line-height:1.65;min-height:100%;color:var(--text)}
+#editor .ql-editor.ql-blank::before{color:var(--muted);left:32px;font-style:normal;opacity:.7}
+#editor .ql-editor pre.ql-syntax{border-radius:6px;padding:12px 14px;font-size:14px}
+#editor .ql-editor blockquote{border-left:4px solid var(--green)}
+#editor .ql-editor a{color:var(--green)}
+
+/* Pencere (yükleme ipuçları) */
+#modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);align-items:center;justify-content:center;z-index:50;padding:20px}
+#modal .box{background:var(--card);color:var(--text);border-radius:12px;padding:22px;max-width:380px;width:100%;box-shadow:0 12px 40px rgba(0,0,0,.35)}
+#modal h3{margin:0 0 10px;display:flex;align-items:center;gap:10px}
+#modal h3 img{width:32px;height:32px;border-radius:8px}
+#modal p{line-height:1.6;color:var(--muted);margin:8px 0}
+#modal .primary{margin-top:10px;background:var(--green);color:#fff;border-radius:20px;padding:9px 20px;font-weight:600;float:right}
+
+/* ---------- Mobil ---------- */
+@media(max-width:860px){
+  #app{grid-template-columns:1fr}
+  .pane{display:none;border-right:0}
+  body[data-view=folders] #side,body[data-view=list] #listPane,body[data-view=editor] #editorPane{display:flex}
+  .menu-btn,.back{display:flex}
+  body[data-view=list] #fab{display:flex}
+  #side{padding-top:env(safe-area-inset-top)}
+  #title{font-size:24px;padding:16px 18px 4px}
+  #tagbar{padding:4px 18px 10px}
+  #editor .ql-editor{padding:6px 18px 80px}
+  #editor .ql-editor.ql-blank::before{left:18px}
+  .etop{padding-left:12px;padding-right:12px}
+  #status span:last-child{display:none}
 }
 </style>
 </head>
 <body data-view="list">
+
+<!-- GİRİŞ EKRANI -->
 <div id="login">
-  <h1>📝 NotDefterim</h1>
-  <p>Notların bulutta güvende, internetsizken de çalışır.</p>
-  <button id="btnLogin">Google ile giriş yap</button>
-  <small id="loginErr" style="color:#c62828"></small>
+  <img class="logo" src="logo.svg" alt="D-Note">
+  <h1>D-Note</h1>
+  <p>Notların bulutta güvende. İnternet yokken de yazmaya devam et, bağlanınca otomatik eşitlenir.</p>
+  <button id="btnLogin">
+    <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M23.5 12.27c0-.85-.08-1.67-.22-2.45H12v4.64h6.46a5.52 5.52 0 0 1-2.4 3.62v3h3.88c2.27-2.09 3.56-5.17 3.56-8.81z"/><path fill="#34A853" d="M12 24c3.24 0 5.96-1.07 7.94-2.91l-3.88-3a7.2 7.2 0 0 1-4.06 1.16c-3.12 0-5.77-2.11-6.71-4.95H1.28v3.1A12 12 0 0 0 12 24z"/><path fill="#FBBC05" d="M5.29 14.3a7.2 7.2 0 0 1 0-4.6v-3.1H1.28a12 12 0 0 0 0 10.8l4.01-3.1z"/><path fill="#EA4335" d="M12 4.75c1.76 0 3.34.6 4.58 1.8l3.43-3.43C17.95 1.19 15.23 0 12 0A12 12 0 0 0 1.28 6.6l4.01 3.1C6.23 6.86 8.88 4.75 12 4.75z"/></svg>
+    Google ile giriş yap
+  </button>
+  <div id="loginErr"></div>
 </div>
 
+<!-- UYGULAMA -->
 <div id="app">
-  <div class="pane" id="folders">
-    <div class="item" style="font-weight:600" id="userLine"></div>
-    <div id="navMain"></div>
-    <h4>Defterler</h4>
-    <div id="navNotebooks"></div>
-    <div class="item" id="addNb" style="opacity:.8">＋ Yeni defter</div>
-    <h4>Etiketler</h4>
-    <div id="navTags"></div>
-    <div style="flex:1"></div>
-    <div class="item" id="btnLogout">Çıkış yap</div>
-  </div>
+  <aside class="pane" id="side">
+    <div class="brand"><img src="logo.svg" alt=""> D-Note</div>
+    <button id="newNote"><span data-ic="plus"></span> Yeni Not</button>
+    <div id="navScroll">
+      <div id="navMain"></div>
+      <div class="sec">Defterler <button id="addNb" title="Yeni defter"><span data-ic="plus"></span></button></div>
+      <div id="navNotebooks"></div>
+      <div class="sec">Etiketler</div>
+      <div id="navTags"></div>
+      <div style="height:8px"></div>
+      <div id="navTrash"></div>
+    </div>
+    <div class="side-foot">
+      <button id="installBtn"><span data-ic="download"></span> Uygulamayı yükle</button>
+      <div class="themes"><span>Tema</span>
+        <button class="sw" data-t="light" title="Açık"></button>
+        <button class="sw" data-t="dark" title="Koyu"></button>
+        <button class="sw" data-t="sepia" title="Sepya"></button>
+      </div>
+      <div class="userrow">
+        <div class="avatar" id="avatar"></div>
+        <div id="userName"></div>
+        <button id="btnLogout" title="Çıkış yap"><span data-ic="logout"></span></button>
+      </div>
+    </div>
+  </aside>
 
-  <div class="pane" id="listPane">
-    <div class="bar">
-      <button class="back" id="toFolders">☰</button>
-      <input id="search" placeholder="Notlarda ara…">
-      <button class="primary" id="newNote">＋ Not</button>
+  <section class="pane" id="listPane">
+    <div class="lhead">
+      <div class="row">
+        <button class="menu-btn" id="toFolders" title="Menü"><span data-ic="menu"></span></button>
+        <h2 id="listTitle">Tüm Notlar</h2>
+      </div>
+      <div class="cnt" id="listCount"></div>
+      <label class="searchbox"><span data-ic="search"></span><input id="search" placeholder="Notlarda ara" autocomplete="off"></label>
     </div>
     <div id="noteList"></div>
-  </div>
+  </section>
 
-  <div class="pane" id="editorPane">
-    <div id="empty">Bir not seçin veya yeni not oluşturun</div>
-    <div id="editorWrap" style="display:none">
-      <div class="topbtns">
-        <button class="back" id="toList">← Notlar</button>
-        <select id="nbSelect"></select>
-        <button id="pinBtn">📌</button>
-        <button id="delBtn">🗑️</button>
-        <button id="restoreBtn" style="display:none">♻️ Geri al</button>
-      </div>
-      <input id="title" placeholder="Başlık">
-      <input id="tags" placeholder="Etiketler (virgülle ayır: iş, fikir)">
-      <div id="editor"></div>
-      <div id="status"></div>
+  <section class="pane" id="editorPane">
+    <div id="empty">
+      <img src="logo.svg" alt="">
+      <div>Bir not seçin veya yeni bir not oluşturun</div>
     </div>
-  </div>
+    <div id="editorWrap">
+      <div class="etop">
+        <button class="back" id="toList" title="Notlar"><span data-ic="back"></span></button>
+        <div class="nbwrap"><span data-ic="book"></span><select id="nbSelect"></select></div>
+        <div class="spacer"></div>
+        <div id="status"></div>
+        <button class="ibtn" id="pinBtn" title="Sabitle"><span data-ic="pin"></span></button>
+        <button class="ibtn" id="delBtn" title="Çöpe at"><span data-ic="trash"></span></button>
+        <button class="ibtn txt" id="restoreBtn" style="display:none"><span data-ic="restore"></span> Geri al</button>
+        <button class="ibtn txt" id="permBtn" style="display:none"><span data-ic="x"></span> Kalıcı sil</button>
+      </div>
+      <div id="toolbar">
+        <select class="ql-header"><option value="1"></option><option value="2"></option><option value="3"></option><option selected></option></select>
+        <span class="ql-formats"><button class="ql-bold"></button><button class="ql-italic"></button><button class="ql-underline"></button><button class="ql-strike"></button></span>
+        <span class="ql-formats"><button class="ql-list" value="bullet"></button><button class="ql-list" value="ordered"></button><button class="ql-list" value="check"></button></span>
+        <span class="ql-formats"><button class="ql-blockquote"></button><button class="ql-code-block"></button><button class="ql-link"></button></span>
+        <span class="ql-formats"><button class="ql-clean"></button></span>
+      </div>
+      <input id="title" placeholder="Başlık" autocomplete="off">
+      <div id="tagbar"><span data-ic="tag" style="color:var(--muted)"></span><span id="chips" style="display:contents"></span><input id="tagInput" placeholder="Etiket ekle…" autocomplete="off"></div>
+      <div id="editor"></div>
+    </div>
+  </section>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
+<button id="fab" title="Yeni Not"><span data-ic="plus"></span></button>
+
+<div id="modal"><div class="box">
+  <h3><img src="logo.svg" alt=""> Uygulamayı yükle</h3>
+  <div id="modalText"></div>
+  <button class="primary" id="modalOk">Tamam</button>
+  <div style="clear:both"></div>
+</div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js" crossorigin="anonymous"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut }
@@ -105,54 +290,118 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAut
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, doc, setDoc,
   updateDoc, deleteDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-// ====== 1) BURAYI KENDİ FIREBASE BİLGİLERİNİNLE DEĞİŞTİR (README'de nereden alacağın yazıyor) ======
+// Firebase web yapılandırması (herkese açık bilgidir; asıl güvenlik firestore.rules ile sağlanır)
 const firebaseConfig = {
   apiKey: "AIzaSyBaXikosGTvNvfyRasnaHBOwsD4OKmsW_A",
   authDomain: "d-note-cb121.firebaseapp.com",
   projectId: "d-note-cb121",
   storageBucket: "d-note-cb121.firebasestorage.app",
   messagingSenderId: "858098284296",
-  appId: "1:858098284296:web:19f2c95a03fa586fc8debd",
-  measurementId: "G-LDP3G3CMG2"
+  appId: "1:858098284296:web:19f2c95a03fa586fc8debd"
 };
-// ================================================================================================
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-// Çevrimdışı mod: veriler tarayıcıdaki yerel veritabanında (IndexedDB) saklanır, internet gelince otomatik eşitlenir
+// Çevrimdışı mod: veriler cihazdaki yerel veritabanında saklanır, internet gelince otomatik eşitlenir
 const db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
 
+// ---------- Küçük yardımcılar ----------
 const $ = id => document.getElementById(id);
-const esc = s => (s || "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const esc = s => (s == null ? "" : String(s)).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const ICONS = {
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
+  notes: '<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h7"/>',
+  book: '<path d="M5 4h12a2 2 0 0 1 2 2v14H7a2 2 0 0 1-2-2z"/><path d="M5 18a2 2 0 0 1 2-2h12M9 8h6"/>',
+  tag: '<path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.2"/>',
+  trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
+  pin: '<path d="M12 17v5M8 3h8l-1 6 3 4H6l3-4z"/>',
+  menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
+  back: '<path d="M15 5l-7 7 7 7"/>',
+  download: '<path d="M12 4v11M7 11l5 5 5-5M5 20h14"/>',
+  logout: '<path d="M9 4H5v16h4M16 8l4 4-4 4M20 12H9"/>',
+  restore: '<path d="M4 12a8 8 0 1 0 3-6.2M4 4v5h5"/>',
+  x: '<path d="M6 6l12 12M18 6L6 18"/>',
+  cloud: '<path d="M7 18a4 4 0 0 1-.5-8A6 6 0 0 1 18 9a4.5 4.5 0 0 1 0 9z"/>',
+  check: '<path d="M5 12l5 5 9-10"/>'
+};
+const svg = n => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[n]}</svg>`;
+const ic = n => `<span class="ic">${svg(n)}</span>`;
+document.querySelectorAll("[data-ic]").forEach(e => { e.classList.add("ic"); e.innerHTML = svg(e.dataset.ic); });
+const fmtDate = t => t ? new Date(t).toLocaleDateString("tr-TR", { day: "numeric", month: "short" }) : "";
+const setView = v => document.body.dataset.view = v;
+
+// ---------- Tema ----------
+function applyTheme(t) {
+  document.documentElement.dataset.theme = t;
+  try { localStorage.setItem("dnote-theme", t); } catch (e) {}
+  document.querySelectorAll(".sw").forEach(b => b.classList.toggle("on", b.dataset.t === t));
+  document.querySelector('meta[name=theme-color]').content = ({ light: "#1f2421", dark: "#121514", sepia: "#3a2f22" })[t];
+}
+document.querySelectorAll(".sw").forEach(b => b.onclick = () => applyTheme(b.dataset.t));
+applyTheme(document.documentElement.dataset.theme || "light");
+
+// ---------- Uygulamayı yükle (PWA) ----------
+const isStandalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+function showInstallBtn() { $("installBtn").style.display = isStandalone() ? "none" : "flex"; }
+showInstallBtn();
+window.addEventListener("bip-ready", showInstallBtn);
+window.addEventListener("appinstalled", () => { window.__bip = null; $("installBtn").style.display = "none"; });
+$("installBtn").onclick = async () => {
+  if (window.__bip) {
+    window.__bip.prompt();
+    try { await window.__bip.userChoice; } catch (e) {}
+    window.__bip = null;
+    return;
+  }
+  $("modalText").innerHTML = isIOS
+    ? "<p><b>iPhone / iPad (Safari):</b></p><p>Alttaki <b>Paylaş</b> düğmesine (yukarı oklu kare) dokunun, ardından <b>Ana Ekrana Ekle</b>'yi seçin.</p>"
+    : "<p>Tarayıcı menüsünü (⋮) açın ve <b>Uygulamayı yükle</b> ya da <b>Ana ekrana ekle</b> seçeneğine dokunun.</p><p>Seçenek yoksa uygulama zaten yüklü olabilir veya tarayıcınız bunu desteklemiyordur (Android'de Chrome, bilgisayarda Chrome/Edge önerilir).</p>";
+  $("modal").style.display = "flex";
+};
+$("modalOk").onclick = () => $("modal").style.display = "none";
+$("modal").onclick = e => { if (e.target === $("modal")) $("modal").style.display = "none"; };
+
+if ("serviceWorker" in navigator) {
+  const hadController = !!navigator.serviceWorker.controller;
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {   // yeni sürüm gelince bir kez yenile
+    if (hadController && !reloaded) { reloaded = true; location.reload(); }
+  });
+  navigator.serviceWorker.register("sw.js").catch(() => {});
+}
+
+// ---------- Durum ----------
 let uid = null, notebooks = [], notes = [], unsubs = [];
 let view = { nb: "all", tag: null, q: "" };
 let curId = null, loadedId = null, saveTimer = null, pending = false;
 
-const quill = new Quill("#editor", {
-  theme: "snow", placeholder: "Yazmaya başla…",
-  modules: { toolbar: [[{ header: [1, 2, 3, false] }], ["bold", "italic", "underline"],
-    [{ list: "bullet" }, { list: "ordered" }], ["code-block", "link"], ["clean"]] }
-});
-
-const setView = v => document.body.dataset.view = v;
+const quill = new Quill("#editor", { theme: "snow", placeholder: "Yazmaya başla…", modules: { toolbar: "#toolbar" } });
 
 // ---------- Giriş / Çıkış ----------
 $("btnLogin").onclick = async () => {
+  $("loginErr").textContent = "";
   const p = new GoogleAuthProvider();
   try { await signInWithPopup(auth, p); }
   catch (e) {
     if (["auth/popup-blocked", "auth/operation-not-supported-in-this-environment"].includes(e.code)) signInWithRedirect(auth, p);
-    else $("loginErr").textContent = "Giriş hatası: " + e.code;
+    else if (e.code !== "auth/popup-closed-by-user" && e.code !== "auth/cancelled-popup-request") $("loginErr").textContent = "Giriş hatası: " + e.code;
   }
 };
 $("btnLogout").onclick = () => signOut(auth);
 
 onAuthStateChanged(auth, user => {
   unsubs.forEach(u => u()); unsubs = [];
-  if (!user) { uid = null; $("app").style.display = "none"; $("login").style.display = "flex"; return; }
+  if (!user) {
+    uid = null; curId = null; loadedId = null; notes = []; notebooks = [];
+    $("app").style.display = "none"; $("login").style.display = "flex"; return;
+  }
   uid = user.uid;
   $("login").style.display = "none"; $("app").style.display = "grid";
-  $("userLine").textContent = "👤 " + (user.displayName || user.email);
+  const nm = user.displayName || user.email || "";
+  $("userName").textContent = nm;
+  $("avatar").innerHTML = user.photoURL ? `<img src="${esc(user.photoURL)}" referrerpolicy="no-referrer" alt="">` : esc(nm.charAt(0).toUpperCase());
   const base = ["users", uid];
   unsubs.push(onSnapshot(query(collection(db, ...base, "notebooks"), orderBy("createdAt")), s => {
     notebooks = s.docs.map(d => ({ id: d.id, ...d.data() })); renderAll();
@@ -163,7 +412,7 @@ onAuthStateChanged(auth, user => {
   }));
 });
 
-// ---------- Yardımcılar ----------
+// ---------- Veri yardımcıları ----------
 const noteRef = id => doc(db, "users", uid, "notes", id);
 const nbRef = id => doc(db, "users", uid, "notebooks", id);
 const newId = () => doc(collection(db, "users", uid, "notes")).id;
@@ -177,7 +426,7 @@ function filtered() {
     if (view.tag && !(n.tags || []).includes(view.tag)) return false;
     if (q && !((n.title || "") + " " + (n.plain || "") + " " + (n.tags || []).join(" ")).toLowerCase().includes(q)) return false;
     return true;
-  }).sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || b.updatedAt - a.updatedAt);
+  }).sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || (b.updatedAt || 0) - (a.updatedAt || 0));
 }
 
 // ---------- Çizim ----------
@@ -185,25 +434,42 @@ function renderAll() { renderNav(); renderList(); syncEditor(); }
 
 function renderNav() {
   const live = notes.filter(n => !n.trashed);
-  const mk = (key, label, count, extra = "") =>
-    `<div class="item ${view.nb === key && !view.tag ? "active" : ""}" data-nb="${key}">${label}<span>${extra}<small>${count}</small></span></div>`;
-  $("navMain").innerHTML = mk("all", "📒 Tüm notlar", live.length) + mk("trash", "🗑️ Çöp", notes.filter(n => n.trashed).length);
-  $("navNotebooks").innerHTML = notebooks.map(nb =>
-    mk(nb.id, "📓 " + esc(nb.name), live.filter(n => n.notebookId === nb.id).length, `<button class="x" data-delnb="${nb.id}">✕</button>`)).join("");
+  const row = (key, icon, label, count, extra = "") =>
+    `<div class="nav ${view.nb === key && !view.tag ? "active" : ""}" data-nb="${key}">${ic(icon)}<span class="lbl">${label}</span>${extra}<small>${count}</small></div>`;
+  $("navMain").innerHTML = row("all", "notes", "Tüm Notlar", live.length);
+  $("navNotebooks").innerHTML = notebooks.length ? notebooks.map(nb =>
+    row(nb.id, "book", esc(nb.name), live.filter(n => n.notebookId === nb.id).length, `<button class="x" data-delnb="${nb.id}" title="Defteri sil">${ic("x")}</button>`)).join("")
+    : `<div class="empty-side">Henüz defter yok</div>`;
   const tags = {};
   live.forEach(n => (n.tags || []).forEach(t => tags[t] = (tags[t] || 0) + 1));
-  $("navTags").innerHTML = Object.keys(tags).sort().map(t =>
-    `<div class="item ${view.tag === t ? "active" : ""}" data-tag="${esc(t)}">🏷️ ${esc(t)}<small>${tags[t]}</small></div>`).join("");
+  const keys = Object.keys(tags).sort();
+  $("navTags").innerHTML = keys.length ? keys.map(t =>
+    `<div class="nav ${view.tag === t ? "active" : ""}" data-tag="${esc(t)}">${ic("tag")}<span class="lbl">${esc(t)}</span><small>${tags[t]}</small></div>`).join("")
+    : `<div class="empty-side">Henüz etiket yok</div>`;
+  $("navTrash").innerHTML = row("trash", "trash", "Çöp", notes.filter(n => n.trashed).length);
 }
 
 function renderList() {
   const list = filtered();
+  let title = "Tüm Notlar";
+  if (view.tag) title = "#" + view.tag;
+  else if (view.nb === "trash") title = "Çöp";
+  else if (view.nb !== "all") title = (notebooks.find(n => n.id === view.nb) || {}).name || "Defter";
+  $("listTitle").textContent = title;
+  $("listCount").textContent = list.length + " not";
   $("noteList").innerHTML = list.length ? list.map(n => `
-    <div class="note ${n.id === curId ? "active" : ""}" data-id="${n.id}">
-      <b>${n.pinned ? "📌 " : ""}${esc(n.title) || "Başlıksız"}</b>
-      <span>${esc((n.plain || "").slice(0, 120))}</span>
-      <em>${(n.tags || []).map(t => "#" + esc(t)).join(" ")}</em>
-    </div>`).join("") : `<div style="padding:20px;color:#999">Not yok.</div>`;
+    <div class="card ${n.id === curId ? "active" : ""}" data-id="${n.id}">
+      <div class="ct">${n.pinned ? ic("pin") : ""}<span>${esc(n.title) || "Başlıksız"}</span></div>
+      <div class="cs">${esc((n.plain || "").slice(0, 140)) || "<i>Boş not</i>"}</div>
+      <div class="cm"><span>${fmtDate(n.updatedAt)}</span>${(n.tags || []).slice(0, 3).map(t => `<span class="chip">${esc(t)}</span>`).join("")}</div>
+    </div>`).join("")
+    : `<div class="none">${view.q ? "Aramanızla eşleşen not yok." : view.nb === "trash" ? "Çöp kutusu boş." : "Burada henüz not yok.<br>“Yeni Not” ile başlayın."}</div>`;
+}
+
+function renderChips(n) {
+  $("chips").innerHTML = (n.tags || []).map(t =>
+    `<span class="chip">${esc(t)}<button data-rmtag="${esc(t)}" title="Etiketi kaldır">${ic("x")}</button></span>`).join("");
+  $("tagInput").style.display = n.trashed ? "none" : "";
 }
 
 function syncEditor() {
@@ -214,19 +480,29 @@ function syncEditor() {
   if (loadedId !== n.id) {            // başka bir not açıldı → editörü doldur
     loadedId = n.id;
     $("title").value = n.title || "";
-    $("tags").value = (n.tags || []).join(", ");
     quill.setContents(quill.clipboard.convert(n.content || ""), "silent");
   }
+  quill.enable(!n.trashed);
+  $("title").disabled = !!n.trashed;
+  renderChips(n);
   $("nbSelect").innerHTML = `<option value="">Defter yok</option>` +
     notebooks.map(nb => `<option value="${nb.id}" ${nb.id === n.notebookId ? "selected" : ""}>${esc(nb.name)}</option>`).join("");
-  $("pinBtn").style.opacity = n.pinned ? 1 : .4;
+  $("pinBtn").classList.toggle("on", !!n.pinned);
+  $("pinBtn").style.display = n.trashed ? "none" : "";
   $("delBtn").style.display = n.trashed ? "none" : "";
   $("restoreBtn").style.display = n.trashed ? "" : "none";
+  $("permBtn").style.display = n.trashed ? "" : "none";
 }
 
 function updateStatus(txt) {
-  $("status").textContent = txt || (!navigator.onLine ? "⚠️ Çevrimdışı – internet gelince eşitlenecek"
-    : pending ? "☁️ Eşitleniyor…" : "✓ Buluta kaydedildi");
+  const st = $("status");
+  let cls = "", icon = "cloud", label;
+  if (txt) label = txt;
+  else if (!navigator.onLine) label = "Çevrimdışı – bağlanınca eşitlenecek";
+  else if (pending) label = "Eşitleniyor…";
+  else { label = "Kaydedildi"; cls = "ok"; icon = "check"; }
+  st.className = cls;
+  st.innerHTML = `${ic(icon)}<span>${label}</span>`;
 }
 window.addEventListener("online", () => updateStatus());
 window.addEventListener("offline", () => updateStatus());
@@ -239,72 +515,94 @@ function scheduleSave() {
   saveTimer = setTimeout(saveNow, 700);
 }
 function saveNow() {
-  if (!curId) return;
-  const tags = $("tags").value.split(",").map(t => t.trim().toLowerCase()).filter(Boolean);
+  clearTimeout(saveTimer);
+  if (!curId || loadedId !== curId) return;
+  const n = notes.find(x => x.id === curId);
+  if (n && n.trashed) return;
   setDoc(noteRef(curId), {
-    title: $("title").value, content: quill.root.innerHTML, plain: quill.getText().trim(),
-    tags: [...new Set(tags)], updatedAt: Date.now()
+    title: $("title").value, content: quill.root.innerHTML, plain: quill.getText().trim(), updatedAt: Date.now()
   }, { merge: true });   // yerel veritabanına anında yazar, bulutla arka planda eşitler
 }
 quill.on("text-change", (_, __, src) => { if (src === "user") scheduleSave(); });
 $("title").oninput = scheduleSave;
-$("tags").oninput = scheduleSave;
+window.addEventListener("pagehide", saveNow);
+document.addEventListener("visibilitychange", () => { if (document.hidden) saveNow(); });
 
 // ---------- Olaylar ----------
-$("newNote").onclick = () => {
+function createNote() {
+  if (!uid) return;
+  saveNow();
   const id = newId();
   curId = id; loadedId = null;
+  if (view.nb === "trash") view.nb = "all";
   setDoc(noteRef(id), {
-    title: "", content: "", plain: "", tags: [], pinned: false, trashed: false,
+    title: "", content: "", plain: "", tags: view.tag ? [view.tag] : [], pinned: false, trashed: false,
     notebookId: (view.nb !== "all" && view.nb !== "trash") ? view.nb : null,
     createdAt: Date.now(), updatedAt: Date.now()
   });
   setView("editor");
-};
+  setTimeout(() => $("title").focus(), 80);
+}
+$("newNote").onclick = createNote;
+$("fab").onclick = createNote;
+
 $("noteList").onclick = e => {
-  const el = e.target.closest(".note"); if (!el) return;
-  clearTimeout(saveTimer); saveNow();
+  const el = e.target.closest(".card"); if (!el) return;
+  saveNow();
   curId = el.dataset.id; loadedId = null; renderAll(); setView("editor");
 };
 $("search").oninput = e => { view.q = e.target.value; renderList(); };
-$("navMain").onclick = $("navNotebooks").onclick = e => {
+
+$("navScroll").onclick = e => {
   const del = e.target.closest("[data-delnb]");
   if (del) {
     e.stopPropagation();
     if (confirm("Defter silinsin mi? (Notlar silinmez, defterden çıkarılır)")) {
       notes.filter(n => n.notebookId === del.dataset.delnb).forEach(n => updateDoc(noteRef(n.id), { notebookId: null }));
-      deleteDoc(nbRef(del.dataset.delnb)); view.nb = "all";
+      deleteDoc(nbRef(del.dataset.delnb)); view.nb = "all"; view.tag = null;
     }
     return;
   }
-  const el = e.target.closest("[data-nb]"); if (!el) return;
-  view.nb = el.dataset.nb; view.tag = null; renderAll(); setView("list");
-};
-$("navTags").onclick = e => {
-  const el = e.target.closest("[data-tag]"); if (!el) return;
-  view.tag = view.tag === el.dataset.tag ? null : el.dataset.tag; view.nb = "all"; renderAll(); setView("list");
+  const tg = e.target.closest("[data-tag]");
+  if (tg) { view.tag = view.tag === tg.dataset.tag ? null : tg.dataset.tag; view.nb = "all"; renderAll(); setView("list"); return; }
+  const el = e.target.closest("[data-nb]");
+  if (el) { view.nb = el.dataset.nb; view.tag = null; renderAll(); setView("list"); }
 };
 $("addNb").onclick = () => {
-  const name = prompt("Defter adı:"); if (!name) return;
-  const ref = doc(collection(db, "users", uid, "notebooks"));
-  setDoc(ref, { name: name.trim(), createdAt: Date.now() });
+  const name = prompt("Defter adı:"); if (!name || !name.trim()) return;
+  setDoc(doc(collection(db, "users", uid, "notebooks")), { name: name.trim(), createdAt: Date.now() });
 };
+
 $("nbSelect").onchange = e => updateDoc(noteRef(curId), { notebookId: e.target.value || null, updatedAt: Date.now() });
-$("pinBtn").onclick = () => { const n = notes.find(x => x.id === curId); updateDoc(noteRef(curId), { pinned: !n.pinned }); };
-$("delBtn").onclick = () => { updateDoc(noteRef(curId), { trashed: true, updatedAt: Date.now() }); curId = null; setView("list"); };
-$("restoreBtn").onclick = () => updateDoc(noteRef(curId), { trashed: false, updatedAt: Date.now() });
+$("pinBtn").onclick = () => { const n = notes.find(x => x.id === curId); if (n) updateDoc(noteRef(curId), { pinned: !n.pinned }); };
+$("delBtn").onclick = () => { saveNow(); updateDoc(noteRef(curId), { trashed: true, updatedAt: Date.now() }); curId = null; loadedId = null; setView("list"); renderAll(); };
+$("restoreBtn").onclick = () => { updateDoc(noteRef(curId), { trashed: false, updatedAt: Date.now() }); };
+$("permBtn").onclick = () => { if (confirm("Not kalıcı olarak silinsin mi?")) { deleteDoc(noteRef(curId)); curId = null; loadedId = null; setView("list"); renderAll(); } };
 $("toFolders").onclick = () => setView("folders");
-$("toList").onclick = () => setView("list");
+$("toList").onclick = () => { saveNow(); setView("list"); };
 
-// Çöpte "kalıcı sil" için: çöp görünümünde bir notu açıp başlığa uzun basmak yerine basit düğme
-const permDel = document.createElement("button");
-permDel.textContent = "❌ Kalıcı sil"; permDel.style.display = "none";
-$("restoreBtn").after(permDel);
-permDel.onclick = () => { if (confirm("Kalıcı olarak silinsin mi?")) { deleteDoc(noteRef(curId)); curId = null; setView("list"); } };
-new MutationObserver(() => { permDel.style.display = $("restoreBtn").style.display === "none" ? "none" : ""; })
-  .observe($("restoreBtn"), { attributes: true, attributeFilter: ["style"] });
+// Etiketler: Enter veya virgül ile ekle, ✕ ile kaldır
+function addTag(raw) {
+  const t = raw.trim().replace(/^#/, "").toLowerCase();
+  const n = notes.find(x => x.id === curId); if (!t || !n) return;
+  if ((n.tags || []).includes(t)) return;
+  updateDoc(noteRef(curId), { tags: [...(n.tags || []), t], updatedAt: Date.now() });
+}
+$("tagInput").onkeydown = e => {
+  if (e.key === "Enter" || e.key === ",") { e.preventDefault(); addTag(e.target.value); e.target.value = ""; }
+  else if (e.key === "Backspace" && !e.target.value) {
+    const n = notes.find(x => x.id === curId);
+    if (n && (n.tags || []).length) updateDoc(noteRef(curId), { tags: n.tags.slice(0, -1) });
+  }
+};
+$("tagInput").onblur = e => { if (e.target.value.trim()) { addTag(e.target.value); e.target.value = ""; } };
+$("chips").onclick = e => {
+  const b = e.target.closest("[data-rmtag]"); if (!b) return;
+  const n = notes.find(x => x.id === curId);
+  if (n) updateDoc(noteRef(curId), { tags: (n.tags || []).filter(t => t !== b.dataset.rmtag), updatedAt: Date.now() });
+};
 
-if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
+updateStatus();
 </script>
 </body>
 </html>
