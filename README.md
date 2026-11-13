@@ -1,32 +1,33 @@
 # D-Note – Güncelleme Rehberi
 
-## GitHub'a yüklenecek dosyalar (hepsi aynı klasörde, depo ana dizininde)
-1. `index.html`
-2. `sw.js`
-3. `manifest.json`
-4. `logo.svg`
-5. `favicon.svg`
-6. `favicon-32.png`
-7. `icon-192.png`
-8. `icon-512.png`
-9. `icon-maskable-512.png`
-10. `apple-touch-icon.png`
+## 1) GitHub'a yüklenecek dosyalar
+Zip'i bilgisayarınızda **klasöre çıkarın**, sonra **içindeki dosyaların hepsini** yükleyin:
 
-(`logo-maskable.svg` ve `firestore.rules` yüklenmek zorunda değil. `firestore.rules` zaten Firebase'e yapıştırıldı.)
+`index.html`, `sw.js`, `manifest.json`, `logo.svg`, `favicon.svg`, `favicon-32.png`, `icon-192.png`, `icon-512.png`, `icon-maskable-512.png`, `apple-touch-icon.png`
 
-## Nasıl yüklenir
-1. https://github.com/Kurotetsu1881/D-Note → **Add file → Upload files**
-2. Yukarıdaki 10 dosyayı birlikte sürükleyin (eski `index.html`, `sw.js`, `manifest.json` üzerine yazılır).
-3. **Commit changes**'e basın. 1-2 dakika sonra site güncellenir.
+Nasıl: https://github.com/Kurotetsu1881/D-Note → **Add file → Upload files** → dosyaları sürükleyin (eskilerin üzerine yazılır) → **Commit changes**. 1-2 dakika sonra site güncellenir.
 
-## "Uygulama olarak yükle" neden artık çalışır?
-Eski manifest, var olmayan simge dosyalarına işaret ediyordu. Tarayıcılar simgesiz uygulamaya yükleme düğmesi vermez. Artık simgeler (192, 512 ve maskable) dahil.
+(`firestore.rules`, `logo-maskable.svg` ve bu README GitHub'a yüklenmez.)
 
-- **Android / bilgisayar (Chrome, Edge):** Sitede sol alttaki **Uygulamayı yükle** düğmesi görünür. Adres çubuğunda da yükleme simgesi çıkar.
-- **iPhone (Safari):** **Uygulamayı yükle** düğmesine basınca Paylaş → Ana Ekrana Ekle ipucu açılır.
-- Uygulama yüklüyse düğme kendiliğinden gizlenir.
+## 2) Firebase kuralını güncelleyin (paylaşım bağlantısı için – 1 dakika)
+Not paylaşma özelliğinin çalışması için:
+1. Firebase → **Firestore Database** → **Rules** sekmesi
+2. Kutudaki her şeyi silin, `firestore.rules` dosyasının içeriğini yapıştırın
+3. **Publish**'e basın
+
+Bunu yapmazsanız diğer her şey çalışır, yalnızca "Bağlantı oluştur" düğmesi hata verir.
+
+## 3) Yeni neler var?
+- **Evernote mobil yapısı:** Oluştur / Notlar / Not defterleri / Daha Fazla alt menüsü, ana ekranda Yeni not, Yeni görev, Etkinlik, Not defteri, Kaydedici, Kamera ve Karalama Defteri.
+- **Yazı tipleri:** Editörün alt çubuğundaki **Aa** ile seçili metnin yazı tipini, boyut düğmesiyle boyutunu değiştirin. Tüm notlar için varsayılan yazı tipi: **Ayarlar**.
+- **Not eylemleri (⋯):** Bul, Paylaş, Taşı, Bağlantıyı kopyala, Notu çoğalt, Başlık öner, Etiket ekle, Hatırlatıcı, Kısayollara ekle, Sabitle, Çöpe taşı, Yazdır.
+- **Daha Fazla:** Kısayollar, Görevler, Takvim, Etiketler, Paylaşılan, Şablonlar, Çöp Kutusu. Ayarlar ve Yardım için sol üstteki profil resmine dokunun.
+- **Evernote'tan taşıma:** Ana ekran → **İçe aktar** → Evernote'tan dışa aktardığınız `.enex` dosyasını seçin. Yedek için `.json` dosyası da desteklenir.
+- Evernote'taki yapay zekâ, ekip alanları ve Android widget özellikleri yoktur.
+
+## 4) Uygulama olarak yükleme
+- **Android / bilgisayar (Chrome, Edge):** Ana ekranda üstte beliren **şimşek** düğmesine ya da Ayarlar'daki **Uygulamayı yükle**'ye basın.
+- **iPhone (Safari):** Paylaş → Ana Ekrana Ekle.
 
 ## Değişiklik görünmüyorsa
-Eski sürüm önbellekte kalmış olabilir. Siteyi açıp sayfayı bir kez yenileyin (Ctrl+Shift+R). Yeni sürüm kendiliğinden bir kez yeniden yükler.
-
-Telefonda yüklü uygulamayı kapatıp yeniden açmak da yeterlidir.
+Siteyi bir kez yenileyin (Ctrl+Shift+R). Yeni sürüm kendiliğinden bir kez yeniden yüklenir. Yüklü uygulamayı kapatıp yeniden açmak da yeterlidir.

@@ -1,21 +1,27 @@
 // D-Note service worker: uygulamanın internetsiz açılmasını sağlar ve "Uygulamayı yükle" şartını karşılar
-const CACHE = "dnote-v2";
-const SHELL = [
+const CACHE = "dnote-v3";
+const FONTS_CSS = "https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Dancing+Script:wght@400;700&family=Inter:wght@400;500;600;700&family=Lora:wght@400;700&family=Merriweather:wght@400;700&family=Nunito:wght@400;700&family=Open+Sans:wght@400;600;700&family=Playfair+Display:wght@400;700&family=Poppins:wght@400;600&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;700&family=Source+Code+Pro:wght@400;700&display=swap";
+const LOCAL = [
   "./", "index.html", "manifest.json",
   "logo.svg", "favicon.svg", "favicon-32.png",
-  "icon-192.png", "icon-512.png", "icon-maskable-512.png", "apple-touch-icon.png",
+  "icon-192.png", "icon-512.png", "icon-maskable-512.png", "apple-touch-icon.png"
+];
+const REMOTE = [
   "https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css",
   "https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js",
   "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js",
   "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js",
-  "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js"
+  "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js",
+  FONTS_CSS
 ];
 
 self.addEventListener("install", e => {
   e.waitUntil(
-    caches.open(CACHE).then(cache =>
-      Promise.all(SHELL.map(u => cache.add(u).catch(() => {})))   // biri indirilemezse diğerleri yine kaydedilir
-    ).then(() => self.skipWaiting())
+    caches.open(CACHE).then(cache => Promise.all([
+      // kendi dosyalarımız: tarayıcı önbelleğini atlayıp en yenisini al
+      ...LOCAL.map(u => cache.add(new Request(u, { cache: "reload" })).catch(() => {})),
+      ...REMOTE.map(u => cache.add(u).catch(() => {}))   // biri indirilemezse diğerleri yine kaydedilir
+    ])).then(() => self.skipWaiting())
   );
 });
 
@@ -30,6 +36,7 @@ self.addEventListener("activate", e => {
 function cacheable(url) {
   if (url.origin === self.location.origin) return true;
   if (url.hostname === "cdn.jsdelivr.net") return true;
+  if (url.hostname === "fonts.googleapis.com" || url.hostname === "fonts.gstatic.com") return true;   // yazı tipleri
   if (url.hostname === "www.gstatic.com" && url.pathname.startsWith("/firebasejs/")) return true;
   return false;
 }

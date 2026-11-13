@@ -2,197 +2,324 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#1f2421">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
+<meta name="theme-color" content="#ffffff">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="D-Note">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>D-Note</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Dancing+Script:wght@400;700&family=Inter:wght@400;500;600;700&family=Lora:wght@400;700&family=Merriweather:wght@400;700&family=Nunito:wght@400;700&family=Open+Sans:wght@400;600;700&family=Playfair+Display:wght@400;700&family=Poppins:wght@400;600&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;700&family=Source+Code+Pro:wght@400;700&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css" rel="stylesheet" crossorigin="anonymous">
 <script>
-// "Uygulamayı yükle" olayını erken yakala (sayfa yüklenmeden tetiklenebilir)
+// "Uygulamayı yükle" olayını erken yakala + temayı titremesiz uygula
 window.__bip = null;
-window.addEventListener("beforeinstallprompt", function (e) {
-  e.preventDefault(); window.__bip = e; window.dispatchEvent(new Event("bip-ready"));
-});
-try { document.documentElement.dataset.theme = localStorage.getItem("dnote-theme") || "light"; }
-catch (e) { document.documentElement.dataset.theme = "light"; }
+window.addEventListener("beforeinstallprompt", function (e) { e.preventDefault(); window.__bip = e; window.dispatchEvent(new Event("bip-ready")); });
+try {
+  var t = localStorage.getItem("dnote-theme") || "light";
+  var dark = t === "dark" || (t === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
+  document.documentElement.dataset.theme = t === "sepia" ? "sepia" : (dark ? "dark" : "light");
+} catch (e) { document.documentElement.dataset.theme = "light"; }
 </script>
 <style>
 :root{
-  --green:#00a82d;--green-d:#008c25;
-  --side:#1f2421;--side-2:#2b312d;--side-t:#d4dad6;--side-m:#8a948d;
-  --list:#f3f4f3;--card:#fff;--edit:#fff;--text:#1f2421;--muted:#6f7a73;--line:#e2e5e3;
-  --sel:#e7f6ea;--chip:#e8efea;--chip-t:#3d5446;--shadow:0 1px 2px rgba(0,0,0,.06);
+  --bg:#fff;--text:#1c1c1e;--muted:#74747a;--line:#e7e7ea;--tile:#f2f2f4;--chip:#e7e7eb;--chipt:#3b3b40;
+  --green:#00a82d;--green-d:#008c25;--purple:#a45ae8;--acc:#4f5bd5;--accbg:#e8ebff;--pad:#fff1b8;--padline:#ecdc8c;
+  --card:#fff;--side:#f7f7f8;--sel:#eef0ff;--red:#d93025;--shadow:0 6px 20px rgba(0,0,0,.14);
+  --efont:"Inter",sans-serif;--esize:16px;--vh:100dvh;
 }
-[data-theme=dark]{
-  --side:#121514;--side-2:#1d2220;--list:#181b1a;--card:#212523;--edit:#1b1e1d;--text:#e6eae7;
-  --muted:#8d978f;--line:#2c3230;--sel:#1f3a27;--chip:#2a312d;--chip-t:#b7c6bb;--shadow:none;
-}
-[data-theme=sepia]{
-  --side:#3a2f22;--side-2:#4a3d2d;--side-t:#eadfca;--side-m:#b3a58b;--list:#efe4cc;--card:#f8f1e0;--edit:#f8f1e0;
-  --text:#43362a;--muted:#8a7a63;--line:#dccfb2;--sel:#e5dcb9;--chip:#e6d9ba;--chip-t:#5b4a33;--shadow:none;
-}
+[data-theme=dark]{--bg:#17181a;--text:#ececee;--muted:#9a9aa1;--line:#2b2c30;--tile:#232427;--chip:#2e2f34;--chipt:#d6d6da;--acc:#9aa4ff;--accbg:#2a2e5a;--pad:#4a4220;--padline:#6a5e2c;--card:#202124;--side:#111214;--sel:#232645;--shadow:0 6px 20px rgba(0,0,0,.5)}
+[data-theme=sepia]{--bg:#f6eedb;--text:#43362a;--muted:#8a7a63;--line:#dccfb2;--tile:#ece1c6;--chip:#e6d9ba;--chipt:#5b4a33;--acc:#7a5a2a;--accbg:#e8dbb6;--pad:#f2e3a8;--padline:#d9c46c;--card:#fbf5e6;--side:#efe4cc;--sel:#e8dbb6}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;margin:0}
-body{font-family:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;color:var(--text);background:var(--edit);overflow:hidden}
-button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
-input,select{font:inherit;color:inherit}
-.ic{display:inline-flex;width:18px;height:18px;flex:none}
-.ic svg{width:100%;height:100%}
+body{font-family:"Inter","Segoe UI",system-ui,-apple-system,Roboto,sans-serif;color:var(--text);background:var(--bg);overflow:hidden;font-size:16px}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0;text-align:inherit}
+input,textarea,select{font:inherit;color:inherit}
+[hidden]{display:none!important}
+.ic{display:inline-flex;width:24px;height:24px;flex:none}
+.ic svg{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.sp{flex:1}
 
-/* ---------- Giriş ---------- */
-#login{display:none;min-height:100%;align-items:center;justify-content:center;flex-direction:column;gap:14px;text-align:center;padding:24px;
-  background:linear-gradient(160deg,#1f2421 0%,#10321b 100%);color:#fff}
-#login .logo{width:92px;height:92px;filter:drop-shadow(0 8px 20px rgba(0,0,0,.35))}
-#login h1{margin:6px 0 0;font-size:34px;letter-spacing:.3px}
+/* ---------- Giriş / paylaşım görüntüleyici ---------- */
+#login{display:none;min-height:100%;align-items:center;justify-content:center;flex-direction:column;gap:14px;text-align:center;padding:24px;background:linear-gradient(160deg,#1f2421 0%,#0f3d1e 100%);color:#fff;position:fixed;inset:0;z-index:100}
+#login.show{display:flex}
+#login img{width:92px;height:92px;filter:drop-shadow(0 8px 20px rgba(0,0,0,.35))}
+#login h1{margin:6px 0 0;font-size:34px}
 #login p{margin:0 0 10px;color:#b9c7bd;max-width:320px;line-height:1.5}
-#btnLogin{display:flex;align-items:center;gap:12px;background:#fff;color:#222;border-radius:6px;padding:11px 20px;font-size:15px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+#btnLogin{display:flex;align-items:center;gap:12px;background:#fff;color:#222;border-radius:8px;padding:12px 20px;font-size:15px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,.3)}
 #btnLogin svg{width:20px;height:20px}
 #loginErr{color:#ff9d9d;min-height:18px}
+#viewer{position:fixed;inset:0;overflow:auto;background:var(--bg);z-index:90}
+.vtop{display:flex;align-items:center;gap:10px;padding:12px 18px;border-bottom:1px solid var(--line)}
+.vtop img{width:28px;height:28px;border-radius:7px}
+.vtop a{margin-left:auto;color:var(--green);font-weight:600;text-decoration:none;font-size:14px}
+.vbody{max-width:760px;margin:0 auto;padding:28px 20px 80px}
+.vbody h1{font-size:32px;margin:0 0 6px;font-family:var(--efont)}
+.vbody .vd{color:var(--muted);font-size:14px;margin-bottom:18px}
+#vEditor .ql-container{border:0;font-family:var(--efont);font-size:var(--esize)}
+#vEditor .ql-editor{padding:0;line-height:1.7}
 
 /* ---------- Ana yerleşim ---------- */
-#app{display:none;height:100%;grid-template-columns:248px 330px minmax(0,1fr)}
-.pane{min-height:0;display:flex;flex-direction:column;overflow:hidden}
+#app{display:none;height:var(--vh);position:relative;background:var(--bg)}
+#app.show{display:block}
+#side{display:none}
+#main{position:absolute;inset:0;overflow:hidden}
+.scr{display:none;position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;padding:0 16px calc(130px + env(safe-area-inset-bottom));background:var(--bg);-webkit-overflow-scrolling:touch}
+.scr.on{display:block}
+.top{display:flex;align-items:center;gap:4px;padding:calc(14px + env(safe-area-inset-top)) 0 8px;min-height:70px}
+.ttl{margin:0;font-size:22px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tbtn{width:44px;height:44px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.tbtn:hover{background:var(--tile)}
+.tbtn.sm{width:36px;height:36px}
+.avbtn{width:46px;height:46px;border-radius:50%;flex:none}
+.av{width:46px;height:46px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;overflow:hidden}
+.av img{width:100%;height:100%;object-fit:cover}
+.orb{width:40px;height:40px;border-radius:50%;background:#f5a000;color:#fff;display:inline-flex;align-items:center;justify-content:center;margin-right:8px}
+.orb .ic{width:20px;height:20px}
+.homehead{text-align:center;margin:14px 0 20px}
+.homehead h1{margin:0;font-size:30px;font-weight:700}
+.hdate{color:var(--muted);margin-top:4px;font-size:17px}
+.searchbox{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;border:1px solid #cfcfd6;border-radius:12px;padding:0 16px;height:54px;color:var(--muted);background:var(--bg)}
+[data-theme=dark] .searchbox{border-color:#3a3b40}
+.bigcards{display:grid;grid-template-columns:1.12fr 1fr;gap:14px;margin:34px 0 14px}
+.bigcard{position:relative;height:128px;border-radius:14px;color:#fff;overflow:hidden;font-weight:600;font-size:17px;display:block}
+.bigcard.green{background:var(--green)}
+.bigcard.purple{background:var(--purple)}
+.bc-t{position:absolute;left:14px;top:12px;display:flex;align-items:center;gap:6px}
+.bc-t .ic{width:22px;height:22px}
+.bc-ill{position:absolute;right:0;bottom:0;width:62%;height:78%}
+.tiles{display:flex;gap:10px;overflow-x:auto;margin:0 -16px;padding:0 16px 4px;scrollbar-width:none}
+.tiles::-webkit-scrollbar{display:none}
+.tile{flex:0 0 92px;height:102px;border-radius:16px;background:var(--tile);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;font-size:15px}
+.sech{display:flex;align-items:center;justify-content:space-between;margin:34px 0 10px 4px}
+.sech h2{margin:0;font-size:20px;font-weight:700}
+.sech a{color:var(--acc);font-size:14px;font-weight:600;cursor:pointer}
+.padbox{background:var(--pad);border:1px solid var(--padline);border-radius:12px;height:176px}
+.padbox textarea{width:100%;height:100%;border:0;outline:0;resize:none;background:transparent;padding:20px;font-size:18px;line-height:1.5;color:#2c2a22}
+[data-theme=dark] .padbox textarea{color:#f1ead0}
+.padbox textarea::placeholder{color:#6b684f}
+.count{margin:4px -16px 0;padding:14px 16px;border-bottom:1px solid var(--line);font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#5d5d63}
+.lst{margin:0 -16px}
+.nrow{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:12px;padding:18px 16px 16px;border-bottom:1px solid var(--line);cursor:pointer}
+.nrow:active,.nrow.cur{background:var(--sel)}
+.nmain{min-width:0}
+.nt{font-size:19px;font-weight:600;line-height:1.3;display:flex;gap:6px;align-items:center}
+.nt span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nt .ic{width:16px;height:16px;color:var(--green);flex:none}
+.ns{color:var(--muted);font-size:16px;margin-top:6px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+.ns mark,.sres mark{background:#ffe27a;color:#222;border-radius:3px;padding:0 1px}
+.nth{width:88px;height:88px;border-radius:10px;object-fit:cover;grid-row:1/3;grid-column:2;align-self:start}
+.nm{grid-column:1/3;margin-top:16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;color:var(--muted);font-size:14px}
+.chip{background:var(--chip);color:var(--chipt);border-radius:7px;padding:5px 10px;font-size:14px;display:inline-flex;align-items:center;gap:5px;max-width:100%}
+.chip .ic{width:14px;height:14px}
+.chip.pill{border-radius:20px;font-size:16px;padding:9px 16px}
+.chip.rem{background:#fff0d6;color:#8a5a00}
+[data-theme=dark] .chip.rem{background:#4a3a14;color:#ffd98a}
+.nrow.dense .ns,.nrow.dense .nth{display:none}
+.nrow.dense .nm{margin-top:6px}
+.lrow{display:flex;align-items:center;gap:14px;padding:18px 16px;margin:0 -16px;border-bottom:1px solid var(--line);cursor:pointer}
+.lrow .lt{flex:1;font-size:20px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lrow .lc{color:var(--muted);font-size:18px}
+.lrow .ic{color:#444}
+[data-theme=dark] .lrow .ic{color:#ccc}
+.empty{padding:56px 24px;text-align:center;color:var(--muted);line-height:1.6}
+.empty .ic{width:46px;height:46px;opacity:.5;margin-bottom:8px}
+.fab{position:fixed;right:18px;bottom:calc(98px + env(safe-area-inset-bottom));width:66px;height:66px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);z-index:19}
+.fab .ic{width:30px;height:30px}
+#nav{position:fixed;left:14px;right:14px;bottom:calc(14px + env(safe-area-inset-bottom));height:70px;background:var(--card);border:1px solid var(--line);border-radius:35px;box-shadow:var(--shadow);display:flex;padding:6px;gap:2px;z-index:20}
+.nv{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-radius:30px;font-size:12.5px;color:var(--text)}
+.nv .ic{width:26px;height:26px}
+.nv.on{background:var(--accbg);color:var(--acc);font-weight:600}
+body[data-p=search] #nav,body[data-p=search] .fab,body[data-editor=open] #nav,body[data-editor=open] .fab{display:none}
 
-/* Kenar çubuğu */
-#side{background:var(--side);color:var(--side-t);padding-top:env(safe-area-inset-top)}
-.brand{display:flex;align-items:center;gap:10px;padding:16px 16px 6px;font-weight:700;font-size:18px;color:#fff}
-.brand img,.brand svg{width:28px;height:28px;border-radius:7px}
-#newNote{margin:12px 14px 8px;background:var(--green);color:#fff;border-radius:22px;padding:10px 16px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 2px 6px rgba(0,0,0,.25)}
-#newNote:hover{background:var(--green-d)}
-#navScroll{flex:1;overflow:auto;padding:6px 8px}
-.sec{display:flex;align-items:center;justify-content:space-between;padding:16px 10px 6px;font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--side-m)}
-.sec button{color:var(--side-m);display:flex;padding:2px;border-radius:4px}
-.sec button:hover{color:#fff;background:var(--side-2)}
-.nav{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:6px;cursor:pointer;font-size:14px;position:relative}
-.nav .lbl{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.nav small{color:var(--side-m);font-size:12px}
-.nav:hover{background:var(--side-2)}
-.nav.active{background:var(--side-2);color:#fff}
-.nav.active::before{content:"";position:absolute;left:-8px;top:6px;bottom:6px;width:4px;border-radius:0 4px 4px 0;background:var(--green)}
-.nav.active .ic:first-child{color:#3ddc6b}
-.nav .x{opacity:0;color:var(--side-m);display:flex;padding:2px}
-.nav:hover .x{opacity:1}
-.empty-side{padding:6px 12px;font-size:13px;color:var(--side-m)}
-.side-foot{border-top:1px solid rgba(255,255,255,.08);padding:10px 12px calc(10px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px}
-#installBtn{display:none;align-items:center;gap:10px;padding:8px 10px;border-radius:6px;background:rgba(0,168,45,.18);color:#6be68e;font-size:14px;font-weight:600}
-#installBtn:hover{background:rgba(0,168,45,.3)}
-.themes{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--side-m)}
-.themes span{flex:1}
-.sw{width:22px;height:22px;border-radius:50%;border:2px solid transparent;box-shadow:0 0 0 1px rgba(255,255,255,.25)}
-.sw[data-t=light]{background:linear-gradient(135deg,#fff 50%,#00a82d 50%)}
-.sw[data-t=dark]{background:linear-gradient(135deg,#222 50%,#00a82d 50%)}
-.sw[data-t=sepia]{background:linear-gradient(135deg,#efe4cc 50%,#8a6a3a 50%)}
-.sw.on{border-color:#fff}
-.userrow{display:flex;align-items:center;gap:10px}
-.avatar{width:30px;height:30px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;overflow:hidden;flex:none}
-.avatar img{width:100%;height:100%;object-fit:cover}
-#userName{flex:1;min-width:0;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff}
-#btnLogout{color:var(--side-m);display:flex;padding:6px;border-radius:6px}
-#btnLogout:hover{background:var(--side-2);color:#fff}
+/* ---------- Görevler / takvim ---------- */
+.addrow{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:12px;padding:4px 6px 4px 14px;margin:4px 0 10px}
+.addrow input{flex:1;border:0;outline:0;background:none;height:44px;min-width:0}
+.trow{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}
+.trow .tc{color:var(--purple)}
+.trow.done .tt{text-decoration:line-through;color:var(--muted)}
+.trow .tt{flex:1;min-width:0;font-size:17px;word-break:break-word;cursor:pointer}
+.due{font-size:13px;color:var(--muted);display:block;margin-top:2px}
+.due.late{color:var(--red);font-weight:600}
+.subh{margin:20px 0 4px;font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#5d5d63}
+.calhead{display:flex;align-items:center;justify-content:space-between;margin:6px 0 10px}
+.calhead b{font-size:19px}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}
+.cal .dw{font-size:12px;color:var(--muted);padding:6px 0}
+.cal button{aspect-ratio:1;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:16px}
+.cal button.dim{opacity:.35}
+.cal button.today{border:1.5px solid var(--green)}
+.cal button.sel{background:var(--acc);color:#fff}
+.dots{display:flex;gap:3px;height:6px}
+.dots i{width:6px;height:6px;border-radius:50%;background:var(--green)}
+.dots i.t{background:var(--purple)}.dots i.r{background:#f5a000}
+.cal button.sel .dots i{background:#fff}
 
-/* Not listesi */
-#listPane{background:var(--list);border-right:1px solid var(--line)}
-.lhead{padding:16px 16px 8px;padding-top:calc(16px + env(safe-area-inset-top))}
-.lhead .row{display:flex;align-items:center;gap:8px}
-.lhead h2{margin:0;font-size:20px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.lhead .cnt{font-size:12px;color:var(--muted);margin:2px 0 10px}
-.menu-btn{display:none;padding:6px;border-radius:6px;margin-left:-6px}
-.searchbox{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:0 10px;color:var(--muted)}
-.searchbox:focus-within{border-color:var(--green);box-shadow:0 0 0 3px rgba(0,168,45,.15)}
-.searchbox input{flex:1;border:0;outline:0;background:none;padding:9px 0;min-width:0}
-#noteList{flex:1;overflow:auto;padding:4px 10px 90px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin:8px 0;cursor:pointer;box-shadow:var(--shadow)}
-.card:hover{border-color:#b5c7bb}
-.card.active{background:var(--sel);border-color:var(--green)}
-.ct{font-weight:600;font-size:15px;display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ct .ic{width:14px;height:14px;color:var(--green)}
-.cs{font-size:13px;color:var(--muted);margin-top:5px;line-height:1.4;max-height:2.8em;overflow:hidden;word-break:break-word}
-.cm{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:9px;font-size:11px;color:var(--muted)}
-.chip{background:var(--chip);color:var(--chip-t);border-radius:10px;padding:2px 8px;font-size:11px}
-.none{padding:40px 20px;text-align:center;color:var(--muted);font-size:14px;line-height:1.6}
-#fab{display:none;position:fixed;right:18px;bottom:calc(20px + env(safe-area-inset-bottom));width:56px;height:56px;border-radius:50%;background:var(--green);color:#fff;
-  align-items:center;justify-content:center;box-shadow:0 6px 16px rgba(0,0,0,.3);z-index:5}
-#fab .ic{width:26px;height:26px}
+/* ---------- Ayarlar / şablonlar ---------- */
+.setg{margin:22px 0 6px;font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#5d5d63}
+.seg{display:flex;background:var(--tile);border-radius:12px;padding:4px;gap:4px;margin:8px 0}
+.seg button{flex:1;padding:10px 6px;border-radius:9px;text-align:center;font-size:14px}
+.seg button.on{background:var(--card);font-weight:600;box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.frow{display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid var(--line);cursor:pointer}
+.frow .fn{flex:1;font-size:21px;line-height:1.2}
+.frow small{display:block;font-family:Inter,sans-serif;font-size:12px;color:var(--muted)}
+.frow .ic{color:var(--green)}
+.srow{display:flex;align-items:center;gap:14px;padding:15px 4px;border-bottom:1px solid var(--line);cursor:pointer}
+.srow .st{flex:1}
+.srow small{display:block;color:var(--muted);font-size:13px;margin-top:2px}
+.tplgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
+.tpl{border:1px solid var(--line);background:var(--card);border-radius:14px;padding:16px;min-height:112px;display:flex;flex-direction:column;gap:8px}
+.tpl .ic{color:var(--green)}
+.tpl b{font-size:16px}
+.tpl span{color:var(--muted);font-size:13px;line-height:1.35}
 
-/* Editör */
-#editorPane{background:var(--edit)}
-#empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--muted);text-align:center;padding:20px}
-#empty img{width:84px;height:84px;opacity:.9}
-#editorWrap{flex:1;min-height:0;display:none;flex-direction:column}
-.etop{display:flex;align-items:center;gap:6px;padding:10px 18px;padding-top:calc(10px + env(safe-area-inset-top));border-bottom:1px solid var(--line)}
-.back{display:none;padding:6px;border-radius:6px;margin-left:-6px}
-.nbwrap{display:flex;align-items:center;gap:6px;color:var(--muted);min-width:0}
-#nbSelect{background:none;border:0;outline:0;color:var(--text);font-weight:600;font-size:14px;max-width:200px;cursor:pointer;text-overflow:ellipsis}
-#nbSelect option{color:#222}
-.spacer{flex:1}
-#status{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:5px;white-space:nowrap}
-#status .ic{width:15px;height:15px}
-#status.ok{color:var(--green)}
-.ibtn{display:flex;align-items:center;gap:6px;padding:7px;border-radius:6px;color:var(--muted)}
-.ibtn:hover{background:var(--list);color:var(--text)}
-.ibtn.on{color:var(--green)}
-.ibtn.txt{padding:6px 10px;font-size:13px}
-#toolbar.ql-toolbar.ql-snow{border:0;border-bottom:1px solid var(--line);padding:6px 14px;display:flex;align-items:center;flex-wrap:wrap;overflow-x:auto;background:var(--edit)}
-.ql-snow .ql-stroke{stroke:var(--text)}
-.ql-snow .ql-fill{fill:var(--text)}
-.ql-snow .ql-picker{color:var(--text)}
-.ql-snow .ql-picker-options{background:var(--card);border-color:var(--line)!important;color:var(--text)}
-.ql-snow.ql-toolbar button:hover .ql-stroke,.ql-snow.ql-toolbar button.ql-active .ql-stroke{stroke:var(--green)}
-.ql-snow.ql-toolbar button:hover .ql-fill,.ql-snow.ql-toolbar button.ql-active .ql-fill{fill:var(--green)}
-.ql-snow.ql-toolbar button.ql-active,.ql-snow.ql-toolbar .ql-picker-label.ql-active{color:var(--green)}
-#title{border:0;outline:0;background:none;font-size:30px;font-weight:700;padding:20px 32px 4px;width:100%;color:var(--text)}
-#title::placeholder{color:var(--muted);opacity:.6}
-#tagbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:4px 32px 10px;min-height:38px}
-#tagbar .chip{display:flex;align-items:center;gap:4px;font-size:12px;padding:3px 6px 3px 10px}
-#tagbar .chip button{display:flex;color:inherit;opacity:.6;padding:0}
-#tagbar .chip button:hover{opacity:1}
-#tagbar .chip .ic{width:12px;height:12px}
-#tagInput{border:0;outline:0;background:none;font-size:13px;min-width:120px;flex:1;color:var(--text)}
-#editor{flex:1;min-height:0;overflow:auto}
-#editor.ql-container.ql-snow{border:0;font-size:16px}
-#editor .ql-editor{padding:6px 32px 80px;line-height:1.65;min-height:100%;color:var(--text)}
-#editor .ql-editor.ql-blank::before{color:var(--muted);left:32px;font-style:normal;opacity:.7}
-#editor .ql-editor pre.ql-syntax{border-radius:6px;padding:12px 14px;font-size:14px}
-#editor .ql-editor blockquote{border-left:4px solid var(--green)}
-#editor .ql-editor a{color:var(--green)}
+/* ---------- Menü / sayfa / toast ---------- */
+#scrim{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50}
+#scrim.clear{background:transparent;z-index:60}
+.sheet{position:fixed;left:0;right:0;bottom:0;max-height:90%;overflow:auto;background:var(--card);border-radius:22px 22px 0 0;padding:18px 18px calc(22px + env(safe-area-inset-bottom));z-index:55;box-shadow:var(--shadow)}
+.sheet.full{top:0;max-height:none;border-radius:0;padding-top:calc(14px + env(safe-area-inset-top))}
+.sh-h{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.sh-h h3{margin:0;font-size:21px;flex:1}
+.sh-p{color:var(--muted);line-height:1.55;font-size:15px;margin:6px 0 12px}
+.sheet input[type=text],.sheet input[type=datetime-local],.sheet input[type=search]{width:100%;border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:12px 14px;outline:0}
+.sheet input:focus{border-color:var(--green)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--green);color:#fff;border-radius:22px;padding:11px 22px;font-weight:600}
+.btn.sec{background:var(--tile);color:var(--text)}
+.btn.red{background:var(--red)}
+.brow{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.chips .chip{cursor:pointer;font-size:15px;padding:8px 14px}
+.chips .chip.on{background:var(--green);color:#fff}
+.atiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:6px 0 10px}
+.atile{background:var(--tile);border-radius:14px;height:92px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;font-size:16px}
+.arow{display:flex;align-items:center;gap:16px;padding:16px 4px;font-size:18px;border-bottom:1px solid var(--line);width:100%}
+.arow:last-child{border-bottom:0}
+.arow .ic{color:#444}
+[data-theme=dark] .arow .ic{color:#ccc}
+.arow .st{flex:1}
+.arow.red{color:var(--red)}.arow.red .ic{color:var(--red)}
+.arow.off{opacity:.45}
+.badge{border:1px solid var(--acc);color:var(--acc);border-radius:7px;padding:1px 8px;font-size:13px;font-weight:600}
+.swt{width:46px;height:26px;border-radius:13px;background:#c9c9cf;position:relative;flex:none}
+.swt::after{content:"";position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.15s}
+.swt.on{background:var(--green)}.swt.on::after{left:23px}
+.asep{height:1px;background:var(--line);margin:4px -18px}
+#menu{position:fixed;z-index:61;background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);min-width:230px;max-width:min(320px,calc(100vw - 16px));padding:8px 6px;max-height:70vh;overflow:auto}
+#menu.dock{right:14px;bottom:calc(96px + env(safe-area-inset-bottom));min-width:250px;overflow:visible}
+.mgear{position:absolute;right:0;top:-54px;width:44px;height:44px;border-radius:50%;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;color:var(--acc)}
+.mi{display:flex;align-items:center;gap:16px;width:100%;padding:14px 14px;border-radius:12px;font-size:17px}
+.mi:hover{background:var(--tile)}
+.mi .ic{color:#444}[data-theme=dark] .mi .ic{color:#ccc}
+.mi.red,.mi.red .ic{color:var(--red)}
+.msep{height:1px;background:var(--line);margin:4px 8px}
+.muser{display:flex;align-items:center;gap:12px;padding:12px 12px 14px}
+.muser .av{width:46px;height:46px}
+.muser b{display:block;font-size:17px}.muser small{color:var(--muted)}
+.pal{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;padding:10px}
+.pal button{width:100%;aspect-ratio:1;border-radius:50%;border:2px solid var(--line)}
+.palx{display:flex;align-items:center;gap:10px;padding:8px 14px 12px;color:var(--muted);font-size:14px;width:100%}
+#toasts{position:fixed;left:0;right:0;bottom:calc(100px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:8px;z-index:200;pointer-events:none}
+.toast{background:#222;color:#fff;border-radius:22px;padding:11px 20px;font-size:15px;max-width:90%;box-shadow:var(--shadow);animation:tin .2s}
+@keyframes tin{from{opacity:0;transform:translateY(8px)}}
+#recOv{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:70;display:flex;align-items:center;justify-content:center;padding:20px}
+#recOv .box{background:var(--card);border-radius:20px;padding:26px;width:100%;max-width:380px;text-align:center}
+.recdot{width:84px;height:84px;border-radius:50%;background:var(--red);color:#fff;margin:6px auto 14px;display:flex;align-items:center;justify-content:center;animation:pulse 1.2s infinite}
+.recdot .ic{width:36px;height:36px}
+@keyframes pulse{50%{box-shadow:0 0 0 16px rgba(217,48,37,.18)}}
+#recTxt{min-height:54px;color:var(--muted);line-height:1.5;margin-bottom:12px;max-height:160px;overflow:auto}
 
-/* Pencere (yükleme ipuçları) */
-#modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);align-items:center;justify-content:center;z-index:50;padding:20px}
-#modal .box{background:var(--card);color:var(--text);border-radius:12px;padding:22px;max-width:380px;width:100%;box-shadow:0 12px 40px rgba(0,0,0,.35)}
-#modal h3{margin:0 0 10px;display:flex;align-items:center;gap:10px}
-#modal h3 img{width:32px;height:32px;border-radius:8px}
-#modal p{line-height:1.6;color:var(--muted);margin:8px 0}
-#modal .primary{margin-top:10px;background:var(--green);color:#fff;border-radius:20px;padding:9px 20px;font-weight:600;float:right}
+/* ---------- Not düzenleyici ---------- */
+#editorView{position:fixed;left:0;top:0;width:100%;height:var(--vh);background:var(--bg);z-index:30;display:none;flex-direction:column}
+body[data-editor=open] #editorView{display:flex}
+#eEmpty{display:none;flex:1;align-items:center;justify-content:center;flex-direction:column;gap:14px;color:var(--muted)}
+#eEmpty img{width:84px;height:84px;opacity:.85}
+#eBody{flex:1;min-height:0;display:flex;flex-direction:column;position:relative}
+.etop{display:flex;align-items:center;gap:8px;padding:calc(12px + env(safe-area-inset-top)) 14px 8px;flex:none}
+.cbtn{width:48px;height:48px;border-radius:50%;background:var(--card);border:1px solid var(--line);box-shadow:0 2px 8px rgba(0,0,0,.1);display:inline-flex;align-items:center;justify-content:center;flex:none}
+.cgrp{display:flex;background:var(--card);border:1px solid var(--line);border-radius:26px;box-shadow:0 2px 8px rgba(0,0,0,.1);padding:0 4px}
+.cgrp .tbtn{width:48px;height:48px}
+#eScroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.ewrap{padding:10px 22px 40px;max-width:900px;margin:0 auto}
+#eChips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;min-height:0}
+.nbline{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:16px;margin-bottom:6px}
+.nbline button{color:var(--muted)}
+.nbline .ic{width:18px;height:18px}
+#eStatus{margin-left:auto;font-size:12px}
+#eBanner{display:flex;flex-direction:column;gap:8px;margin-bottom:8px}
+.banner{display:flex;align-items:center;gap:10px;background:var(--tile);border-radius:12px;padding:10px 14px;font-size:14px}
+.banner b{flex:1;font-weight:500}
+.banner button{color:var(--acc);font-weight:600}
+#eTitle{width:100%;border:0;outline:0;background:none;resize:none;overflow:hidden;font-family:var(--efont);font-size:calc(var(--esize) * 2.15);font-weight:700;line-height:1.2;padding:6px 0 10px;display:block}
+#eTitle::placeholder{color:var(--muted);opacity:.55}
+#findBar{display:flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:12px;padding:2px 4px 2px 12px;margin:4px 0 10px;position:sticky;top:0;background:var(--bg);z-index:3}
+#findBar input{flex:1;border:0;outline:0;background:none;height:40px;min-width:0}
+#findCnt{font-size:12px;color:var(--muted);padding:0 4px}
+#editor .ql-container{border:0;font-family:var(--efont);font-size:var(--esize);height:auto}
+#editor .ql-editor{padding:0 0 140px;min-height:42vh;line-height:1.65;overflow:visible;font-family:var(--efont);font-size:var(--esize);color:var(--text)}
+#editor .ql-editor.ql-blank::before{left:0;font-style:normal;color:var(--muted);opacity:.65}
+#editor .ql-editor img{max-width:100%;height:auto;border-radius:8px}
+#editor .ql-editor a{color:var(--acc)}
+#editor .ql-editor blockquote{border-left:4px solid var(--green);color:inherit;opacity:.9}
+#editor .ql-editor pre.ql-syntax{border-radius:8px;padding:12px 14px;font-size:.9em;overflow-x:auto}
+#editor .ql-editor code{background:var(--tile);border-radius:4px;padding:1px 5px;font-size:.92em}
+#editor .ql-editor hr{border:0;border-top:1px solid var(--line);margin:18px 0}
+#editor .ql-editor h1{font-size:1.7em}#editor .ql-editor h2{font-size:1.4em}#editor .ql-editor h3{font-size:1.18em}
+#editor .ql-editor ul[data-checked]>li::before{font-size:1.15em}
+.fbar{display:flex;align-items:center;gap:2px;overflow-x:auto;padding:6px 10px calc(6px + env(safe-area-inset-bottom));margin:0 10px 8px;background:var(--card);border:1px solid var(--line);border-radius:28px;box-shadow:var(--shadow);flex:none;scrollbar-width:none}
+.fbar::-webkit-scrollbar{display:none}
+.tb{width:46px;height:46px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.tb.on{background:var(--accbg);color:var(--acc)}
+.tb.add{background:var(--acc);color:#fff;border-radius:50%}
+.tbs{width:1px;height:26px;background:var(--line);margin:0 4px;flex:none}
+.kbhide{position:absolute;right:14px;bottom:78px;width:50px;height:50px;border-radius:50%;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;z-index:4}
+#printArea{display:none}
 
-/* ---------- Mobil ---------- */
-@media(max-width:860px){
-  #app{grid-template-columns:1fr}
-  .pane{display:none;border-right:0}
-  body[data-view=folders] #side,body[data-view=list] #listPane,body[data-view=editor] #editorPane{display:flex}
-  .menu-btn,.back{display:flex}
-  body[data-view=list] #fab{display:flex}
-  #side{padding-top:env(safe-area-inset-top)}
-  #title{font-size:24px;padding:16px 18px 4px}
-  #tagbar{padding:4px 18px 10px}
-  #editor .ql-editor{padding:6px 18px 80px}
-  #editor .ql-editor.ql-blank::before{left:18px}
-  .etop{padding-left:12px;padding-right:12px}
-  #status span:last-child{display:none}
+/* ---------- Masaüstü ---------- */
+@media(min-width:861px){
+  #app.show{display:grid;grid-template-columns:250px 430px minmax(0,1fr)}
+  #side{display:flex;flex-direction:column;background:var(--side);border-right:1px solid var(--line);padding-top:12px;min-height:0}
+  #main{position:relative;border-right:1px solid var(--line)}
+  #nav,.fab{display:none!important}
+  .scr{padding-bottom:40px}
+  #editorView{position:static;display:flex;width:auto;height:100%}
+  body[data-editor=closed] #eEmpty{display:flex}
+  body[data-editor=closed] #eBody{display:none}
+  .cbtn.back{display:none}
+  .brand{display:flex;align-items:center;gap:10px;padding:10px 16px;font-weight:700;font-size:19px}
+  .brand img{width:30px;height:30px;border-radius:8px}
+  #sNew{margin:8px 14px 10px;background:var(--green);color:#fff;border-radius:22px;padding:11px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px}
+  #sNav{flex:1;overflow:auto;padding:4px 8px}
+  .sn{display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px;border-radius:10px;font-size:15px}
+  .sn .ic{width:21px;height:21px}
+  .sn:hover{background:var(--tile)}
+  .sn.on{background:var(--accbg);color:var(--acc);font-weight:600}
+  .sn small{margin-left:auto;color:var(--muted)}
+  .sfoot{border-top:1px solid var(--line);padding:10px 12px;display:flex;align-items:center;gap:10px}
+  .sfoot .av{width:34px;height:34px;font-size:14px}
+  .sfoot span.nm2{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px}
+  .sheet{left:50%;right:auto;bottom:auto;top:50%;transform:translate(-50%,-50%);width:480px;max-width:94vw;border-radius:18px;max-height:88%}
+  .sheet.full{top:50%;max-height:88%;border-radius:18px;padding-top:18px}
+  #menu.dock{display:none}
+}
+@media print{
+  body{overflow:visible;height:auto}
+  body>*:not(#printArea){display:none!important}
+  #printArea{display:block!important;color:#000;background:#fff;font-family:var(--efont)}
+  #printArea h1{font-size:28px;margin:0 0 12px}
+  #printArea img{max-width:100%}
 }
 </style>
 </head>
-<body data-view="list">
+<body data-p="home" data-editor="closed">
 
-<!-- GİRİŞ EKRANI -->
 <div id="login">
-  <img class="logo" src="logo.svg" alt="D-Note">
+  <img src="logo.svg" alt="D-Note">
   <h1>D-Note</h1>
   <p>Notların bulutta güvende. İnternet yokken de yazmaya devam et, bağlanınca otomatik eşitlenir.</p>
   <button id="btnLogin">
@@ -202,93 +329,122 @@ input,select{font:inherit;color:inherit}
   <div id="loginErr"></div>
 </div>
 
-<!-- UYGULAMA -->
+<div id="viewer" hidden>
+  <header class="vtop"><img src="logo.svg" alt=""><b>D-Note</b><a href="./">Kendi notlarını oluştur</a></header>
+  <article class="vbody"><h1 id="vTitle"></h1><div class="vd" id="vDate"></div><div id="vEditor"></div><div id="vErr" class="empty" hidden>Bu not bulunamadı ya da paylaşımı durdurulmuş.</div></article>
+</div>
+
 <div id="app">
-  <aside class="pane" id="side">
+  <aside id="side">
     <div class="brand"><img src="logo.svg" alt=""> D-Note</div>
-    <button id="newNote"><span data-ic="plus"></span> Yeni Not</button>
-    <div id="navScroll">
-      <div id="navMain"></div>
-      <div class="sec">Defterler <button id="addNb" title="Yeni defter"><span data-ic="plus"></span></button></div>
-      <div id="navNotebooks"></div>
-      <div class="sec">Etiketler</div>
-      <div id="navTags"></div>
-      <div style="height:8px"></div>
-      <div id="navTrash"></div>
-    </div>
-    <div class="side-foot">
-      <button id="installBtn"><span data-ic="download"></span> Uygulamayı yükle</button>
-      <div class="themes"><span>Tema</span>
-        <button class="sw" data-t="light" title="Açık"></button>
-        <button class="sw" data-t="dark" title="Koyu"></button>
-        <button class="sw" data-t="sepia" title="Sepya"></button>
-      </div>
-      <div class="userrow">
-        <div class="avatar" id="avatar"></div>
-        <div id="userName"></div>
-        <button id="btnLogout" title="Çıkış yap"><span data-ic="logout"></span></button>
-      </div>
-    </div>
+    <button id="sNew" data-act="newNote"><span data-ic="plus"></span> Yeni Not</button>
+    <nav id="sNav"></nav>
+    <div class="sfoot"><button class="avbtn" data-act="profile" style="width:34px;height:34px"><span class="av" data-av></span></button><span class="nm2" id="sName"></span><button class="tbtn sm" data-act="logout" title="Oturumu kapat"><span data-ic="logout"></span></button></div>
   </aside>
 
-  <section class="pane" id="listPane">
-    <div class="lhead">
-      <div class="row">
-        <button class="menu-btn" id="toFolders" title="Menü"><span data-ic="menu"></span></button>
-        <h2 id="listTitle">Tüm Notlar</h2>
+  <main id="main">
+    <section class="scr" id="scr-home">
+      <div class="top">
+        <button class="avbtn" data-act="profile"><span class="av" data-av></span></button>
+        <span class="sp"></span>
+        <button class="orb" id="orbInstall" data-act="install" hidden title="Uygulamayı yükle"><span data-ic="bolt"></span></button>
+        <button class="tbtn" data-act="whatsnew" title="Yenilikler"><span data-ic="megaphone"></span></button>
       </div>
-      <div class="cnt" id="listCount"></div>
-      <label class="searchbox"><span data-ic="search"></span><input id="search" placeholder="Notlarda ara" autocomplete="off"></label>
-    </div>
-    <div id="noteList"></div>
-  </section>
+      <div class="homehead"><h1>D-Note'um</h1><div class="hdate" id="homeDate"></div></div>
+      <button class="searchbox" data-go="search"><span>Herhangi bir notu, görevi veya belgeyi bulun</span><span data-ic="search"></span></button>
+      <div class="bigcards">
+        <button class="bigcard green" data-act="newNote"><span class="bc-t"><span data-ic="plus"></span>Yeni not</span>
+          <svg class="bc-ill" viewBox="0 0 160 110" preserveAspectRatio="xMaxYMax meet"><g transform="rotate(-10 100 90)"><rect x="52" y="26" width="120" height="120" rx="8" fill="#f1f1f1"/><rect x="80" y="46" width="58" height="7" rx="3.5" fill="#9b9b9b"/><rect x="70" y="62" width="76" height="7" rx="3.5" fill="#c8c8c8"/><rect x="70" y="77" width="60" height="7" rx="3.5" fill="#c8c8c8"/></g></svg></button>
+        <button class="bigcard purple" data-act="newTask"><span class="bc-t"><span data-ic="plus"></span>Yeni görev</span>
+          <svg class="bc-ill" viewBox="0 0 160 110" preserveAspectRatio="xMaxYMax meet"><g transform="rotate(12 100 70)"><rect x="40" y="24" width="124" height="42" rx="8" fill="#f1e7fb"/><circle cx="62" cy="45" r="9" fill="#a45ae8"/><path d="M57.5 45l3 3 5-6" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/><rect x="80" y="38" width="58" height="6" rx="3" fill="#c9a8ee"/><rect x="80" y="50" width="40" height="6" rx="3" fill="#dcc7f3"/><rect x="48" y="76" width="124" height="42" rx="8" fill="#f1e7fb"/><circle cx="70" cy="97" r="9" fill="none" stroke="#a45ae8" stroke-width="2"/></g></svg></button>
+      </div>
+      <div class="tiles">
+        <button class="tile" data-act="newEvent"><span data-ic="calplus"></span>Etkinlik</button>
+        <button class="tile" data-act="newNotebook"><span data-ic="bookplus"></span>Not defteri</button>
+        <button class="tile" data-act="record"><span data-ic="mic"></span>Kaydedici</button>
+        <button class="tile" data-act="camera"><span data-ic="cameraplus"></span>Kamera</button>
+        <button class="tile" data-go="templates"><span data-ic="template"></span>Şablon</button>
+        <button class="tile" data-act="importAny"><span data-ic="upload"></span>İçe aktar</button>
+      </div>
+      <div id="homePinned"></div>
+      <div class="sech"><h2>Karalama Defteri</h2><button class="tbtn sm" data-act="scratchMenu"><span data-ic="dots"></span></button></div>
+      <div class="padbox"><textarea id="scratch" placeholder="Yazmaya başlayın..."></textarea></div>
+      <div id="homeRecent"></div>
+    </section>
 
-  <section class="pane" id="editorPane">
-    <div id="empty">
-      <img src="logo.svg" alt="">
-      <div>Bir not seçin veya yeni bir not oluşturun</div>
-    </div>
-    <div id="editorWrap">
-      <div class="etop">
-        <button class="back" id="toList" title="Notlar"><span data-ic="back"></span></button>
-        <div class="nbwrap"><span data-ic="book"></span><select id="nbSelect"></select></div>
-        <div class="spacer"></div>
-        <div id="status"></div>
-        <button class="ibtn" id="pinBtn" title="Sabitle"><span data-ic="pin"></span></button>
-        <button class="ibtn" id="delBtn" title="Çöpe at"><span data-ic="trash"></span></button>
-        <button class="ibtn txt" id="restoreBtn" style="display:none"><span data-ic="restore"></span> Geri al</button>
-        <button class="ibtn txt" id="permBtn" style="display:none"><span data-ic="x"></span> Kalıcı sil</button>
+    <section class="scr" id="scr-tasks">
+      <div class="top" id="top-tasks"></div>
+      <div class="addrow"><span data-ic="circle" style="color:var(--purple)"></span><input id="taskIn" placeholder="Görev ekle" autocomplete="off"><button class="tbtn sm" data-act="taskDue" title="Tarih"><span data-ic="calendar"></span></button><button class="btn" data-act="taskAdd" style="padding:8px 16px">Ekle</button></div>
+      <div id="taskDueTxt" class="due" style="margin:-4px 0 8px 6px" hidden></div>
+      <div id="body-tasks"></div>
+    </section>
+
+    <section class="scr" id="scr-search">
+      <div class="top"><button class="tbtn" data-act="back"><span data-ic="back"></span></button>
+        <div class="addrow" style="flex:1;margin:0"><span data-ic="search" style="color:var(--muted)"></span><input id="qIn" placeholder="Ara" autocomplete="off"><button class="tbtn sm" id="qClear" data-act="qClear" hidden><span data-ic="x"></span></button></div></div>
+      <div id="searchRes"></div>
+    </section>
+  </main>
+
+  <button class="fab" id="fab" hidden></button>
+
+  <nav id="nav">
+    <button class="nv" data-nav="home"><span data-ic="plusc"></span><span>Oluştur</span></button>
+    <button class="nv" data-nav="notes"><span data-ic="notes"></span><span>Notlar</span></button>
+    <button class="nv" data-nav="notebooks"><span data-ic="book"></span><span>Not defterleri</span></button>
+    <button class="nv" data-nav="more"><span data-ic="dots"></span><span>Daha Fazla</span></button>
+  </nav>
+
+  <section id="editorView">
+    <div id="eEmpty"><img src="logo.svg" alt=""><div>Bir not seçin veya yeni bir not oluşturun</div></div>
+    <div id="eBody" hidden>
+      <header class="etop">
+        <button class="cbtn back" data-act="closeNote" title="Geri"><span data-ic="back"></span></button>
+        <span class="sp"></span>
+        <div class="cgrp">
+          <button class="tbtn" data-act="eTag" title="Etiket ekle"><span data-ic="tagplus"></span></button>
+          <button class="tbtn" data-act="eShare" title="Paylaş"><span data-ic="share"></span></button>
+          <button class="tbtn" data-act="eMore" title="Not eylemleri"><span data-ic="dots"></span></button>
+        </div>
+      </header>
+      <div id="eScroll">
+        <div class="ewrap">
+          <div id="eChips"></div>
+          <div class="nbline"><span data-ic="book"></span><button data-act="eMove" id="eNb"></button><span id="eStatus"></span></div>
+          <div id="eBanner"></div>
+          <textarea id="eTitle" rows="1" placeholder="Başlık"></textarea>
+          <div id="findBar" hidden>
+            <span data-ic="search" style="color:var(--muted)"></span>
+            <input id="findIn" placeholder="Notta bul" autocomplete="off"><span id="findCnt"></span>
+            <button class="tbtn sm" data-act="findPrev"><span data-ic="chevu"></span></button>
+            <button class="tbtn sm" data-act="findNext"><span data-ic="chevd"></span></button>
+            <button class="tbtn sm" data-act="findClose"><span data-ic="x"></span></button>
+          </div>
+          <div id="editor"></div>
+        </div>
       </div>
-      <div id="toolbar">
-        <select class="ql-header"><option value="1"></option><option value="2"></option><option value="3"></option><option selected></option></select>
-        <span class="ql-formats"><button class="ql-bold"></button><button class="ql-italic"></button><button class="ql-underline"></button><button class="ql-strike"></button></span>
-        <span class="ql-formats"><button class="ql-list" value="bullet"></button><button class="ql-list" value="ordered"></button><button class="ql-list" value="check"></button></span>
-        <span class="ql-formats"><button class="ql-blockquote"></button><button class="ql-code-block"></button><button class="ql-link"></button></span>
-        <span class="ql-formats"><button class="ql-clean"></button></span>
-      </div>
-      <input id="title" placeholder="Başlık" autocomplete="off">
-      <div id="tagbar"><span data-ic="tag" style="color:var(--muted)"></span><span id="chips" style="display:contents"></span><input id="tagInput" placeholder="Etiket ekle…" autocomplete="off"></div>
-      <div id="editor"></div>
+      <button class="kbhide" id="kbHide" data-act="kbHide" hidden><span data-ic="kbhide"></span></button>
+      <div class="fbar" id="fbar"></div>
     </div>
   </section>
 </div>
 
-<button id="fab" title="Yeni Not"><span data-ic="plus"></span></button>
-
-<div id="modal"><div class="box">
-  <h3><img src="logo.svg" alt=""> Uygulamayı yükle</h3>
-  <div id="modalText"></div>
-  <button class="primary" id="modalOk">Tamam</button>
-  <div style="clear:both"></div>
-</div></div>
+<div id="scrim" hidden></div>
+<div class="sheet" id="sheet" hidden></div>
+<div id="menu" hidden></div>
+<div id="toasts"></div>
+<div id="printArea"></div>
+<input type="file" id="fileImg" accept="image/*" hidden>
+<input type="file" id="fileCam" accept="image/*" capture="environment" hidden>
+<input type="file" id="fileImport" accept=".json,.enex,.xml" hidden>
 
 <script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js" crossorigin="anonymous"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut }
   from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, doc, setDoc,
-  updateDoc, deleteDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, doc, setDoc, getDoc,
+  updateDoc, deleteDoc, onSnapshot, query, orderBy, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
 // Firebase web yapılandırması (herkese açık bilgidir; asıl güvenlik firestore.rules ile sağlanır)
 const firebaseConfig = {
@@ -299,310 +455,945 @@ const firebaseConfig = {
   messagingSenderId: "858098284296",
   appId: "1:858098284296:web:19f2c95a03fa586fc8debd"
 };
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+const fbApp = initializeApp(firebaseConfig);
+const auth = getAuth(fbApp);
 // Çevrimdışı mod: veriler cihazdaki yerel veritabanında saklanır, internet gelince otomatik eşitlenir
-const db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
+const db = initializeFirestore(fbApp, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
 
-// ---------- Küçük yardımcılar ----------
+/* ================= Yardımcılar ================= */
 const $ = id => document.getElementById(id);
+const qs = (s, r = document) => r.querySelector(s);
+const qsa = (s, r = document) => [...r.querySelectorAll(s)];
 const esc = s => (s == null ? "" : String(s)).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const store = { get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
+const MONTHS = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+const DAYS = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
+const fmtDate = t => t ? new Date(t).toLocaleDateString("tr-TR") : "";
+const fmtDT = t => t ? new Date(t).toLocaleString("tr-TR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "";
+const dayKey = t => { const d = new Date(t); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+const toLocalInput = t => { const d = new Date(t); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 16); };
+const randId = () => Array.from(crypto.getRandomValues(new Uint8Array(12)), b => b.toString(16).padStart(2, "0")).join("");
+
 const ICONS = {
   plus: '<path d="M12 5v14M5 12h14"/>',
-  search: '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
-  notes: '<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h7"/>',
-  book: '<path d="M5 4h12a2 2 0 0 1 2 2v14H7a2 2 0 0 1-2-2z"/><path d="M5 18a2 2 0 0 1 2-2h12M9 8h6"/>',
-  tag: '<path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.2"/>',
-  trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
-  pin: '<path d="M12 17v5M8 3h8l-1 6 3 4H6l3-4z"/>',
-  menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
+  plusc: '<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>',
+  notes: '<rect x="5" y="3" width="14" height="18" rx="2.5"/><path d="M9 8h6M9 12h6M9 16h4"/>',
+  noteplus: '<path d="M13 21H8a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v6"/><path d="M9 8h6M9 12h4M17 16v6M14 19h6"/>',
+  book: '<path d="M6 3h11a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6z"/><path d="M6 3v18M10 8h5"/>',
+  bookstar: '<path d="M6 3h11a2 2 0 0 1 2 2v6M6 3v18h6M10 8h5"/><path d="M18 14l1.3 2.6 2.7.4-2 1.9.5 2.7-2.5-1.3-2.5 1.3.5-2.7-2-1.9 2.7-.4z"/>',
+  bookplus: '<path d="M6 3h11a2 2 0 0 1 2 2v8M6 3v18h7M10 8h5"/><path d="M18 16v6M15 19h6"/>',
+  tag: '<path d="M5 8l5-4a2 2 0 0 1 2.6 0l5 4a2 2 0 0 1 .8 1.6V19a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9.6A2 2 0 0 1 5 8z"/><circle cx="12" cy="10" r="1.3"/>',
+  tagplus: '<path d="M5 8l5-4a2 2 0 0 1 2.6 0l5 4a2 2 0 0 1 .8 1.6V13M4 9.6V19a2 2 0 0 0 2 2h6"/><circle cx="12" cy="10" r="1.3"/><path d="M18 16v6M15 19h6"/>',
+  trash: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/>',
+  pin: '<path d="M9 3h6l-1 6 3 4H7l3-4zM12 13v8"/>',
   back: '<path d="M15 5l-7 7 7 7"/>',
-  download: '<path d="M12 4v11M7 11l5 5 5-5M5 20h14"/>',
-  logout: '<path d="M9 4H5v16h4M16 8l4 4-4 4M20 12H9"/>',
-  restore: '<path d="M4 12a8 8 0 1 0 3-6.2M4 4v5h5"/>',
+  chev: '<path d="M9 5l7 7-7 7"/>', chevd: '<path d="M5 9l7 7 7-7"/>', chevu: '<path d="M5 15l7-7 7 7"/>',
+  dots: '<circle cx="5" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="19" cy="12" r="1.5" fill="currentColor"/>',
   x: '<path d="M6 6l12 12M18 6L6 18"/>',
-  cloud: '<path d="M7 18a4 4 0 0 1-.5-8A6 6 0 0 1 18 9a4.5 4.5 0 0 1 0 9z"/>',
-  check: '<path d="M5 12l5 5 9-10"/>'
+  check: '<path d="M5 12.5l4.5 4.5L19 7"/>',
+  checkc: '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/>',
+  circle: '<circle cx="12" cy="12" r="9"/>',
+  calendar: '<rect x="4" y="5" width="16" height="16" rx="2.5"/><path d="M4 10h16M9 3v4M15 3v4"/>',
+  calplus: '<rect x="4" y="5" width="16" height="16" rx="2.5"/><path d="M4 10h16M9 3v4M15 3v4M12 13v5M9.5 15.5h5"/>',
+  star: '<path d="M12 3.5l2.6 5.3 5.9.9-4.2 4.1 1 5.8-5.3-2.8-5.3 2.8 1-5.8L3.5 9.7l5.9-.9z"/>',
+  starplus: '<path d="M12 3.5l2.6 5.3 5.9.9-4.2 4.1.4 2.4M12 17.5l-5.3 2.8 1-5.8L3.5 9.7l5.9-.9"/><path d="M18 16v6M15 19h6"/>',
+  share: '<path d="M12 15V3M8 7l4-4 4 4M5 12v8h14v-8"/>',
+  link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
+  copy: '<rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/>',
+  sparkle: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16v4M17 18h4"/>',
+  bell: '<path d="M6 17V11a6 6 0 0 1 12 0v6l1.5 2h-15z"/><path d="M10 21h4"/>',
+  bellplus: '<path d="M6 17V11a6 6 0 0 1 11-3.3M18 11v6l1.5 2h-15L6 17"/><path d="M10 21h4M19 3v6M16 6h6"/>',
+  printer: '<path d="M7 9V3h10v6M7 17H5a1 1 0 0 1-1-1v-5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v5a1 1 0 0 1-1 1h-2"/><rect x="7" y="14" width="10" height="7" rx="1"/>',
+  move: '<path d="M13 21H8a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v5"/><path d="M9 8h6M9 12h3M15 17h6M18 14l3 3-3 3"/>',
+  filter: '<path d="M4 7h16M7 12h10M10 17h4"/>',
+  megaphone: '<path d="M4 10v4a1 1 0 0 0 1 1h3l8 4V5L8 9H5a1 1 0 0 0-1 1z"/><path d="M19 9a4 4 0 0 1 0 6"/>',
+  gear: '<circle cx="12" cy="12" r="3"/><path d="M12 2.8l1.5 2.4 2.8-.5.9 2.7 2.7.9-.5 2.8 2.4 1.5-2.4 1.5.5 2.8-2.7.9-.9 2.7-2.8-.5L12 21.2l-1.5-2.4-2.8.5-.9-2.7-2.7-.9.5-2.8L2.2 12l2.4-1.5-.5-2.8 2.7-.9.9-2.7 2.8.5z"/>',
+  help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7M12 17h.01"/>',
+  logout: '<path d="M10 21H5V3h5M15 8l4 4-4 4M19 12H9"/>',
+  mic: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',
+  camera: '<path d="M4 8h3l1.5-2.5h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',
+  cameraplus: '<path d="M4 8h3l1.5-2.5h7L17 8h3v11H4z"/><path d="M12 10.5v5M9.5 13h5"/>',
+  image: '<rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="9" cy="10" r="1.6"/><path d="M4 18l5-5 4 4 3-3 4 4"/>',
+  bold: '<path d="M7 4h6a3.5 3.5 0 0 1 0 7H7zM7 11h7a3.5 3.5 0 0 1 0 7H7z"/>',
+  italic: '<path d="M14 4h-4M14 20h-4M15 4l-6 16"/>',
+  underline: '<path d="M7 4v7a5 5 0 0 0 10 0V4M5 20h14"/>',
+  strike: '<path d="M7 8c0-2 2-3 5-3s5 1 5 3M7 16c0 2 2 3 5 3s5-1 5-3M4 12h16"/>',
+  code: '<path d="M9 7l-5 5 5 5M15 7l5 5-5 5"/>',
+  codeblock: '<rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M10 9l-3 3 3 3M14 9l3 3-3 3"/>',
+  quote: '<path d="M9 7C6 8 5 10 5 13v4h5v-5H7.5c0-2 .8-3 2.5-4zM19 7c-3 1-4 3-4 6v4h5v-5h-2.5c0-2 .8-3 2.5-4z"/>',
+  ul: '<circle cx="5" cy="7" r="1.2" fill="currentColor"/><circle cx="5" cy="12" r="1.2" fill="currentColor"/><circle cx="5" cy="17" r="1.2" fill="currentColor"/><path d="M10 7h10M10 12h10M10 17h10"/>',
+  ol: '<path d="M10 7h10M10 12h10M10 17h10M4 6l1.5-1v4M4 14h3l-3 3h3"/>',
+  indent: '<path d="M4 6h16M12 10h8M12 14h8M4 18h16M4 9l3 3-3 3"/>',
+  outdent: '<path d="M4 6h16M12 10h8M12 14h8M4 18h16M7 9l-3 3 3 3"/>',
+  color: '<path d="M8 15l4-10 4 10M9.5 11.5h5"/><path d="M5 20h14" stroke-width="3"/>',
+  marker: '<path d="M14 4l6 6-8 8H7v-5z"/><path d="M5 21h6"/>',
+  fontAa: '<text x="1.5" y="17" font-size="14" font-family="Georgia,serif" font-style="italic" fill="currentColor" stroke="none">Aa</text>',
+  sizeA: '<path d="M4 17l4-10 4 10M5.5 13h5M17 6v12M15 8l2-2 2 2M15 16l2 2 2-2"/>',
+  alignL: '<path d="M4 6h16M4 10h10M4 14h16M4 18h10"/>',
+  alignC: '<path d="M4 6h16M7 10h10M4 14h16M7 18h10"/>',
+  alignR: '<path d="M4 6h16M10 10h10M4 14h16M10 18h10"/>',
+  alignJ: '<path d="M4 6h16M4 10h16M4 14h16M4 18h16"/>',
+  heading: '<path d="M6 5v14M18 5v14M6 12h12"/>',
+  eraser: '<path d="M4 17l9-11 6 5-7 9H8zM8 20h12"/>',
+  kbhide: '<rect x="3" y="4" width="18" height="11" rx="2.5"/><path d="M7 8h.01M11 8h.01M15 8h.01M7 11.5h10M9 19l3 2.5 3-2.5"/>',
+  template: '<rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+  users: '<circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0M16 5a3 3 0 0 1 0 6M18 14a5 5 0 0 1 3 5"/>',
+  download: '<path d="M12 4v11M7 11l5 5 5-5M5 20h14"/>',
+  upload: '<path d="M12 16V5M7 9l5-5 5 5M5 20h14"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  hr: '<path d="M4 12h16"/>',
+  bolt: '<path d="M13 3L5 14h6l-1 7 8-11h-6z"/>',
+  restore: '<path d="M4 12a8 8 0 1 0 3-6.2M4 4v5h5"/>',
+  cloudoff: '<path d="M7 18a4 4 0 0 1-.5-8A6 6 0 0 1 18 9a4.5 4.5 0 0 1 0 9zM4 4l16 16"/>',
+  info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/>',
+  home: '<path d="M4 11l8-7 8 7v9H4z"/>'
 };
-const svg = n => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[n]}</svg>`;
-const ic = n => `<span class="ic">${svg(n)}</span>`;
-document.querySelectorAll("[data-ic]").forEach(e => { e.classList.add("ic"); e.innerHTML = svg(e.dataset.ic); });
-const fmtDate = t => t ? new Date(t).toLocaleDateString("tr-TR", { day: "numeric", month: "short" }) : "";
-const setView = v => document.body.dataset.view = v;
+const svg = n => `<svg viewBox="0 0 24 24">${ICONS[n] || ""}</svg>`;
+const ic = (n, c = "") => `<span class="ic ${c}">${svg(n)}</span>`;
+function hydrate(root = document) { qsa("[data-ic]", root).forEach(e => { if (e.dataset.done) return; e.classList.add("ic"); e.innerHTML = svg(e.dataset.ic); e.dataset.done = "1"; }); }
+const toast = (msg, ms = 2800) => { const d = document.createElement("div"); d.className = "toast"; d.textContent = msg; $("toasts").appendChild(d); setTimeout(() => d.remove(), ms); };
 
-// ---------- Tema ----------
-function applyTheme(t) {
-  document.documentElement.dataset.theme = t;
-  try { localStorage.setItem("dnote-theme", t); } catch (e) {}
-  document.querySelectorAll(".sw").forEach(b => b.classList.toggle("on", b.dataset.t === t));
-  document.querySelector('meta[name=theme-color]').content = ({ light: "#1f2421", dark: "#121514", sepia: "#3a2f22" })[t];
+/* ================= Ayarlar, tema, yazı tipleri ================= */
+const FONTS = [
+  { n: "Inter", g: "sans-serif" }, { n: "Roboto", g: "sans-serif" }, { n: "Open Sans", g: "sans-serif" }, { n: "Poppins", g: "sans-serif" },
+  { n: "Nunito", g: "sans-serif" }, { n: "Merriweather", g: "serif" }, { n: "Lora", g: "serif" }, { n: "Playfair Display", g: "serif" },
+  { n: "Roboto Mono", g: "monospace" }, { n: "Source Code Pro", g: "monospace" }, { n: "Caveat", g: "cursive" }, { n: "Dancing Script", g: "cursive" },
+  { n: "Arial", g: "sans-serif" }, { n: "Georgia", g: "serif" }, { n: "Times New Roman", g: "serif" }, { n: "Courier New", g: "monospace" }
+];
+const fontCss = n => { const f = FONTS.find(x => x.n === n) || FONTS[0]; return `"${f.n}",${f.g}`; };
+const SIZES = { small: 14, normal: 16, large: 18, xl: 21 };
+const SIZE_LBL = { small: "Küçük", normal: "Normal", large: "Büyük", xl: "Çok büyük" };
+const S = { theme: store.get("dnote-theme", "light"), font: store.get("dnote-font", "Inter"), size: store.get("dnote-size", "normal"), sort: store.get("dnote-sort", "updated"), dense: store.get("dnote-dense", "0") === "1" };
+function applySettings() {
+  const dark = S.theme === "dark" || (S.theme === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
+  const eff = S.theme === "sepia" ? "sepia" : (dark ? "dark" : "light");
+  document.documentElement.dataset.theme = eff;
+  const m = qs('meta[name=theme-color]'); if (m) m.content = { light: "#ffffff", dark: "#17181a", sepia: "#f6eedb" }[eff];
+  const r = document.documentElement.style;
+  r.setProperty("--efont", fontCss(S.font)); r.setProperty("--esize", (SIZES[S.size] || 16) + "px");
 }
-document.querySelectorAll(".sw").forEach(b => b.onclick = () => applyTheme(b.dataset.t));
-applyTheme(document.documentElement.dataset.theme || "light");
+matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", () => { if (S.theme === "system") applySettings(); });
+applySettings();
+function fitViewport() { const vv = window.visualViewport; document.documentElement.style.setProperty("--vh", (vv ? vv.height : innerHeight) + "px"); }
+fitViewport(); window.visualViewport?.addEventListener("resize", fitViewport); addEventListener("resize", fitViewport);
 
-// ---------- Uygulamayı yükle (PWA) ----------
-const isStandalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
-const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-function showInstallBtn() { $("installBtn").style.display = isStandalone() ? "none" : "flex"; }
-showInstallBtn();
-window.addEventListener("bip-ready", showInstallBtn);
-window.addEventListener("appinstalled", () => { window.__bip = null; $("installBtn").style.display = "none"; });
-$("installBtn").onclick = async () => {
-  if (window.__bip) {
-    window.__bip.prompt();
-    try { await window.__bip.userChoice; } catch (e) {}
-    window.__bip = null;
-    return;
-  }
-  $("modalText").innerHTML = isIOS
-    ? "<p><b>iPhone / iPad (Safari):</b></p><p>Alttaki <b>Paylaş</b> düğmesine (yukarı oklu kare) dokunun, ardından <b>Ana Ekrana Ekle</b>'yi seçin.</p>"
-    : "<p>Tarayıcı menüsünü (⋮) açın ve <b>Uygulamayı yükle</b> ya da <b>Ana ekrana ekle</b> seçeneğine dokunun.</p><p>Seçenek yoksa uygulama zaten yüklü olabilir veya tarayıcınız bunu desteklemiyordur (Android'de Chrome, bilgisayarda Chrome/Edge önerilir).</p>";
-  $("modal").style.display = "flex";
-};
-$("modalOk").onclick = () => $("modal").style.display = "none";
-$("modal").onclick = e => { if (e.target === $("modal")) $("modal").style.display = "none"; };
+/* ================= Quill ================= */
+const Font = Quill.import("attributors/style/font"); Font.whitelist = FONTS.map(f => f.n); Quill.register(Font, true);
+const SIZE_LIST = ["12px", "14px", "16px", "18px", "22px", "28px", "36px"];
+const SizeA = Quill.import("attributors/style/size"); SizeA.whitelist = SIZE_LIST; Quill.register(SizeA, true);
+const BlockEmbed = Quill.import("blots/block/embed");
+class Divider extends BlockEmbed {}
+Divider.blotName = "divider"; Divider.tagName = "hr"; Quill.register(Divider);
 
-if ("serviceWorker" in navigator) {
-  const hadController = !!navigator.serviceWorker.controller;
-  let reloaded = false;
-  navigator.serviceWorker.addEventListener("controllerchange", () => {   // yeni sürüm gelince bir kez yenile
-    if (hadController && !reloaded) { reloaded = true; location.reload(); }
-  });
-  navigator.serviceWorker.register("sw.js").catch(() => {});
+const quill = new Quill("#editor", { theme: "snow", placeholder: "Yazmaya başlayın…", modules: { toolbar: false }, scrollingContainer: "#eScroll" });
+let lastRange = null;
+
+/* ================= Durum ================= */
+const SHARE_ID = new URLSearchParams(location.search).get("s");
+let user = null, uid = null, notes = [], notebooks = [], tasks = [], shared = [], sharedErr = false, scratchSnap = null;
+let curId = null, loadedId = null, afterLoad = null, saveTimer = null, pending = false, unsubs = [];
+let route = { p: "home", a: {} };
+let cal = { y: new Date().getFullYear(), m: new Date().getMonth(), sel: dayKey(Date.now()) };
+let taskDue = null, depth = 0;
+const ready = { notes: false };
+
+const noteRef = id => doc(db, "users", uid, "notes", id);
+const nbRef = id => doc(db, "users", uid, "notebooks", id);
+const taskRef = id => doc(db, "users", uid, "tasks", id);
+const ucol = n => collection(db, "users", uid, n);
+const newId = () => doc(ucol("notes")).id;
+const getNote = id => notes.find(n => n.id === id);
+const nbName = id => (id && (notebooks.find(b => b.id === id) || {}).name) || "Genel";
+const nbKey = n => (n.notebookId && notebooks.some(b => b.id === n.notebookId)) ? n.notebookId : null;
+const live = () => notes.filter(n => !n.trashed);
+async function batchSet(ops) { // ops: [[ref,data]] → 300'erli gruplar halinde yaz
+  for (let i = 0; i < ops.length; i += 300) { const b = writeBatch(db); ops.slice(i, i + 300).forEach(([r, d]) => b.set(r, d, { merge: true })); b.commit().catch(e => console.warn(e)); }
 }
+async function batchDelete(refs) { for (let i = 0; i < refs.length; i += 300) { const b = writeBatch(db); refs.slice(i, i + 300).forEach(r => b.delete(r)); b.commit().catch(e => console.warn(e)); } }
 
-// ---------- Durum ----------
-let uid = null, notebooks = [], notes = [], unsubs = [];
-let view = { nb: "all", tag: null, q: "" };
-let curId = null, loadedId = null, saveTimer = null, pending = false;
-
-const quill = new Quill("#editor", { theme: "snow", placeholder: "Yazmaya başla…", modules: { toolbar: "#toolbar" } });
-
-// ---------- Giriş / Çıkış ----------
+/* ================= Giriş / çıkış ================= */
 $("btnLogin").onclick = async () => {
   $("loginErr").textContent = "";
   const p = new GoogleAuthProvider();
   try { await signInWithPopup(auth, p); }
   catch (e) {
     if (["auth/popup-blocked", "auth/operation-not-supported-in-this-environment"].includes(e.code)) signInWithRedirect(auth, p);
-    else if (e.code !== "auth/popup-closed-by-user" && e.code !== "auth/cancelled-popup-request") $("loginErr").textContent = "Giriş hatası: " + e.code;
+    else if (!["auth/popup-closed-by-user", "auth/cancelled-popup-request"].includes(e.code)) $("loginErr").textContent = "Giriş hatası: " + e.code;
   }
 };
-$("btnLogout").onclick = () => signOut(auth);
+function logout() { if (confirm("Oturum kapatılsın mı?")) signOut(auth); }
 
-onAuthStateChanged(auth, user => {
-  unsubs.forEach(u => u()); unsubs = [];
-  if (!user) {
-    uid = null; curId = null; loadedId = null; notes = []; notebooks = [];
-    $("app").style.display = "none"; $("login").style.display = "flex"; return;
-  }
-  uid = user.uid;
-  $("login").style.display = "none"; $("app").style.display = "grid";
-  const nm = user.displayName || user.email || "";
-  $("userName").textContent = nm;
-  $("avatar").innerHTML = user.photoURL ? `<img src="${esc(user.photoURL)}" referrerpolicy="no-referrer" alt="">` : esc(nm.charAt(0).toUpperCase());
-  const base = ["users", uid];
-  unsubs.push(onSnapshot(query(collection(db, ...base, "notebooks"), orderBy("createdAt")), s => {
-    notebooks = s.docs.map(d => ({ id: d.id, ...d.data() })); renderAll();
-  }));
-  unsubs.push(onSnapshot(query(collection(db, ...base, "notes"), orderBy("updatedAt", "desc")), { includeMetadataChanges: true }, s => {
+if (SHARE_ID) openViewer(SHARE_ID);
+else onAuthStateChanged(auth, u => {
+  unsubs.forEach(f => f()); unsubs = [];
+  user = u;
+  if (!u) { uid = null; notes = []; notebooks = []; tasks = []; curId = null; loadedId = null; ready.notes = false; $("app").classList.remove("show"); $("login").classList.add("show"); return; }
+  uid = u.uid;
+  $("login").classList.remove("show"); $("app").classList.add("show");
+  qsa("[data-av]").forEach(e => e.innerHTML = avatarInner()); $("sName").textContent = u.displayName || u.email || "";
+  unsubs.push(onSnapshot(query(ucol("notebooks"), orderBy("createdAt")), s => { notebooks = s.docs.map(d => ({ id: d.id, ...d.data() })); schedule(); }, e => console.warn(e)));
+  unsubs.push(onSnapshot(query(ucol("notes"), orderBy("updatedAt", "desc")), { includeMetadataChanges: true }, s => {
     pending = s.metadata.hasPendingWrites;
-    notes = s.docs.map(d => ({ id: d.id, ...d.data() })); renderAll(); updateStatus();
-  }));
+    notes = s.docs.map(d => ({ id: d.id, ...d.data() }));
+    if (curId && !getNote(curId) && !s.metadata.fromCache) { curId = null; loadedId = null; }
+    if (!ready.notes) { ready.notes = true; launch(); }
+    schedule(); updateStatus();
+  }, e => console.warn(e)));
+  unsubs.push(onSnapshot(query(ucol("tasks"), orderBy("createdAt")), s => { tasks = s.docs.map(d => ({ id: d.id, ...d.data() })); schedule(); }, e => console.warn(e)));
+  unsubs.push(onSnapshot(doc(db, "users", uid, "meta", "scratch"), s => {
+    scratchSnap = s.exists() ? s.data() : null;
+    const t = $("scratch"); if (document.activeElement !== t) t.value = (scratchSnap && scratchSnap.text) || "";
+  }, e => console.warn(e)));
+  unsubs.push(onSnapshot(query(collection(db, "shared"), where("ownerUid", "==", uid)), s => {
+    sharedErr = false; shared = s.docs.map(d => ({ id: d.id, ...d.data() })); schedule();
+  }, e => { sharedErr = true; console.warn(e); schedule(); }));
+  history.replaceState({ route, note: null, d: 0 }, "");
+  showRoute();   // açılışta ilk sayfayı görünür yap (yoksa ana ekran boş kalıyordu)
+  schedule();
 });
 
-// ---------- Veri yardımcıları ----------
-const noteRef = id => doc(db, "users", uid, "notes", id);
-const nbRef = id => doc(db, "users", uid, "notebooks", id);
-const newId = () => doc(collection(db, "users", uid, "notes")).id;
+let rafPending = false;
+function schedule() { if (rafPending) return; rafPending = true; requestAnimationFrame(() => { rafPending = false; refreshAll(); }); }
+function refreshAll() { if (!uid) return; renderSide(); renderScreen(); syncEditor(); updateNav(); }
 
-function filtered() {
-  const q = view.q.trim().toLowerCase();
-  return notes.filter(n => {
-    if (view.nb === "trash") { if (!n.trashed) return false; }
-    else if (n.trashed) return false;
-    if (view.nb !== "all" && view.nb !== "trash" && n.notebookId !== view.nb) return false;
-    if (view.tag && !(n.tags || []).includes(view.tag)) return false;
-    if (q && !((n.title || "") + " " + (n.plain || "") + " " + (n.tags || []).join(" ")).toLowerCase().includes(q)) return false;
-    return true;
-  }).sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || (b.updatedAt || 0) - (a.updatedAt || 0));
+function launch() { // ?n=ID, ?new=1, ?task=1 (kısayollar ve bağlantılar)
+  const p = new URLSearchParams(location.search); const n = p.get("n");
+  if (n && getNote(n)) openNote(n); else if (p.get("new")) createNote(); else if (p.get("task")) newTaskSheet();
+  if (location.search) history.replaceState(history.state, "", location.pathname);
 }
 
-// ---------- Çizim ----------
-function renderAll() { renderNav(); renderList(); syncEditor(); }
-
-function renderNav() {
-  const live = notes.filter(n => !n.trashed);
-  const row = (key, icon, label, count, extra = "") =>
-    `<div class="nav ${view.nb === key && !view.tag ? "active" : ""}" data-nb="${key}">${ic(icon)}<span class="lbl">${label}</span>${extra}<small>${count}</small></div>`;
-  $("navMain").innerHTML = row("all", "notes", "Tüm Notlar", live.length);
-  $("navNotebooks").innerHTML = notebooks.length ? notebooks.map(nb =>
-    row(nb.id, "book", esc(nb.name), live.filter(n => n.notebookId === nb.id).length, `<button class="x" data-delnb="${nb.id}" title="Defteri sil">${ic("x")}</button>`)).join("")
-    : `<div class="empty-side">Henüz defter yok</div>`;
-  const tags = {};
-  live.forEach(n => (n.tags || []).forEach(t => tags[t] = (tags[t] || 0) + 1));
-  const keys = Object.keys(tags).sort();
-  $("navTags").innerHTML = keys.length ? keys.map(t =>
-    `<div class="nav ${view.tag === t ? "active" : ""}" data-tag="${esc(t)}">${ic("tag")}<span class="lbl">${esc(t)}</span><small>${tags[t]}</small></div>`).join("")
-    : `<div class="empty-side">Henüz etiket yok</div>`;
-  $("navTrash").innerHTML = row("trash", "trash", "Çöp", notes.filter(n => n.trashed).length);
+/* ================= Gezinme ================= */
+const SUBS = ["tasks", "calendar", "tags", "shared", "shortcuts", "templates", "trash", "settings"];
+const GENERIC = ["notes", "notebooks", "calendar", "tags", "shared", "shortcuts", "templates", "trash", "settings"];
+GENERIC.forEach(k => $("main").insertAdjacentHTML("beforeend", `<section class="scr" id="scr-${k}"><div class="top" id="top-${k}"></div><div class="count" id="count-${k}" hidden></div><div id="body-${k}"></div></section>`));
+function pushState(extra = {}) { const d = (history.state && history.state.d || 0) + 1; depth = d; history.pushState({ route, note: curId, d, ...extra }, ""); }
+function go(p, a = {}) {
+  closeAll();
+  if (curId && innerWidth <= 860) { flushSave(); curId = null; loadedId = null; } // masaüstünde açık not yanda kalır
+  route = { p, a };
+  pushState(); showRoute();
+  if (p === "search") setTimeout(() => { $("qIn").value = ""; $("qClear").hidden = true; renderSearch(); $("qIn").focus(); }, 30);
+}
+function showRoute() {
+  document.body.dataset.p = route.p;
+  qsa(".scr").forEach(s => s.classList.toggle("on", s.id === "scr-" + route.p));
+  const sc = $("scr-" + route.p); if (sc) sc.scrollTop = 0;
+  renderScreen(); updateNav(); syncEditor();
+}
+function goBack() { if ((history.state && history.state.d) > 0) history.back(); else { route = { p: "notes", a: {} }; showRoute(); } }
+addEventListener("popstate", e => {
+  if (sheetOpen() || !$("menu").hidden) { closeAll(); history.go(1); return; } // geri tuşu önce açık pencereyi kapatır
+  const st = e.state; if (!st) return;
+  route = st.route || { p: "home", a: {} };
+  if ((st.note || null) !== curId) { flushSave(); curId = st.note || null; loadedId = null; }
+  showRoute();
+});
+function updateNav() {
+  const p = route.p, on = p === "home" ? "home" : p === "notes" ? "notes" : p === "notebooks" ? "notebooks" : p === "search" ? "" : "more";
+  qsa(".nv").forEach(b => b.classList.toggle("on", b.dataset.nav === on));
+  qsa(".sn").forEach(b => b.classList.toggle("on", b.dataset.go === p && !(p === "notes" && route.a && (route.a.nb !== undefined || route.a.tag))));
+  const fab = $("fab"); const m = { notes: ["noteplus", "newNote"], notebooks: ["bookplus", "newNotebook"], tasks: ["plus", "newTask"] }[p];
+  fab.hidden = !m; if (m) { fab.innerHTML = ic(m[0]); fab.dataset.act = m[1]; }
+}
+function openNote(id, after) {
+  closeAll(); if (curId && curId !== id) flushSave();
+  const had = !!curId; curId = id; loadedId = null; afterLoad = after || null;
+  if (had) history.replaceState({ route, note: id, d: history.state ? history.state.d : 0 }, ""); else pushState();
+  document.body.dataset.editor = "open"; syncEditor();
+}
+function closeNote() {
+  flushSave();
+  if (history.state && history.state.note) history.back(); else { curId = null; loadedId = null; syncEditor(); }
 }
 
-function renderList() {
-  const list = filtered();
-  let title = "Tüm Notlar";
-  if (view.tag) title = "#" + view.tag;
-  else if (view.nb === "trash") title = "Çöp";
-  else if (view.nb !== "all") title = (notebooks.find(n => n.id === view.nb) || {}).name || "Defter";
-  $("listTitle").textContent = title;
-  $("listCount").textContent = list.length + " not";
-  $("noteList").innerHTML = list.length ? list.map(n => `
-    <div class="card ${n.id === curId ? "active" : ""}" data-id="${n.id}">
-      <div class="ct">${n.pinned ? ic("pin") : ""}<span>${esc(n.title) || "Başlıksız"}</span></div>
-      <div class="cs">${esc((n.plain || "").slice(0, 140)) || "<i>Boş not</i>"}</div>
-      <div class="cm"><span>${fmtDate(n.updatedAt)}</span>${(n.tags || []).slice(0, 3).map(t => `<span class="chip">${esc(t)}</span>`).join("")}</div>
-    </div>`).join("")
-    : `<div class="none">${view.q ? "Aramanızla eşleşen not yok." : view.nb === "trash" ? "Çöp kutusu boş." : "Burada henüz not yok.<br>“Yeni Not” ile başlayın."}</div>`;
+/* ================= Genel render ================= */
+const avatarInner = () => user && user.photoURL ? `<img src="${esc(user.photoURL)}" referrerpolicy="no-referrer" alt="">` : esc(((user && (user.displayName || user.email)) || "?").charAt(0).toUpperCase());
+const tb = (act, icon, v, title = "") => `<button class="tbtn" data-act="${act}"${v != null ? ` data-v="${esc(v)}"` : ""}${title ? ` title="${title}"` : ""}>${ic(icon)}</button>`;
+const mainTop = actions => `<button class="avbtn" data-act="profile"><span class="av">${avatarInner()}</span></button><span class="sp"></span>${actions || ""}`;
+const subTop = (title, actions) => `<button class="tbtn" data-act="back">${ic("back")}</button><h2 class="ttl">${esc(title)}</h2><span class="sp"></span>${actions || ""}`;
+const emptyHTML = (icon, txt) => `<div class="empty">${ic(icon)}<div>${txt}</div></div>`;
+
+const SIDE = [["home", "home", "Ana Sayfa"], ["notes", "notes", "Tüm Notlar"], ["notebooks", "book", "Not Defterleri"], ["tasks", "checkc", "Görevler"], ["calendar", "calendar", "Takvim"], ["tags", "tag", "Etiketler"], ["shortcuts", "star", "Kısayollar"], ["shared", "users", "Paylaşılan"], ["templates", "template", "Şablonlar"], ["trash", "trash", "Çöp Kutusu"], ["settings", "gear", "Ayarlar"]];
+function renderSide() {
+  const cnt = { notes: live().length, notebooks: notebooks.length + 1, tasks: tasks.filter(t => !t.done).length, trash: notes.filter(n => n.trashed).length };
+  $("sNav").innerHTML = SIDE.map(([p, i, l]) => `<button class="sn" data-go="${p}">${ic(i)}<span>${l}</span>${cnt[p] ? `<small>${cnt[p]}</small>` : ""}</button>`).join("");
+  $("sName").textContent = (user && (user.displayName || user.email)) || "";
+  qsa("[data-av]").forEach(e => e.innerHTML = avatarInner());
+}
+function renderScreen() {
+  if (!uid) return;
+  const f = { home: renderHome, notes: renderNotes, notebooks: renderNotebooks, tasks: renderTasks, calendar: renderCalendar, tags: renderTags, shared: renderShared, shortcuts: renderShortcuts, templates: renderTemplates, trash: renderTrash, settings: renderSettings, search: renderSearch }[route.p];
+  if (f) f();
 }
 
-function renderChips(n) {
-  $("chips").innerHTML = (n.tags || []).map(t =>
-    `<span class="chip">${esc(t)}<button data-rmtag="${esc(t)}" title="Etiketi kaldır">${ic("x")}</button></span>`).join("");
-  $("tagInput").style.display = n.trashed ? "none" : "";
+/* ---------- Not satırı ---------- */
+function firstImg(n) { const m = /<img[^>]+src="(data:image\/[^"]+)"/.exec(n.content || ""); return m ? m[1] : null; }
+function snippet(n, q) {
+  const t = (n.plain || "").replace(/\s+/g, " ").trim();
+  if (!q) return esc(t.slice(0, 220));
+  const i = t.toLowerCase().indexOf(q.toLowerCase()); if (i < 0) return esc(t.slice(0, 200));
+  const s = Math.max(0, i - 50), part = t.slice(s, s + 220);
+  return (s > 0 ? "…" : "") + esc(part).replace(new RegExp(esc(q).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "ig"), m => `<mark>${m}</mark>`);
 }
+function noteRow(n, q = "") {
+  const im = firstImg(n);
+  return `<div class="nrow ${S.dense ? "dense" : ""} ${n.id === curId ? "cur" : ""}" data-open="${n.id}">
+    <div class="nmain"><div class="nt">${n.pinned ? ic("pin") : ""}<span>${esc(n.title) || "Başlıksız"}</span></div><div class="ns">${snippet(n, q) || "<i>Boş not</i>"}</div></div>
+    ${im ? `<img class="nth" src="${im}" alt="">` : ""}
+    <div class="nm"><span>${fmtDate(S.sort === "created" ? n.createdAt : n.updatedAt)}</span>${n.reminder ? `<span class="chip rem">${ic("bell")}${fmtDT(n.reminder)}</span>` : ""}${(n.tags || []).slice(0, 3).map(t => `<span class="chip">${esc(t)}</span>`).join("")}</div></div>`;
+}
+function listNotes(a = {}) {
+  let l = a.trash ? notes.filter(n => n.trashed) : live();
+  if (a.nb !== undefined) l = l.filter(n => nbKey(n) === a.nb);
+  if (a.tag) l = l.filter(n => (n.tags || []).includes(a.tag));
+  return l.sort((x, y) => (y.pinned ? 1 : 0) - (x.pinned ? 1 : 0) || (S.sort === "title" ? (x.title || "").localeCompare(y.title || "", "tr") : S.sort === "created" ? (y.createdAt || 0) - (x.createdAt || 0) : (y.updatedAt || 0) - (x.updatedAt || 0)));
+}
+
+/* ---------- Ana sayfa ---------- */
+function renderHome() {
+  $("homeDate").textContent = new Date().toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric", weekday: "long" });
+  const pins = live().filter(n => n.homePinned).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  $("homePinned").innerHTML = pins.length ? `<div class="sech"><h2>Sabitlenen Notlar</h2></div><div class="lst">${pins.map(n => noteRow(n)).join("")}</div>` : "";
+  const rec = live().sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)).slice(0, 5);
+  $("homeRecent").innerHTML = rec.length ? `<div class="sech"><h2>Son Notlar</h2><a data-go="notes">Tümü</a></div><div class="lst">${rec.map(n => noteRow(n)).join("")}</div>` : "";
+  $("orbInstall").hidden = !canInstall();
+}
+const scratchSave = debounce(() => { if (uid) setDoc(doc(db, "users", uid, "meta", "scratch"), { text: $("scratch").value, updatedAt: Date.now() }, { merge: true }); }, 600);
+$("scratch").addEventListener("input", scratchSave);
+
+/* ---------- Notlar ---------- */
+function renderNotes() {
+  const a = route.a || {}, filtered = a.nb !== undefined || a.tag;
+  const title = a.tag ? "#" + a.tag : a.nb !== undefined ? nbName(a.nb) : "";
+  const acts = (filtered ? "" : `<button class="tbtn" data-go="search">${ic("search")}</button>`) + tb("sortMenu", "filter") + tb("notesMenu", "dots");
+  $("top-notes").innerHTML = filtered ? subTop(title, acts) : mainTop(acts);
+  const l = listNotes(a); const c = $("count-notes"); c.hidden = false; c.textContent = l.length + " NOT";
+  $("body-notes").innerHTML = l.length ? `<div class="lst">${l.map(n => noteRow(n)).join("")}</div>` : emptyHTML("notes", "Burada henüz not yok.<br>Yeni bir not oluşturmak için + düğmesine dokunun.");
+}
+
+/* ---------- Not defterleri ---------- */
+function renderNotebooks() {
+  $("top-notebooks").innerHTML = mainTop(tb("newNotebook", "bookplus", null, "Yeni not defteri"));
+  const c = $("count-notebooks"); c.hidden = false; c.textContent = (notebooks.length + 1) + " NOT DEFTERİ";
+  const cn = id => live().filter(n => nbKey(n) === id).length;
+  $("body-notebooks").innerHTML = `<div class="lst">` +
+    `<div class="lrow" data-act="nbOpen" data-v="">${ic("bookstar")}<span class="lt">Genel</span><span class="lc">${cn(null)}</span></div>` +
+    notebooks.map(b => `<div class="lrow" data-act="nbOpen" data-v="${b.id}">${ic("book")}<span class="lt">${esc(b.name)}</span><span class="lc">${cn(b.id)}</span><button class="tbtn sm" data-act="nbMenu" data-v="${b.id}">${ic("dots")}</button></div>`).join("") + `</div>`;
+}
+
+/* ---------- Etiketler ---------- */
+function tagCounts() { const m = {}; live().forEach(n => (n.tags || []).forEach(t => m[t] = (m[t] || 0) + 1)); return m; }
+function renderTags() {
+  $("top-tags").innerHTML = subTop("Etiketler");
+  const m = tagCounts(), keys = Object.keys(m).sort((a, b) => a.localeCompare(b, "tr"));
+  const c = $("count-tags"); c.hidden = false; c.textContent = keys.length + " ETİKET";
+  $("body-tags").innerHTML = keys.length ? `<div class="lst">${keys.map(t => `<div class="lrow" data-act="tagOpen" data-v="${esc(t)}">${ic("tag")}<span class="lt">${esc(t)}</span><span class="lc">${m[t]}</span><button class="tbtn sm" data-act="tagMenu" data-v="${esc(t)}">${ic("dots")}</button></div>`).join("")}</div>` : emptyHTML("tag", "Henüz etiket yok.<br>Bir notta etiket simgesine dokunarak ekleyin.");
+}
+
+/* ---------- Kısayollar ---------- */
+function renderShortcuts() {
+  $("top-shortcuts").innerHTML = subTop("Kısayollar");
+  const nbs = notebooks.filter(b => b.shortcut), ns = live().filter(n => n.shortcut);
+  const c = $("count-shortcuts"); c.hidden = false; c.textContent = (nbs.length + ns.length) + " KISAYOL";
+  $("body-shortcuts").innerHTML = (nbs.length + ns.length) ? `<div class="lst">` +
+    nbs.map(b => `<div class="lrow" data-act="nbOpen" data-v="${b.id}">${ic("book")}<span class="lt">${esc(b.name)}</span><button class="tbtn sm" data-act="scOffNb" data-v="${b.id}">${ic("star")}</button></div>`).join("") +
+    ns.map(n => `<div class="lrow" data-open="${n.id}">${ic("notes")}<span class="lt">${esc(n.title) || "Başlıksız"}</span><button class="tbtn sm" data-act="scOffNote" data-v="${n.id}">${ic("star")}</button></div>`).join("") + `</div>`
+    : emptyHTML("star", "Sık kullandığınız notları ve not defterlerini<br>buraya kısayol olarak ekleyin.");
+}
+
+/* ---------- Şablonlar ---------- */
+const todayTxt = () => new Date().toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" });
+const cl = items => `<ul>${items.map(i => `<li>${i}</li>`).join("")}</ul>`.replace(/<ul>/, '<ul data-checked="false">');
+const TEMPLATES = [
+  { id: "bos", i: "notes", n: "Boş not", d: "Sıfırdan başla", title: "", html: "" },
+  { id: "toplanti", i: "users", n: "Toplantı notu", d: "Gündem, kararlar, görevler", title: "Toplantı notu", html: () => `<h2>Toplantı bilgileri</h2><p>Tarih: ${todayTxt()}</p><p>Katılımcılar: </p><h2>Gündem</h2><ul><li> </li></ul><h2>Alınan kararlar</h2><ul><li> </li></ul><h2>Yapılacaklar</h2>${cl(["Görev 1", "Görev 2"])}` },
+  { id: "yapilacak", i: "checkc", n: "Yapılacaklar", d: "Onay kutulu liste", title: "Yapılacaklar", html: () => cl(["Görev 1", "Görev 2", "Görev 3", "Görev 4"]) },
+  { id: "gunluk", i: "book", n: "Günlük", d: "Günün özeti", title: "Günlük – " + new Date().toLocaleDateString("tr-TR"), html: () => `<h2>Bugün neler oldu?</h2><p> </p><h2>Minnettar olduklarım</h2><ul><li> </li><li> </li><li> </li></ul><h2>Yarın için</h2>${cl(["Plan 1"])}` },
+  { id: "haftalik", i: "calendar", n: "Haftalık plan", d: "Gün gün plan", title: "Haftalık plan", html: () => ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"].map(g => `<h3>${g}</h3>${cl([" "])}`).join("") },
+  { id: "proje", i: "template", n: "Proje planı", d: "Hedef, kilometre taşları", title: "Proje planı", html: () => `<h2>Hedef</h2><p> </p><h2>Kapsam</h2><ul><li> </li></ul><h2>Kilometre taşları</h2>${cl(["Başlangıç", "İlk sürüm", "Yayın"])}<h2>Riskler</h2><ul><li> </li></ul><h2>Notlar</h2><p> </p>` },
+  { id: "kitap", i: "book", n: "Kitap notu", d: "Özet ve alıntılar", title: "Kitap notu", html: () => `<p><b>Kitap:</b> </p><p><b>Yazar:</b> </p><h2>Özet</h2><p> </p><h2>Önemli alıntılar</h2><blockquote> </blockquote><h2>Düşüncelerim</h2><p> </p>` },
+  { id: "alisveris", i: "noteplus", n: "Alışveriş listesi", d: "Kutulu liste", title: "Alışveriş listesi", html: () => cl(["Ekmek", "Süt", "Meyve", "Sebze"]) },
+  { id: "ders", i: "notes", n: "Ders notu", d: "Konu, ana fikirler, sorular", title: "Ders notu", html: () => `<p>Tarih: ${todayTxt()}</p><h2>Konu</h2><p> </p><h2>Ana fikirler</h2><ul><li> </li></ul><h2>Örnekler</h2><p> </p><h2>Sorular</h2><ul><li> </li></ul>` }
+];
+function renderTemplates() {
+  $("top-templates").innerHTML = subTop("Şablonlar");
+  $("body-templates").innerHTML = `<div class="tplgrid">${TEMPLATES.map(t => `<button class="tpl" data-act="tplUse" data-v="${t.id}">${ic(t.i)}<b>${t.n}</b><span>${t.d}</span></button>`).join("")}</div>`;
+}
+function useTemplate(id) {
+  const t = TEMPLATES.find(x => x.id === id); if (!t) return;
+  const html = typeof t.html === "function" ? t.html() : t.html;
+  createNote({ title: t.title, content: html, plain: htmlToText(html) });
+}
+const htmlToText = html => { const d = document.createElement("div"); d.innerHTML = html; return (d.innerText || d.textContent || "").trim(); };
+
+/* ---------- Görevler ---------- */
+function dueChip(t) { if (!t.due) return ""; const late = !t.done && t.due < Date.now(); return `<span class="due ${late ? "late" : ""}"><span class="ic" style="width:13px;height:13px;vertical-align:-2px;margin-right:3px">${svg("clock")}</span>${fmtDT(t.due)}</span>`; }
+function taskRow(t) { return `<div class="trow ${t.done ? "done" : ""}"><button class="tc" data-act="taskToggle" data-v="${t.id}">${ic(t.done ? "checkc" : "circle")}</button><div class="tt" data-act="taskEdit" data-v="${t.id}">${esc(t.title)}${dueChip(t)}</div><button class="tbtn sm" data-act="taskDel" data-v="${t.id}">${ic("x")}</button></div>`; }
+function renderTasks() {
+  $("top-tasks").innerHTML = subTop("Görevler");
+  const open = tasks.filter(t => !t.done).sort((a, b) => (a.due || 9e15) - (b.due || 9e15) || a.createdAt - b.createdAt);
+  const done = tasks.filter(t => t.done).sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0));
+  const rems = live().filter(n => n.reminder).sort((a, b) => a.reminder - b.reminder);
+  $("body-tasks").innerHTML =
+    (rems.length ? `<div class="subh">Hatırlatıcılar</div>` + rems.map(n => `<div class="trow" data-open="${n.id}" style="cursor:pointer"><span style="color:#f5a000">${ic("bell")}</span><div class="tt">${esc(n.title) || "Başlıksız"}<span class="due ${n.reminder < Date.now() ? "late" : ""}">${fmtDT(n.reminder)}</span></div></div>`).join("") : "") +
+    `<div class="subh">Açık görevler (${open.length})</div>` + (open.length ? open.map(taskRow).join("") : `<div class="empty" style="padding:26px">Açık görev yok 🎉</div>`) +
+    (done.length ? `<div class="subh">Tamamlanan (${done.length})</div>` + done.map(taskRow).join("") + `<div class="brow"><button class="btn sec" data-act="taskClearDone">Tamamlananları temizle</button></div>` : "");
+}
+function addTask(title, due) {
+  title = (title || "").trim(); if (!title) return;
+  const id = doc(ucol("tasks")).id;
+  setDoc(taskRef(id), { title, done: false, due: due || null, notified: false, createdAt: Date.now() });
+}
+$("taskIn").addEventListener("keydown", e => { if (e.key === "Enter") ACT.taskAdd(); });
+
+/* ---------- Takvim ---------- */
+function renderCalendar() {
+  $("top-calendar").innerHTML = subTop("Takvim", tb("calToday", "calendar", null, "Bugün"));
+  const ev = {}; const add = (k, t) => (ev[k] = ev[k] || { n: [], t: [], r: [] })[t[0]].push(t[1]);
+  live().forEach(n => { add(dayKey(n.createdAt || Date.now()), ["n", n]); if (n.reminder) add(dayKey(n.reminder), ["r", n]); });
+  tasks.forEach(t => { if (t.due) add(dayKey(t.due), ["t", t]); });
+  const first = new Date(cal.y, cal.m, 1), lead = (first.getDay() + 6) % 7, dim = new Date(cal.y, cal.m + 1, 0).getDate(), today = dayKey(Date.now());
+  let cells = DAYS.map(d => `<div class="dw">${d}</div>`).join("");
+  for (let i = 0; i < lead; i++) cells += `<button class="dim" disabled></button>`;
+  for (let d = 1; d <= dim; d++) {
+    const k = cal.y + "-" + String(cal.m + 1).padStart(2, "0") + "-" + String(d).padStart(2, "0"), e = ev[k];
+    cells += `<button class="${k === today ? "today" : ""} ${k === cal.sel ? "sel" : ""}" data-act="calDay" data-v="${k}"><span>${d}</span><span class="dots">${e ? (e.n.length ? "<i></i>" : "") + (e.t.length ? '<i class="t"></i>' : "") + (e.r.length ? '<i class="r"></i>' : "") : ""}</span></button>`;
+  }
+  const e = ev[cal.sel] || { n: [], t: [], r: [] }, [sy, sm, sd] = cal.sel.split("-").map(Number);
+  $("body-calendar").innerHTML = `<div class="calhead">${tb("calPrev", "back")}<b>${MONTHS[cal.m]} ${cal.y}</b>${tb("calNext", "chev")}</div><div class="cal">${cells}</div>
+    <div class="subh">${sd} ${MONTHS[sm - 1]} ${sy}</div>` +
+    (e.r.map(n => `<div class="trow" data-open="${n.id}" style="cursor:pointer"><span style="color:#f5a000">${ic("bell")}</span><div class="tt">${esc(n.title) || "Başlıksız"}<span class="due">${fmtDT(n.reminder)}</span></div></div>`).join("") +
+      e.t.map(taskRow).join("") + e.n.map(n => `<div class="trow" data-open="${n.id}" style="cursor:pointer"><span style="color:var(--green)">${ic("notes")}</span><div class="tt">${esc(n.title) || "Başlıksız"}</div></div>`).join("") ||
+      `<div class="empty" style="padding:26px">Bu gün için kayıt yok.</div>`);
+}
+
+/* ---------- Paylaşılan ---------- */
+function shareUrl(sid) { return location.origin + location.pathname.replace(/index\.html$/, "") + "?s=" + sid; }
+function renderShared() {
+  $("top-shared").innerHTML = subTop("Paylaşılan");
+  const c = $("count-shared"); c.hidden = false; c.textContent = shared.length + " PAYLAŞIM";
+  $("body-shared").innerHTML = sharedErr ? emptyHTML("info", "Paylaşılan notlar okunamadı.<br>Paylaşım için <b>firestore.rules</b> dosyasını Firebase'e yeniden yayınlamanız gerekir (README'deki Adım 3).")
+    : shared.length ? `<div class="lst">${shared.map(s => `<div class="lrow" data-act="shareOpen" data-v="${s.id}">${ic("users")}<span class="lt">${esc(s.title) || "Başlıksız"}</span><button class="tbtn sm" data-act="shareCopy" data-v="${s.id}">${ic("link")}</button></div>`).join("")}</div>`
+    : emptyHTML("users", "Henüz paylaştığınız not yok.<br>Bir notta Paylaş → Bağlantı oluştur'u kullanın.");
+}
+
+/* ---------- Çöp ---------- */
+function renderTrash() {
+  const l = listNotes({ trash: true });
+  $("top-trash").innerHTML = subTop("Çöp Kutusu", l.length ? tb("emptyTrash", "trash", null, "Çöpü boşalt") : "");
+  const c = $("count-trash"); c.hidden = false; c.textContent = l.length + " NOT";
+  $("body-trash").innerHTML = l.length ? `<div class="lst">${l.map(n => noteRow(n)).join("")}</div>` : emptyHTML("trash", "Çöp kutusu boş.");
+}
+
+/* ---------- Ayarlar ---------- */
+function canInstall() { return !isStandalone() && (!!window.__bip || isIOS()); }
+const isStandalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+function renderSettings() {
+  $("top-settings").innerHTML = subTop("Ayarlar");
+  const seg = (key, opts) => { const cur = key === "dense" ? (S.dense ? "1" : "0") : S[key]; return `<div class="seg">${opts.map(([v, l]) => `<button class="${cur === v ? "on" : ""}" data-act="set" data-k="${key}" data-v="${v}">${l}</button>`).join("")}</div>`; };
+  const nperm = "Notification" in window ? Notification.permission : "yok";
+  $("body-settings").innerHTML =
+    `<div class="setg">Hesap</div><div class="srow" style="cursor:default"><span class="av" style="width:42px;height:42px">${avatarInner()}</span><div class="st">${esc((user && user.displayName) || "")}<small>${esc((user && user.email) || "")}</small></div></div>
+     <div class="setg">Tema</div>${seg("theme", [["light", "Açık"], ["dark", "Koyu"], ["sepia", "Sepya"], ["system", "Sistem"]])}
+     <div class="setg">Yazı tipi (tüm notlar için varsayılan)</div>
+     ${FONTS.map(f => `<div class="frow" data-act="setFont" data-v="${esc(f.n)}"><div class="fn" style="font-family:'${f.n}',${f.g}">${f.n}<small>Hızlı kahverengi tilki tembel köpeğin üstünden atladı</small></div>${S.font === f.n ? ic("check") : ""}</div>`).join("")}
+     <div class="setg">Metin boyutu</div>${seg("size", Object.entries(SIZE_LBL))}
+     <div class="setg">Not listesi</div>${seg("dense", [["0", "Ayrıntılı"], ["1", "Kompakt"]])}
+     <div class="setg">Uygulama</div>
+     ${canInstall() ? `<div class="srow" data-act="install">${ic("download")}<div class="st">Uygulamayı yükle<small>Ana ekrana ekle, tam ekran çalıştır</small></div></div>` : ""}
+     <div class="srow" data-act="notifPerm">${ic("bell")}<div class="st">Hatırlatıcı bildirimleri<small>${nperm === "granted" ? "Açık" : nperm === "denied" ? "Tarayıcıdan engellenmiş" : nperm === "yok" ? "Bu tarayıcı desteklemiyor" : "Kapalı – açmak için dokunun"}</small></div></div>
+     <div class="setg">Veri</div>
+     <div class="srow" data-act="exportAll">${ic("download")}<div class="st">Tüm notları yedekle (.json)<small>Notlar, defterler ve görevler tek dosyada</small></div></div>
+     <div class="srow" data-act="importAny">${ic("upload")}<div class="st">İçe aktar<small>Evernote (.enex) veya D-Note yedeği (.json)</small></div></div>
+     <div class="setg">Hakkında</div><div class="srow" style="cursor:default"><div class="st">D-Note<small>Bulut senkron · çevrimdışı çalışır · Firebase</small></div></div>
+     <div class="srow" data-act="logout" style="color:var(--red)">${ic("logout")}<div class="st">Oturumu kapat</div></div>`;
+}
+
+/* ---------- Arama ---------- */
+function renderSearch() {
+  const q = $("qIn").value.trim(); $("qClear").hidden = !q;
+  if (!q) { const m = tagCounts(), keys = Object.keys(m).sort(); $("searchRes").innerHTML = (keys.length ? `<div class="subh">Etiketler</div><div class="chips">${keys.map(t => `<span class="chip" data-act="tagOpen" data-v="${esc(t)}">${esc(t)}</span>`).join("")}</div>` : "") + emptyHTML("search", "Başlık, metin veya etiket yazarak arayın."); return; }
+  const lq = q.toLowerCase();
+  const res = live().filter(n => ((n.title || "") + " " + (n.plain || "") + " " + (n.tags || []).join(" ")).toLowerCase().includes(lq))
+    .sort((a, b) => ((b.title || "").toLowerCase().includes(lq) ? 1 : 0) - ((a.title || "").toLowerCase().includes(lq) ? 1 : 0) || b.updatedAt - a.updatedAt);
+  const tr = tasks.filter(t => t.title.toLowerCase().includes(lq));
+  $("searchRes").innerHTML = `<div class="count" style="margin-top:0">${res.length} NOT</div>` + (res.length ? `<div class="lst sres">${res.map(n => noteRow(n, q)).join("")}</div>` : emptyHTML("search", "Sonuç bulunamadı.")) +
+    (tr.length ? `<div class="subh">Görevler</div>${tr.map(taskRow).join("")}` : "");
+}
+$("qIn").addEventListener("input", renderSearch);
+
+/* ================= Menü / sayfa ================= */
+function closeMenu() { $("menu").hidden = true; if ($("scrim").classList.contains("clear")) { $("scrim").hidden = true; $("scrim").classList.remove("clear"); } }
+function sheetOpen() { return !$("sheet").hidden; }
+function closeAll() { closeMenu(); if (sheetOpen()) { $("sheet").hidden = true; $("scrim").hidden = true; } }
+function showMenu(items, o = {}) {
+  const m = $("menu"); m.className = o.dock ? "dock" : ""; m.hidden = false;
+  m.innerHTML = (o.dock ? `<button class="mgear" data-m="gear">${ic("gear")}</button>` : "") + items.map((it, i) => it.sep ? `<div class="msep"></div>` : it.user ? `<button class="muser" data-m="${i}"><span class="av">${avatarInner()}</span><span style="flex:1;min-width:0"><b>${esc(it.t)}</b><small>${esc(it.s || "")}</small></span>${ic("chev")}</button>` : `<button class="mi ${it.red ? "red" : ""}" data-m="${i}">${ic(it.i)}<span>${it.t}</span></button>`).join("");
+  m.onclick = e => { const b = e.target.closest("[data-m]"); if (!b) return; const f = b.dataset.m === "gear" ? () => go("settings") : items[+b.dataset.m].f; closeMenu(); f && f(); };
+  m.onmousedown = e => e.preventDefault();
+  $("scrim").hidden = false; $("scrim").classList.add("clear");
+  if (!o.dock) {
+    const r = o.anchor.getBoundingClientRect(), w = m.offsetWidth, h = m.offsetHeight;
+    let left = o.right ? r.right - w : r.left; left = Math.max(8, Math.min(left, innerWidth - w - 8));
+    let top = o.above ? r.top - h - 8 : r.bottom + 6; top = Math.max(8, Math.min(top, innerHeight - h - 8));
+    m.style.left = left + "px"; m.style.top = top + "px"; m.style.right = "auto"; m.style.bottom = "auto";
+  } else { m.style.left = m.style.top = m.style.right = m.style.bottom = ""; }
+}
+function openSheet(html, o = {}) {
+  const s = $("sheet"); s.className = "sheet" + (o.full ? " full" : ""); s.innerHTML = html; hydrate(s);
+  s.hidden = false; $("scrim").classList.remove("clear"); $("scrim").hidden = false;
+  s.scrollTop = 0; if (o.mount) o.mount(s);
+}
+$("scrim").onclick = () => closeAll();
+addEventListener("keydown", e => { if (e.key === "Escape") closeAll(); });
+const shHead = (t, close = true) => `<div class="sh-h"><h3>${t}</h3>${close ? `<button class="tbtn" data-act="closeSheet">${ic("x")}</button>` : ""}</div>`;
+
+/* ================= Not oluşturma / düzenleme ================= */
+function defaultNb() { const a = route.a || {}; return route.p === "notes" && a.nb !== undefined ? a.nb : null; }
+function createNote(init = {}, after) {
+  const id = newId(), now = Date.now();
+  const data = { title: "", content: "", plain: "", tags: route.p === "notes" && route.a && route.a.tag ? [route.a.tag] : [], pinned: false, trashed: false, notebookId: defaultNb(), createdAt: now, updatedAt: now, reminder: null, reminded: false, shortcut: false, homePinned: false, shareId: null, ...init };
+  notes.unshift({ id, ...data });
+  setDoc(noteRef(id), data);
+  openNote(id, after || (() => { if (!data.title) $("eTitle").focus(); else quill.focus(); }));
+  return id;
+}
+function autoGrow() { const t = $("eTitle"); t.style.height = "auto"; t.style.height = t.scrollHeight + "px"; }
+$("eTitle").addEventListener("input", () => { autoGrow(); scheduleSave(); });
+$("eTitle").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); quill.focus(); quill.setSelection(0, 0); } });
 
 function syncEditor() {
-  const n = notes.find(x => x.id === curId);
-  $("empty").style.display = n ? "none" : "flex";
-  $("editorWrap").style.display = n ? "flex" : "none";
-  if (!n) return;
-  if (loadedId !== n.id) {            // başka bir not açıldı → editörü doldur
-    loadedId = n.id;
-    $("title").value = n.title || "";
-    quill.setContents(quill.clipboard.convert(n.content || ""), "silent");
+  const n = getNote(curId);
+  document.body.dataset.editor = curId ? "open" : "closed";
+  $("eBody").hidden = !n;
+  if (!n) { if (!curId) loadedId = null; return; }
+  if (loadedId !== n.id) {
+    loadedId = n.id; $("eTitle").value = n.title || ""; autoGrow();
+    quill.setContents(quill.clipboard.convert(n.content || ""), "silent"); quill.history.clear(); lastRange = null; closeFind(); $("eScroll").scrollTop = 0;
+    if (afterLoad) { const f = afterLoad; afterLoad = null; setTimeout(f, 60); }
   }
-  quill.enable(!n.trashed);
-  $("title").disabled = !!n.trashed;
-  renderChips(n);
-  $("nbSelect").innerHTML = `<option value="">Defter yok</option>` +
-    notebooks.map(nb => `<option value="${nb.id}" ${nb.id === n.notebookId ? "selected" : ""}>${esc(nb.name)}</option>`).join("");
-  $("pinBtn").classList.toggle("on", !!n.pinned);
-  $("pinBtn").style.display = n.trashed ? "none" : "";
-  $("delBtn").style.display = n.trashed ? "none" : "";
-  $("restoreBtn").style.display = n.trashed ? "" : "none";
-  $("permBtn").style.display = n.trashed ? "" : "none";
+  quill.enable(!n.trashed); $("eTitle").disabled = !!n.trashed; $("fbar").style.display = n.trashed ? "none" : "";
+  $("eChips").innerHTML = (n.tags || []).map(t => `<span class="chip pill" data-act="eTag">${esc(t)}</span>`).join("");
+  $("eNb").textContent = nbName(nbKey(n));
+  let b = "";
+  if (n.trashed) b += `<div class="banner">${ic("trash")}<b>Bu not çöp kutusunda.</b><button data-act="restoreNote">Geri yükle</button></div>`;
+  if (n.reminder && !n.trashed) b += `<div class="banner">${ic("bell")}<b>Hatırlatıcı: ${fmtDT(n.reminder)}</b><button data-act="eRemind">Değiştir</button></div>`;
+  if (n.shareId && !n.trashed) b += `<div class="banner">${ic("users")}<b>Bağlantıyla paylaşılıyor</b><button data-act="eShare">Yönet</button></div>`;
+  $("eBanner").innerHTML = b;
+  updateStatus();
 }
-
 function updateStatus(txt) {
-  const st = $("status");
-  let cls = "", icon = "cloud", label;
-  if (txt) label = txt;
-  else if (!navigator.onLine) label = "Çevrimdışı – bağlanınca eşitlenecek";
-  else if (pending) label = "Eşitleniyor…";
-  else { label = "Kaydedildi"; cls = "ok"; icon = "check"; }
-  st.className = cls;
-  st.innerHTML = `${ic(icon)}<span>${label}</span>`;
+  const el = $("eStatus"); if (!el) return;
+  el.textContent = txt || (!navigator.onLine ? "Çevrimdışı – bağlanınca eşitlenecek" : pending ? "Eşitleniyor…" : "Kaydedildi");
 }
-window.addEventListener("online", () => updateStatus());
-window.addEventListener("offline", () => updateStatus());
+addEventListener("online", () => updateStatus()); addEventListener("offline", () => updateStatus());
 
-// ---------- Otomatik kaydetme ----------
-function scheduleSave() {
-  if (!curId || loadedId !== curId) return;
-  updateStatus("Yazılıyor…");
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(saveNow, 700);
-}
+/* ---------- Otomatik kaydetme ---------- */
+function scheduleSave() { if (!curId || loadedId !== curId) return; updateStatus("Yazılıyor…"); clearTimeout(saveTimer); saveTimer = setTimeout(saveNow, 700); }
+function flushSave() { if (saveTimer) saveNow(); }
+let warned = false;
 function saveNow() {
-  clearTimeout(saveTimer);
-  if (!curId || loadedId !== curId) return;
-  const n = notes.find(x => x.id === curId);
-  if (n && n.trashed) return;
-  setDoc(noteRef(curId), {
-    title: $("title").value, content: quill.root.innerHTML, plain: quill.getText().trim(), updatedAt: Date.now()
-  }, { merge: true });   // yerel veritabanına anında yazar, bulutla arka planda eşitler
+  clearTimeout(saveTimer); saveTimer = null;
+  if (!uid || !curId || loadedId !== curId) return;
+  const n = getNote(curId); if (!n || n.trashed) return;
+  const content = quill.root.innerHTML;
+  if (content.length > 950000) { if (!warned) { warned = true; toast("Bu not 1 MB sınırına ulaştı (görseller büyük). Kaydedilmedi; bazı görselleri silin."); } updateStatus("Not çok büyük – kaydedilmedi"); return; }
+  warned = false;
+  const data = { title: $("eTitle").value, content, plain: quill.getText().trim(), updatedAt: Date.now() };
+  Object.assign(n, data);
+  setDoc(noteRef(curId), data, { merge: true });
+  if (n.shareId) setDoc(doc(db, "shared", n.shareId), { ownerUid: uid, noteId: n.id, title: data.title, content, updatedAt: data.updatedAt }, { merge: true }).catch(() => {});
 }
-quill.on("text-change", (_, __, src) => { if (src === "user") scheduleSave(); });
-$("title").oninput = scheduleSave;
-window.addEventListener("pagehide", saveNow);
-document.addEventListener("visibilitychange", () => { if (document.hidden) saveNow(); });
+addEventListener("pagehide", flushSave);
+document.addEventListener("visibilitychange", () => { if (document.hidden) flushSave(); });
+quill.on("text-change", (_, __, src) => { if (src === "user") scheduleSave(); updateTb(); });
+quill.on("selection-change", r => { if (r) lastRange = r; updateTb(); });
 
-// ---------- Olaylar ----------
-function createNote() {
-  if (!uid) return;
-  saveNow();
-  const id = newId();
-  curId = id; loadedId = null;
-  if (view.nb === "trash") view.nb = "all";
-  setDoc(noteRef(id), {
-    title: "", content: "", plain: "", tags: view.tag ? [view.tag] : [], pinned: false, trashed: false,
-    notebookId: (view.nb !== "all" && view.nb !== "trash") ? view.nb : null,
-    createdAt: Date.now(), updatedAt: Date.now()
+/* ---------- Not güncelleme yardımcıları ---------- */
+const patchNote = (id, p) => { const n = getNote(id); if (n) Object.assign(n, p); return updateDoc(noteRef(id), p); };
+function setTags(id, tags) { patchNote(id, { tags, updatedAt: Date.now() }); schedule(); }
+
+/* ================= Alt araç çubuğu ================= */
+const COLORS = ["#1c1c1e", "#6b6b70", "#d93025", "#f57c00", "#c79a00", "#00a82d", "#00897b", "#1a73e8", "#4f5bd5", "#a45ae8", "#e91e63", "#795548", "#ffffff"];
+const HILITE = ["#fff59d", "#c8f7c5", "#bde0fe", "#ffd6e7", "#ffe0b2", "#e1d5ff", "#e0e0e0"];
+const TB = [["plus", "insert"], ["camera", "camera"], ["mic", "dictate"], ["checkc", "todo"], "|", ["ul", "bullet"], ["ol", "ordered"], ["indent", "indent"], ["outdent", "outdent"], "|",
+  ["heading", "style"], ["fontAa", "font"], ["sizeA", "size"], "|", ["bold", "bold"], ["italic", "italic"], ["underline", "underline"], ["strike", "strike"], "|",
+  ["code", "code"], ["codeblock", "codeblock"], ["quote", "quote"], "|", ["color", "color"], ["marker", "bg"], ["alignL", "align"], ["link", "link"], ["eraser", "clean"]];
+$("fbar").innerHTML = TB.map(x => x === "|" ? `<span class="tbs"></span>` : `<button class="tb ${x[1] === "insert" ? "add" : ""}" data-tb="${x[1]}" title="${x[1]}">${ic(x[0])}</button>`).join("");
+$("fbar").addEventListener("mousedown", e => e.preventDefault());
+$("fbar").addEventListener("click", e => { const b = e.target.closest("[data-tb]"); if (b) tbAction(b.dataset.tb, b); });
+function selRange() { return quill.getSelection() || lastRange || { index: Math.max(0, quill.getLength() - 1), length: 0 }; }
+function fmt(name, val) { const r = selRange(); quill.setSelection(r.index, r.length, "silent"); const cur = quill.getFormat(); quill.format(name, cur[name] === val ? false : val, "user"); updateTb(); }
+function fmtSet(name, val) { const r = selRange(); quill.setSelection(r.index, r.length, "silent"); quill.format(name, val, "user"); updateTb(); }
+function tbAction(k, anchor) {
+  const cur = quill.getFormat(selRange());
+  switch (k) {
+    case "bold": case "italic": case "underline": case "strike": return fmt(k, true);
+    case "code": return fmt("code", true);
+    case "codeblock": return fmt("code-block", true);
+    case "quote": return fmt("blockquote", true);
+    case "bullet": return fmt("list", "bullet");
+    case "ordered": return fmt("list", "ordered");
+    case "todo": return fmtSet("list", (cur.list === "unchecked" || cur.list === "checked") ? false : "unchecked");
+    case "indent": return fmtSet("indent", "+1");
+    case "outdent": return fmtSet("indent", "-1");
+    case "clean": { const r = selRange(); quill.removeFormat(r.index, r.length || 1, "user"); return updateTb(); }
+    case "link": return makeLink();
+    case "insert": return showMenu([
+      { i: "image", t: "Galeriden görsel", f: () => $("fileImg").click() }, { i: "camera", t: "Kamera", f: () => $("fileCam").click() }, { i: "mic", t: "Sesle yaz", f: () => startDictation() },
+      { i: "checkc", t: "Yapılacaklar kutusu", f: () => fmtSet("list", "unchecked") }, { i: "hr", t: "Ayırıcı çizgi", f: () => insertDivider() }, { i: "clock", t: "Tarih ve saat", f: () => insertText(new Date().toLocaleString("tr-TR", { dateStyle: "long", timeStyle: "short" })) }, { i: "link", t: "Bağlantı", f: () => makeLink() }
+    ], { anchor, above: true });
+    case "camera": return $("fileCam").click();
+    case "dictate": return startDictation();
+    case "style": return showMenu([["Normal metin", () => { fmtSet("header", false); fmtSet("blockquote", false); fmtSet("code-block", false); }], ["Başlık 1", () => fmtSet("header", 1)], ["Başlık 2", () => fmtSet("header", 2)], ["Başlık 3", () => fmtSet("header", 3)], ["Alıntı", () => fmtSet("blockquote", true)], ["Kod bloğu", () => fmtSet("code-block", true)]].map(([t, f]) => ({ i: "heading", t, f })), { anchor, above: true });
+    case "font": return showMenu([{ i: "fontAa", t: "Varsayılan yazı tipi", f: () => fmtSet("font", false) }, ...FONTS.map(f => ({ i: cur.font === f.n ? "check" : "fontAa", t: `<span style="font-family:'${f.n}',${f.g}">${f.n}</span>`, f: () => fmtSet("font", f.n) }))], { anchor, above: true });
+    case "size": return showMenu([{ i: "sizeA", t: "Varsayılan boyut", f: () => fmtSet("size", false) }, ...SIZE_LIST.map(s => ({ i: cur.size === s ? "check" : "sizeA", t: `<span style="font-size:${s}">${s.replace("px", "")} punto</span>`, f: () => fmtSet("size", s) }))], { anchor, above: true });
+    case "align": return showMenu([["alignL", "Sola yasla", false], ["alignC", "Ortala", "center"], ["alignR", "Sağa yasla", "right"], ["alignJ", "İki yana yasla", "justify"]].map(([i, t, v]) => ({ i, t, f: () => fmtSet("align", v) })), { anchor, above: true });
+    case "color": return palette(anchor, COLORS, "color", "Varsayılan renk");
+    case "bg": return palette(anchor, HILITE, "background", "Vurguyu kaldır");
+  }
+}
+function palette(anchor, cols, name, resetLbl) {
+  showMenu([], { anchor, above: true });
+  $("menu").innerHTML = `<div class="pal">${cols.map(c => `<button data-c="${c}" style="background:${c}"></button>`).join("")}</div><button class="palx" data-c="">${ic("x")} ${resetLbl}</button>`;
+  $("menu").onclick = e => { const b = e.target.closest("[data-c]"); if (!b) return; closeMenu(); fmtSet(name, b.dataset.c || false); };
+  const r = anchor.getBoundingClientRect(), w = $("menu").offsetWidth, h = $("menu").offsetHeight;
+  $("menu").style.left = Math.max(8, Math.min(r.left, innerWidth - w - 8)) + "px"; $("menu").style.top = Math.max(8, r.top - h - 8) + "px";
+}
+function updateTb() {
+  if (!curId) return; const f = quill.getFormat(selRange());
+  const on = { bold: f.bold, italic: f.italic, underline: f.underline, strike: f.strike, code: f.code, codeblock: f["code-block"], quote: f.blockquote, bullet: f.list === "bullet", ordered: f.list === "ordered", todo: f.list === "unchecked" || f.list === "checked", font: f.font, size: f.size, align: f.align, color: f.color, bg: f.background, style: f.header };
+  qsa("#fbar [data-tb]").forEach(b => b.classList.toggle("on", !!on[b.dataset.tb]));
+}
+function makeLink() {
+  const r = selRange(); let url = prompt("Bağlantı adresi (URL):", "https://"); if (!url || url === "https://") return;
+  if (!/^[a-z][a-z0-9+.-]*:/i.test(url)) url = "https://" + url;
+  if (!/^(https?:|mailto:|tel:)/i.test(url)) return toast("Yalnızca http, https, mailto ve tel bağlantıları desteklenir.");
+  if (r.length > 0) { quill.setSelection(r.index, r.length, "silent"); quill.format("link", url, "user"); } else { quill.insertText(r.index, url, { link: url }, "user"); }
+}
+function insertText(t) { const r = selRange(); quill.insertText(r.index, t, "user"); quill.setSelection(r.index + t.length, 0, "silent"); }
+function insertDivider() { const r = selRange(); quill.insertEmbed(r.index, "divider", true, "user"); quill.setSelection(r.index + 1, 0, "silent"); }
+$("editor").addEventListener("focusin", () => { $("kbHide").hidden = innerWidth > 860; });
+$("eTitle").addEventListener("focusin", () => { $("kbHide").hidden = innerWidth > 860; });
+document.addEventListener("focusout", () => setTimeout(() => { const a = document.activeElement; if (!a || !(a.closest && (a.closest("#editor") || a.id === "eTitle"))) $("kbHide").hidden = true; }, 50));
+
+/* ---------- Görseller ---------- */
+function compressImage(src, max = 1200, q = 0.7) {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    img.onload = () => { const k = Math.min(1, max / Math.max(img.width, img.height)); const c = document.createElement("canvas"); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k); const x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, c.width, c.height); x.drawImage(img, 0, 0, c.width, c.height); res(c.toDataURL("image/jpeg", q)); };
+    img.onerror = rej; img.src = src;
   });
-  setView("editor");
-  setTimeout(() => $("title").focus(), 80);
 }
-$("newNote").onclick = createNote;
-$("fab").onclick = createNote;
-
-$("noteList").onclick = e => {
-  const el = e.target.closest(".card"); if (!el) return;
-  saveNow();
-  curId = el.dataset.id; loadedId = null; renderAll(); setView("editor");
-};
-$("search").oninput = e => { view.q = e.target.value; renderList(); };
-
-$("navScroll").onclick = e => {
-  const del = e.target.closest("[data-delnb]");
-  if (del) {
-    e.stopPropagation();
-    if (confirm("Defter silinsin mi? (Notlar silinmez, defterden çıkarılır)")) {
-      notes.filter(n => n.notebookId === del.dataset.delnb).forEach(n => updateDoc(noteRef(n.id), { notebookId: null }));
-      deleteDoc(nbRef(del.dataset.delnb)); view.nb = "all"; view.tag = null;
-    }
-    return;
-  }
-  const tg = e.target.closest("[data-tag]");
-  if (tg) { view.tag = view.tag === tg.dataset.tag ? null : tg.dataset.tag; view.nb = "all"; renderAll(); setView("list"); return; }
-  const el = e.target.closest("[data-nb]");
-  if (el) { view.nb = el.dataset.nb; view.tag = null; renderAll(); setView("list"); }
-};
-$("addNb").onclick = () => {
-  const name = prompt("Defter adı:"); if (!name || !name.trim()) return;
-  setDoc(doc(collection(db, "users", uid, "notebooks")), { name: name.trim(), createdAt: Date.now() });
-};
-
-$("nbSelect").onchange = e => updateDoc(noteRef(curId), { notebookId: e.target.value || null, updatedAt: Date.now() });
-$("pinBtn").onclick = () => { const n = notes.find(x => x.id === curId); if (n) updateDoc(noteRef(curId), { pinned: !n.pinned }); };
-$("delBtn").onclick = () => { saveNow(); updateDoc(noteRef(curId), { trashed: true, updatedAt: Date.now() }); curId = null; loadedId = null; setView("list"); renderAll(); };
-$("restoreBtn").onclick = () => { updateDoc(noteRef(curId), { trashed: false, updatedAt: Date.now() }); };
-$("permBtn").onclick = () => { if (confirm("Not kalıcı olarak silinsin mi?")) { deleteDoc(noteRef(curId)); curId = null; loadedId = null; setView("list"); renderAll(); } };
-$("toFolders").onclick = () => setView("folders");
-$("toList").onclick = () => { saveNow(); setView("list"); };
-
-// Etiketler: Enter veya virgül ile ekle, ✕ ile kaldır
-function addTag(raw) {
-  const t = raw.trim().replace(/^#/, "").toLowerCase();
-  const n = notes.find(x => x.id === curId); if (!t || !n) return;
-  if ((n.tags || []).includes(t)) return;
-  updateDoc(noteRef(curId), { tags: [...(n.tags || []), t], updatedAt: Date.now() });
+async function imageFromFile(file) {
+  if (!file) return; const url = URL.createObjectURL(file);
+  try { const data = await compressImage(url); URL.revokeObjectURL(url); addImage(data); } catch (e) { toast("Görsel okunamadı."); }
 }
-$("tagInput").onkeydown = e => {
-  if (e.key === "Enter" || e.key === ",") { e.preventDefault(); addTag(e.target.value); e.target.value = ""; }
-  else if (e.key === "Backspace" && !e.target.value) {
-    const n = notes.find(x => x.id === curId);
-    if (n && (n.tags || []).length) updateDoc(noteRef(curId), { tags: n.tags.slice(0, -1) });
-  }
-};
-$("tagInput").onblur = e => { if (e.target.value.trim()) { addTag(e.target.value); e.target.value = ""; } };
-$("chips").onclick = e => {
-  const b = e.target.closest("[data-rmtag]"); if (!b) return;
-  const n = notes.find(x => x.id === curId);
-  if (n) updateDoc(noteRef(curId), { tags: (n.tags || []).filter(t => t !== b.dataset.rmtag), updatedAt: Date.now() });
-};
+function addImage(data) {
+  const put = () => { const r = selRange(); quill.insertEmbed(r.index, "image", data, "user"); quill.setSelection(r.index + 1, 0, "silent"); if (quill.root.innerHTML.length > 900000) { quill.history.undo(); toast("Not 1 MB sınırına ulaştı. Daha az/küçük görsel kullanın."); } };
+  if (curId && loadedId === curId) put(); else createNote({}, () => setTimeout(put, 80));
+}
+$("fileImg").onchange = e => { imageFromFile(e.target.files[0]); e.target.value = ""; };
+$("fileCam").onchange = e => { imageFromFile(e.target.files[0]); e.target.value = ""; };
 
-updateStatus();
+/* ---------- Sesle yazma (Kaydedici) ---------- */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition; let rec = null, recOn = false;
+function startDictation() {
+  if (!SR) return toast("Bu tarayıcı sesle yazmayı desteklemiyor (Chrome önerilir).");
+  const go = () => {
+    recOn = true; let idx = selRange().index;
+    const ov = document.createElement("div"); ov.id = "recOv"; ov.innerHTML = `<div class="box"><div class="recdot">${ic("mic")}</div><b style="font-size:19px">Dinleniyor…</b><div id="recTxt">Konuşun, metin nota yazılır.</div><button class="btn" id="recStop">Bitir</button></div>`; document.body.appendChild(ov);
+    rec = new SR(); rec.lang = "tr-TR"; rec.continuous = true; rec.interimResults = true;
+    rec.onresult = e => { let interim = ""; for (let i = e.resultIndex; i < e.results.length; i++) { const t = e.results[i][0].transcript; if (e.results[i].isFinal) { const s = t.trim() + " "; quill.insertText(idx, s, "user"); idx += s.length; } else interim += t; } $("recTxt").textContent = interim || "…"; };
+    rec.onerror = e => { if (e.error === "not-allowed") { toast("Mikrofon izni verilmedi."); stop(); } };
+    rec.onend = () => { if (recOn) { try { rec.start(); } catch (e) {} } };
+    const stop = () => { recOn = false; try { rec.stop(); } catch (e) {} ov.remove(); };
+    $("recStop").onclick = stop; try { rec.start(); } catch (e) { stop(); }
+  };
+  if (curId && loadedId === curId) go(); else createNote({}, () => setTimeout(go, 80));
+}
+
+/* ---------- Bul ---------- */
+let find = { i: -1, m: [] };
+function closeFind() { $("findBar").hidden = true; find = { i: -1, m: [] }; $("findCnt").textContent = ""; }
+function findRun(dir = 1, fresh) {
+  const q = $("findIn").value.toLowerCase(); if (!q) { $("findCnt").textContent = ""; return; }
+  const t = quill.getText().toLowerCase(); if (fresh || !find.m.length) { find.m = []; let i = -1; while ((i = t.indexOf(q, i + 1)) >= 0) find.m.push(i); find.i = -1; }
+  if (!find.m.length) { $("findCnt").textContent = "0/0"; return; }
+  find.i = (find.i + dir + find.m.length) % find.m.length; const at = find.m[find.i];
+  quill.setSelection(at, q.length, "silent"); $("findCnt").textContent = `${find.i + 1}/${find.m.length}`;
+  const b = quill.getBounds(at, q.length), sc = $("eScroll"); sc.scrollTop = Math.max(0, b.top + $("editor").offsetTop - 140);
+}
+$("findIn").addEventListener("input", () => findRun(1, true));
+$("findIn").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); findRun(e.shiftKey ? -1 : 1); } });
+
+/* ================= Not eylemleri ================= */
+function actionsSheet() {
+  const n = getNote(curId); if (!n) return;
+  const row = (k, i, t, o = {}) => `<button class="arow ${o.red ? "red" : ""} ${o.off ? "off" : ""}" data-na="${k}">${ic(i)}<span class="st">${t}</span>${o.badge ? `<span class="badge">${o.badge}</span>` : ""}${o.chev ? ic("chev") : ""}${o.sw !== undefined ? `<span class="swt ${o.sw ? "on" : ""}"></span>` : ""}</button>`;
+  openSheet(`<div class="sh-h"><button class="tbtn" data-act="closeSheet">${ic("x")}</button><h3 style="margin-left:6px">Not eylemleri</h3></div>
+    <div class="atiles"><button class="atile" data-na="find">${ic("search")}Bul</button><button class="atile" data-na="share">${ic("share")}Paylaş</button><button class="atile" data-na="move">${ic("move")}Taşı</button></div>
+    ${row("copylink", "link", "Bağlantıyı Kopyala")}${row("dup", "copy", "Notu çoğalt")}${row("suggest", "sparkle", "Başlık öner", { badge: "Yeni" })}
+    <div class="asep"></div>
+    ${row("tag", "tagplus", "Etiket ekle", { chev: 1 })}${row("remind", "bellplus", n.reminder ? "Hatırlatıcı: " + fmtDT(n.reminder) : "Hatırlatıcı ekle", { chev: 1 })}
+    <div class="asep"></div>
+    ${row("shortcut", n.shortcut ? "star" : "starplus", n.shortcut ? "Kısayollardan kaldır" : "Kısayollara ekle")}${row("pin", "pin", n.pinned ? "Not defterinden sabitlemeyi kaldır" : "Not defterine sabitle")}${row("homepin", "pin", n.homePinned ? "Giriş sayfasından kaldır" : "Giriş sayfasına sabitle")}
+    <div class="asep"></div>
+    ${row("offline", "download", "Çevrimdışı kullanılabilir", { sw: true })}
+    <div class="asep"></div>
+    ${row("trash", "trash", "Çöp Kutusuna taşı", { red: 1 })}
+    <div class="asep"></div>
+    ${row("print", "printer", "Notu yazdır", { chev: 1 })}${row("export", "download", "Dışa aktar (HTML / metin)", { chev: 1 })}`, { full: true });
+  $("sheet").onclick = e => { const b = e.target.closest("[data-na]"); if (b) noteAction(b.dataset.na); else if (e.target.closest("[data-act=closeSheet]")) closeAll(); };
+}
+function noteAction(k) {
+  const n = getNote(curId); if (!n) return;
+  switch (k) {
+    case "find": closeAll(); $("findBar").hidden = false; $("findIn").focus(); return;
+    case "share": return shareSheet();
+    case "move": return moveSheet();
+    case "copylink": closeAll(); return copy(location.origin + location.pathname.replace(/index\.html$/, "") + "?n=" + n.id, "Bağlantı kopyalandı (yalnızca hesabınızla açılır).");
+    case "dup": { closeAll(); flushSave(); const c = { ...n }; delete c.id; createNote({ ...c, title: (n.title || "Başlıksız") + " (kopya)", createdAt: Date.now(), updatedAt: Date.now(), shareId: null, reminder: null, reminded: false }); return toast("Not çoğaltıldı."); }
+    case "suggest": { closeAll(); const t = suggestTitle(); if (!t) return toast("Önerilecek yeterli metin yok."); $("eTitle").value = t; autoGrow(); scheduleSave(); return toast("Başlık eklendi: " + t); }
+    case "tag": return tagSheet();
+    case "remind": return remindSheet();
+    case "shortcut": patchNote(n.id, { shortcut: !n.shortcut }); closeAll(); return toast(n.shortcut ? "Kısayollara eklendi." : "Kısayollardan kaldırıldı.");
+    case "pin": patchNote(n.id, { pinned: !n.pinned }); closeAll(); return toast(n.pinned ? "Not sabitlendi." : "Sabitleme kaldırıldı.");
+    case "homepin": patchNote(n.id, { homePinned: !n.homePinned }); closeAll(); return toast(n.homePinned ? "Giriş sayfasına sabitlendi." : "Giriş sayfasından kaldırıldı.");
+    case "offline": return toast("Tüm notlar zaten çevrimdışı kullanılabilir (otomatik).");
+    case "trash": closeAll(); saveNow(); patchNote(n.id, { trashed: true, updatedAt: Date.now() }); toast("Not çöp kutusuna taşındı."); return closeNote();
+    case "print": closeAll(); return printNote();
+    case "export": return exportSheet();
+  }
+}
+function suggestTitle() {
+  const d = document.createElement("div"); d.innerHTML = quill.root.innerHTML; const h = d.querySelector("h1,h2,h3");
+  let t = (h && h.textContent.trim()) || quill.getText().trim().split(/\n/)[0] || ""; t = t.replace(/\s+/g, " ").trim();
+  if (t.length > 60) { t = t.slice(0, 60); t = t.slice(0, t.lastIndexOf(" ") > 25 ? t.lastIndexOf(" ") : 60) + "…"; } return t;
+}
+async function copy(text, msg) { try { await navigator.clipboard.writeText(text); toast(msg || "Kopyalandı."); } catch (e) { prompt("Kopyalamak için seçin:", text); } }
+function printNote() { const n = getNote(curId); $("printArea").innerHTML = `<h1>${esc(n.title) || "Başlıksız"}</h1><div class="ql-editor">${quill.root.innerHTML}</div>`; setTimeout(() => { print(); }, 100); }
+addEventListener("afterprint", () => { $("printArea").innerHTML = ""; });
+function download(name, mime, text) { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type: mime })); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); }
+const fileSafe = s => (s || "not").replace(/[\\/:*?"<>|]+/g, "_").slice(0, 60);
+function exportSheet() {
+  const n = getNote(curId);
+  openSheet(`${shHead("Dışa aktar")}<div class="sh-p">Notu bilgisayarınıza dosya olarak indirin.</div>
+    <button class="arow" data-x="html">${ic("download")}<span class="st">HTML dosyası (.html)</span></button><button class="arow" data-x="txt">${ic("download")}<span class="st">Düz metin (.txt)</span></button>`);
+  $("sheet").onclick = e => { if (e.target.closest("[data-act=closeSheet]")) return closeAll(); const b = e.target.closest("[data-x]"); if (!b) return; saveNow();
+    if (b.dataset.x === "html") download(fileSafe(n.title) + ".html", "text/html", `<!doctype html><html lang="tr"><meta charset="utf-8"><title>${esc(n.title)}</title><body style="font-family:sans-serif;max-width:760px;margin:30px auto"><h1>${esc(n.title)}</h1>${quill.root.innerHTML}</body></html>`);
+    else download(fileSafe(n.title) + ".txt", "text/plain", (n.title ? n.title + "\n\n" : "") + quill.getText()); closeAll(); };
+}
+
+/* ---------- Taşı / etiket / hatırlatıcı / paylaş sheet'leri ---------- */
+function moveSheet() {
+  const n = getNote(curId), cur = nbKey(n);
+  const row = (id, name, icon) => `<button class="arow" data-mv="${id || ""}">${ic(icon)}<span class="st">${esc(name)}</span>${cur === id ? ic("check") : ""}</button>`;
+  openSheet(`${shHead("Not defterine taşı")}${row(null, "Genel", "bookstar")}${notebooks.map(b => row(b.id, b.name, "book")).join("")}<button class="arow" data-mv="__new">${ic("bookplus")}<span class="st">Yeni not defteri…</span></button>`);
+  $("sheet").onclick = e => { if (e.target.closest("[data-act=closeSheet]")) return closeAll(); const b = e.target.closest("[data-mv]"); if (!b) return; let v = b.dataset.mv || null;
+    if (v === "__new") { const name = prompt("Not defteri adı:"); if (!name || !name.trim()) return; const id = doc(ucol("notebooks")).id; setDoc(nbRef(id), { name: name.trim(), createdAt: Date.now(), shortcut: false }); v = id; }
+    patchNote(n.id, { notebookId: v, updatedAt: Date.now() }); closeAll(); toast("Taşındı: " + (v ? (notebooks.find(x => x.id === v) || { name: "yeni defter" }).name : "Genel")); schedule(); };
+}
+function tagSheet() {
+  const n = getNote(curId); const all = Object.keys(tagCounts()).sort((a, b) => a.localeCompare(b, "tr"));
+  const draw = () => { const cur = (getNote(curId).tags || []); $("tgChips").innerHTML = [...new Set([...all, ...cur])].map(t => `<span class="chip ${cur.includes(t) ? "on" : ""}" data-t="${esc(t)}">${esc(t)}</span>`).join("") || `<div class="sh-p">Henüz etiket yok. Yukarıya yazıp ekleyin.</div>`; };
+  openSheet(`${shHead("Etiketler")}<div style="display:flex;gap:8px"><input type="text" id="tgIn" placeholder="Yeni etiket yazın" autocomplete="off"><button class="btn" id="tgAdd">Ekle</button></div><div class="chips" id="tgChips"></div><div class="brow"><button class="btn sec" data-act="closeSheet">Tamam</button></div>`, { mount: () => draw() });
+  const add = () => { const v = $("tgIn").value.trim().replace(/^#/, ""); if (!v) return; const cur = getNote(curId).tags || []; if (!cur.some(t => t.toLowerCase() === v.toLowerCase())) { all.push(v); setTags(curId, [...cur, v]); } $("tgIn").value = ""; draw(); };
+  $("sheet").onclick = e => { if (e.target.closest("[data-act=closeSheet]")) return closeAll(); if (e.target.closest("#tgAdd")) return add(); const c = e.target.closest("[data-t]"); if (!c) return; const t = c.dataset.t, cur = getNote(curId).tags || []; setTags(curId, cur.includes(t) ? cur.filter(x => x !== t) : [...cur, t]); draw(); };
+  $("tgIn").addEventListener("keydown", e => { if (e.key === "Enter" || e.key === ",") { e.preventDefault(); add(); } });
+}
+function remindSheet() {
+  const n = getNote(curId), def = n.reminder || (Math.ceil((Date.now() + 3600e3) / 900e3) * 900e3);
+  openSheet(`${shHead("Hatırlatıcı")}<input type="datetime-local" id="rmIn" value="${toLocalInput(def)}">
+    <div class="chips"><span class="chip" data-q="1h">1 saat sonra</span><span class="chip" data-q="tom">Yarın 09:00</span><span class="chip" data-q="week">1 hafta sonra</span></div>
+    <div class="sh-p">Bildirim, uygulama/tarayıcı açıkken gelir. (İnternet gerekmez.)</div>
+    <div class="brow"><button class="btn" id="rmSave">Kaydet</button>${n.reminder ? `<button class="btn sec" id="rmDel">Kaldır</button>` : ""}</div>`);
+  $("sheet").onclick = e => { if (e.target.closest("[data-act=closeSheet]")) return closeAll(); const q = e.target.closest("[data-q]");
+    if (q) { const d = new Date(); if (q.dataset.q === "1h") d.setHours(d.getHours() + 1); else if (q.dataset.q === "tom") { d.setDate(d.getDate() + 1); d.setHours(9, 0, 0, 0); } else d.setDate(d.getDate() + 7); $("rmIn").value = toLocalInput(d); return; }
+    if (e.target.closest("#rmDel")) { patchNote(n.id, { reminder: null, reminded: false }); closeAll(); return toast("Hatırlatıcı kaldırıldı."); }
+    if (e.target.closest("#rmSave")) { const t = new Date($("rmIn").value).getTime(); if (!t) return toast("Geçerli bir tarih seçin."); patchNote(n.id, { reminder: t, reminded: false }); askNotif(); closeAll(); toast("Hatırlatıcı: " + fmtDT(t)); } };
+}
+function shareSheet() {
+  const n = getNote(curId); saveNow();
+  const body = n.shareId ? `<div class="sh-p">Bağlantıya sahip herkes bu notu <b>salt okunur</b> görüntüleyebilir. Notu düzenledikçe paylaşılan kopya da güncellenir.</div><input type="text" readonly value="${esc(shareUrl(n.shareId))}" onclick="this.select()">
+      <div class="brow"><button class="btn" data-sh="copy">${ic("copy")} Kopyala</button><button class="btn sec" data-sh="native">${ic("share")} Paylaş…</button><button class="btn red" data-sh="stop">Paylaşımı durdur</button></div>`
+    : `<div class="sh-p">Notunuz için herkese açık, salt okunur bir bağlantı oluşturun. Bağlantıya sahip kişiler notu açabilir.</div><div class="brow"><button class="btn" data-sh="make">${ic("link")} Bağlantı oluştur</button></div>`;
+  openSheet(`${shHead("Paylaş")}${body}<div class="asep" style="margin-top:16px"></div><button class="arow" data-sh="text">${ic("share")}<span class="st">Metni paylaş…</span></button><button class="arow" data-sh="export">${ic("download")}<span class="st">Dosya olarak indir</span></button>`);
+  $("sheet").onclick = async e => { if (e.target.closest("[data-act=closeSheet]")) return closeAll(); const b = e.target.closest("[data-sh]"); if (!b) return; const k = b.dataset.sh;
+    if (k === "make") { const sid = randId(); patchNote(n.id, { shareId: sid }); setDoc(doc(db, "shared", sid), { ownerUid: uid, noteId: n.id, title: n.title || "", content: quill.root.innerHTML, updatedAt: Date.now() }).catch(() => { patchNote(n.id, { shareId: null }); toast("Paylaşım kapalı: firestore.rules dosyasını güncelleyip yayınlayın (README Adım 3)."); }); setTimeout(shareSheet, 150); }
+    else if (k === "copy") copy(shareUrl(n.shareId), "Paylaşım bağlantısı kopyalandı.");
+    else if (k === "native") { if (navigator.share) navigator.share({ title: n.title || "Not", url: shareUrl(n.shareId) }).catch(() => {}); else copy(shareUrl(n.shareId), "Bağlantı kopyalandı."); }
+    else if (k === "stop") { if (!confirm("Paylaşım durdurulsun mu? Bağlantı çalışmaz olur.")) return; deleteDoc(doc(db, "shared", n.shareId)).catch(() => {}); patchNote(n.id, { shareId: null }); closeAll(); toast("Paylaşım durduruldu."); }
+    else if (k === "text") { const t = quill.getText().trim(); if (navigator.share) navigator.share({ title: n.title || "Not", text: t }).catch(() => {}); else copy((n.title ? n.title + "\n\n" : "") + t, "Metin kopyalandı."); }
+    else if (k === "export") exportSheet(); };
+}
+
+/* ---------- Görev / etkinlik sheet'leri ---------- */
+function newTaskSheet() {
+  taskDue = null;
+  openSheet(`${shHead("Yeni görev")}<input type="text" id="ntIn" placeholder="Ne yapılacak?" autocomplete="off"><div style="height:10px"></div><input type="datetime-local" id="ntDue"><div class="sh-p">Son tarih isteğe bağlıdır.</div><div class="brow"><button class="btn" id="ntSave">Ekle</button></div>`, { mount: () => setTimeout(() => $("ntIn").focus(), 80) });
+  const save = () => { const t = $("ntIn").value.trim(); if (!t) return; addTask(t, $("ntDue").value ? new Date($("ntDue").value).getTime() : null); if ($("ntDue").value) askNotif(); closeAll(); toast("Görev eklendi."); };
+  $("sheet").onclick = e => { if (e.target.closest("[data-act=closeSheet]")) closeAll(); else if (e.target.closest("#ntSave")) save(); };
+  $("ntIn").addEventListener("keydown", e => { if (e.key === "Enter") save(); });
+}
+function newEventSheet() {
+  const d = new Date(); d.setHours(d.getHours() + 1, 0, 0, 0);
+  openSheet(`${shHead("Yeni etkinlik")}<input type="text" id="evIn" placeholder="Etkinlik adı" autocomplete="off"><div style="height:10px"></div><input type="datetime-local" id="evDate" value="${toLocalInput(d)}"><div class="sh-p">Etkinlik, hatırlatıcılı bir not olarak oluşturulur ve takvimde görünür.</div><div class="brow"><button class="btn" id="evSave">Oluştur</button></div>`, { mount: () => setTimeout(() => $("evIn").focus(), 80) });
+  $("sheet").onclick = e => { if (e.target.closest("[data-act=closeSheet]")) return closeAll(); if (!e.target.closest("#evSave")) return; const t = $("evIn").value.trim() || "Etkinlik", at = new Date($("evDate").value).getTime() || d.getTime();
+    closeAll(); askNotif(); createNote({ title: t, reminder: at, content: `<p>Tarih: ${new Date(at).toLocaleString("tr-TR", { dateStyle: "full", timeStyle: "short" })}</p><p>Yer: </p><p>Notlar: </p>`, plain: "" }, () => quill.focus()); };
+}
+
+/* ---------- Hatırlatıcı bildirimleri ---------- */
+function askNotif() { if ("Notification" in window && Notification.permission === "default") Notification.requestPermission().then(() => schedule()).catch(() => {}); }
+async function notify(title, body, tag) {
+  toast("🔔 " + title);
+  if (!("Notification" in window) || Notification.permission !== "granted") return;
+  try { const reg = await navigator.serviceWorker.ready; await reg.showNotification(title, { body, icon: "icon-192.png", badge: "favicon-32.png", tag }); } catch (e) { try { new Notification(title, { body, icon: "icon-192.png" }); } catch (e2) {} }
+}
+setInterval(() => {
+  if (!uid) return; const now = Date.now();
+  notes.filter(n => !n.trashed && n.reminder && !n.reminded && n.reminder <= now).forEach(n => { n.reminded = true; updateDoc(noteRef(n.id), { reminded: true }).catch(() => {}); notify(n.title || "Hatırlatıcı", "Not hatırlatıcısı", "n" + n.id); });
+  tasks.filter(t => !t.done && t.due && !t.notified && t.due <= now).forEach(t => { t.notified = true; updateDoc(taskRef(t.id), { notified: true }).catch(() => {}); notify(t.title, "Görev zamanı geldi", "t" + t.id); });
+}, 20000);
+
+/* ---------- Dışa / içe aktarma ---------- */
+function exportAll() {
+  const strip = x => { const { id, ...r } = x; return { id, ...r }; };
+  download("d-note-yedek-" + dayKey(Date.now()) + ".json", "application/json", JSON.stringify({ app: "D-Note", version: 2, exportedAt: Date.now(), notebooks: notebooks.map(strip), notes: notes.map(strip), tasks: tasks.map(strip) }));
+  toast("Yedek indirildi.");
+}
+const tmpHost = document.createElement("div"); tmpHost.style.cssText = "position:fixed;left:-9999px;top:0;width:600px"; document.body.appendChild(tmpHost);
+let tmpQuill = null;
+function htmlToContent(html) { tmpQuill = tmpQuill || new Quill(tmpHost, { theme: "snow", modules: { toolbar: false } }); tmpQuill.setContents(tmpQuill.clipboard.convert(html), "silent"); return { content: tmpQuill.root.innerHTML, plain: tmpQuill.getText().trim() }; }
+async function importAny(file) {
+  if (!file) return; const text = await file.text(), name = file.name.toLowerCase();
+  try { if (name.endsWith(".json")) await importJSON(text); else await importENEX(text); } catch (e) { console.warn(e); toast("İçe aktarma başarısız: dosya okunamadı."); }
+}
+async function importJSON(text) {
+  const d = JSON.parse(text); if (!d.notes) throw new Error("bad");
+  const ops = []; (d.notebooks || []).forEach(b => { const { id, ...r } = b; ops.push([nbRef(id), r]); }); (d.notes || []).forEach(n => { const { id, ...r } = n; ops.push([noteRef(id), { ...r, shareId: null }]); }); (d.tasks || []).forEach(t => { const { id, ...r } = t; ops.push([taskRef(id), r]); });
+  await batchSet(ops); toast(`${(d.notes || []).length} not, ${(d.notebooks || []).length} defter, ${(d.tasks || []).length} görev içe aktarıldı.`);
+}
+const enexDate = s => { const m = /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/.exec((s || "").trim()); return m ? Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6]) : Date.now(); };
+async function importENEX(text) {
+  const xml = new DOMParser().parseFromString(text, "application/xml"); if (xml.querySelector("parsererror")) throw new Error("xml");
+  const list = [...xml.getElementsByTagName("note")]; if (!list.length) throw new Error("empty");
+  toast(`${list.length} not içe aktarılıyor…`, 4000); let done = 0, skippedImg = 0, ops = [];
+  for (const nd of list) {
+    const tx = tag => { const e = [...nd.children].find(c => c.tagName === tag); return e ? e.textContent : ""; };
+    const title = tx("title").trim(), created = enexDate(tx("created")), updated = enexDate(tx("updated") || tx("created"));
+    const tags = [...nd.children].filter(c => c.tagName === "tag").map(t => t.textContent.trim()).filter(Boolean);
+    const imgs = [...nd.children].filter(c => c.tagName === "resource").map(r => ({ mime: (([...r.children].find(c => c.tagName === "mime") || {}).textContent || "").trim(), data: (([...r.children].find(c => c.tagName === "data") || {}).textContent || "").replace(/\s+/g, "") })).filter(r => r.mime.startsWith("image/") && r.data);
+    // ENML'deki <en-todo/> ve <en-media/> kendi kendine kapanır; HTML ayrıştırıcı bunu bilmediği için sonrasındaki metni içine alıp kaybettirirdi
+    const enml = new DOMParser().parseFromString(tx("content").replace(/<(en-todo|en-media|en-crypt)\b([^>]*?)\s*\/>/g, "<$1$2></$1>"), "text/html"); const root = enml.querySelector("en-note") || enml.body;
+    root.querySelectorAll("en-todo").forEach(e => e.replaceWith(enml.createTextNode(e.getAttribute("checked") === "true" ? "☑ " : "☐ ")));
+    const slots = []; root.querySelectorAll("en-media").forEach(e => { const ty = e.getAttribute("type") || ""; if (ty.startsWith("image/")) { const im = enml.createElement("img"); im.setAttribute("data-slot", slots.length); slots.push(1); e.replaceWith(im); } else e.replaceWith(enml.createTextNode("[Ek dosya atlandı]")); });
+    root.querySelectorAll("img[data-slot]").forEach(im => { const r = imgs[+im.getAttribute("data-slot")]; if (r && +im.getAttribute("data-slot") < 4) im.setAttribute("src", "__IMG" + im.getAttribute("data-slot") + "__"); else { im.remove(); if (r) skippedImg++; } });
+    let html = root.innerHTML;
+    for (let i = 0; i < Math.min(4, imgs.length); i++) { if (!html.includes("__IMG" + i + "__")) continue; try { html = html.replace("__IMG" + i + "__", await compressImage(`data:${imgs[i].mime};base64,${imgs[i].data}`, 1000, 0.62)); } catch (e) { html = html.replace(/<img[^>]*__IMG\d__[^>]*>/, ""); skippedImg++; } }
+    let c = htmlToContent(html); if (c.content.length > 950000) { c = htmlToContent(html.replace(/<img[^>]*>/g, "")); skippedImg++; }
+    const id = newId(); ops.push([noteRef(id), { title, content: c.content, plain: c.plain, tags, pinned: false, trashed: false, notebookId: null, createdAt: created, updatedAt: updated, reminder: null, reminded: false, shortcut: false, homePinned: false, shareId: null }]);
+    if (ops.length >= 6) { batchSet(ops); ops = []; } done++;
+    await new Promise(r => setTimeout(r, 0));
+  }
+  if (ops.length) batchSet(ops);
+  toast(`${done} not içe aktarıldı.` + (skippedImg ? ` ${skippedImg} görsel/ek atlandı.` : ""), 6000);
+}
+$("fileImport").onchange = e => { importAny(e.target.files[0]); e.target.value = ""; };
+
+/* ================= Tıklama yöneticisi ================= */
+function profileMenu(anchor) {
+  showMenu([{ user: 1, t: (user && (user.displayName || user.email)) || "", s: (user && user.email) || "", f: () => go("settings") }, { sep: 1 },
+    { i: "megaphone", t: "Yeni Neler", f: whatsNew }, { i: "trash", t: "Çöp Kutusu", f: () => go("trash") }, { i: "gear", t: "Ayarlar", f: () => go("settings") }, { i: "help", t: "Yardım", f: helpSheet },
+    ...(canInstall() ? [{ i: "download", t: "Uygulamayı yükle", f: () => ACT.install() }] : []), { i: "logout", t: "Oturumu kapat", red: 1, f: logout }], { anchor, right: false });
+}
+function moreMenu() {
+  showMenu([["star", "Kısayollar", "shortcuts"], ["checkc", "Görevler", "tasks"], ["calendar", "Takvim", "calendar"], ["tag", "Etiketler", "tags"], ["users", "Paylaşılan", "shared"], ["template", "Şablonlar", "templates"], ["trash", "Çöp Kutusu", "trash"]].map(([i, t, p]) => ({ i, t, f: () => go(p) })), { dock: true });
+}
+function whatsNew() {
+  openSheet(`${shHead("Yeni Neler")}<div class="sh-p"><b>Ana Sayfa</b> – hızlı not, görev, etkinlik, kamera, kaydedici ve karalama defteri.<br><b>Zengin metin</b> – yazı tipi, boyut, renk, vurgu, hizalama, kod, alıntı, onay kutuları.<br><b>Görevler, Takvim, Hatırlatıcılar</b><br><b>Şablonlar, Kısayollar, Sabitleme</b><br><b>Paylaşım bağlantısı</b>, yazdırma, dışa aktarma<br><b>Evernote (.enex) içe aktarma</b><br><b>Çevrimdışı çalışma</b> ve otomatik bulut eşitleme</div>`);
+  $("sheet").onclick = e => { if (e.target.closest("[data-act=closeSheet]")) closeAll(); };
+}
+function helpSheet() {
+  openSheet(`${shHead("Yardım")}<div class="sh-p"><b>Not yazarken:</b> alttaki çubuk kaydırılabilir; + düğmesi görsel, kamera, ses, çizgi ve tarih ekler.<br><b>Eylemler:</b> notun sağ üstündeki ⋯ düğmesi (bul, taşı, çoğalt, hatırlatıcı, sabitle, yazdır…).<br><b>Çevrimdışı:</b> internet olmasa da yazın; bağlanınca otomatik eşitlenir.<br><b>Etiket:</b> notta etiket simgesine dokunun.<br><b>Evernote'tan geçiş:</b> Evernote'ta notları .enex olarak dışa aktarın, Ana Sayfa → İçe aktar.<br><b>Masaüstü:</b> Esc pencereyi kapatır.</div>`);
+  $("sheet").onclick = e => { if (e.target.closest("[data-act=closeSheet]")) closeAll(); };
+}
+
+const ACT = {
+  profile: el => profileMenu(el), whatsnew: whatsNew,
+  back: goBack, closeNote, closeSheet: () => closeAll(),
+  install: async () => { if (window.__bip) { window.__bip.prompt(); try { await window.__bip.userChoice; } catch (e) {} window.__bip = null; schedule(); return; }
+    openSheet(`${shHead("Uygulamayı yükle")}<div class="sh-p">${isIOS() ? "<b>iPhone / iPad (Safari):</b> alttaki <b>Paylaş</b> düğmesine dokunun, ardından <b>Ana Ekrana Ekle</b>'yi seçin." : "Tarayıcı menüsünü (⋮) açın ve <b>Uygulamayı yükle</b> ya da <b>Ana ekrana ekle</b>'ye dokunun. Seçenek yoksa uygulama zaten yüklü olabilir."}</div>`);
+    $("sheet").onclick = e => { if (e.target.closest("[data-act=closeSheet]")) closeAll(); }; },
+  newNote: () => createNote(), newTask: newTaskSheet, newEvent: newEventSheet,
+  newNotebook: () => { const name = prompt("Not defteri adı:"); if (!name || !name.trim()) return; setDoc(nbRef(doc(ucol("notebooks")).id), { name: name.trim(), createdAt: Date.now(), shortcut: false }); toast("Not defteri oluşturuldu."); },
+  record: () => startDictation(), camera: () => $("fileCam").click(), importAny: () => $("fileImport").click(), exportAll,
+  scratchMenu: el => showMenu([{ i: "notes", t: "Nota dönüştür", f: () => { const t = $("scratch").value.trim(); if (!t) return toast("Karalama defteri boş."); const html = t.split(/\n/).map(l => `<p>${esc(l) || "<br>"}</p>`).join(""); $("scratch").value = ""; scratchSave(); createNote({ title: t.split(/\n/)[0].slice(0, 60), content: html, plain: t }); } }, { i: "trash", t: "Temizle", f: () => { $("scratch").value = ""; scratchSave(); } }], { anchor: el, right: true }),
+  sortMenu: el => showMenu([["updated", "Güncelleme tarihi"], ["created", "Oluşturma tarihi"], ["title", "Başlık (A–Z)"]].map(([v, t]) => ({ i: S.sort === v ? "check" : "filter", t, f: () => { S.sort = v; store.set("dnote-sort", v); schedule(); } })), { anchor: el, right: true }),
+  notesMenu: el => showMenu([{ i: "notes", t: S.dense ? "Ayrıntılı görünüm" : "Kompakt görünüm", f: () => { S.dense = !S.dense; store.set("dnote-dense", S.dense ? "1" : "0"); schedule(); } }, { i: "noteplus", t: "Yeni not", f: () => createNote() }], { anchor: el, right: true }),
+  nbOpen: el => go("notes", { nb: el.dataset.v || null }),
+  nbMenu: el => { const id = el.dataset.v, b = notebooks.find(x => x.id === id); if (!b) return; showMenu([
+    { i: "bookplus", t: "Yeniden adlandır", f: () => { const nm = prompt("Yeni ad:", b.name); if (nm && nm.trim()) updateDoc(nbRef(id), { name: nm.trim() }); } },
+    { i: b.shortcut ? "star" : "starplus", t: b.shortcut ? "Kısayollardan kaldır" : "Kısayollara ekle", f: () => updateDoc(nbRef(id), { shortcut: !b.shortcut }) },
+    { i: "trash", t: "Sil", red: 1, f: () => { if (confirm(`"${b.name}" silinsin mi? Notlar silinmez, "Genel" defterine taşınır.`)) { notes.filter(n => n.notebookId === id).forEach(n => patchNote(n.id, { notebookId: null })); deleteDoc(nbRef(id)); } } }], { anchor: el, right: true }); },
+  tagOpen: el => go("notes", { tag: el.dataset.v }),
+  tagMenu: el => { const t = el.dataset.v; showMenu([
+    { i: "tag", t: "Yeniden adlandır", f: () => { const nm = (prompt("Yeni etiket adı:", t) || "").trim(); if (!nm || nm === t) return; notes.filter(n => (n.tags || []).includes(t)).forEach(n => setTags(n.id, [...new Set(n.tags.map(x => x === t ? nm : x))])); } },
+    { i: "trash", t: "Etiketi sil", red: 1, f: () => { if (confirm(`"${t}" etiketi tüm notlardan kaldırılsın mı?`)) notes.filter(n => (n.tags || []).includes(t)).forEach(n => setTags(n.id, n.tags.filter(x => x !== t))); } }], { anchor: el, right: true }); },
+  scOffNb: el => updateDoc(nbRef(el.dataset.v), { shortcut: false }), scOffNote: el => patchNote(el.dataset.v, { shortcut: false }),
+  tplUse: el => useTemplate(el.dataset.v),
+  taskAdd: () => { const due = taskDue; addTask($("taskIn").value, due); $("taskIn").value = ""; taskDue = null; $("taskDueTxt").hidden = true; if (due) askNotif(); },
+  taskDue: () => { openSheet(`${shHead("Son tarih")}<input type="datetime-local" id="tdIn" value="${toLocalInput(taskDue || Date.now() + 3600e3)}"><div class="brow"><button class="btn" id="tdOk">Tamam</button><button class="btn sec" id="tdNo">Kaldır</button></div>`);
+    $("sheet").onclick = e => { if (e.target.closest("[data-act=closeSheet]")) return closeAll(); if (e.target.closest("#tdOk")) { taskDue = new Date($("tdIn").value).getTime() || null; askNotif(); } else if (e.target.closest("#tdNo")) taskDue = null; else return; $("taskDueTxt").hidden = !taskDue; $("taskDueTxt").textContent = taskDue ? "Son tarih: " + fmtDT(taskDue) : ""; closeAll(); }; },
+  taskToggle: el => { const t = tasks.find(x => x.id === el.dataset.v); if (t) { t.done = !t.done; updateDoc(taskRef(t.id), { done: t.done, doneAt: t.done ? Date.now() : null }); schedule(); } },
+  taskEdit: el => { const t = tasks.find(x => x.id === el.dataset.v); if (!t) return; const nm = prompt("Görevi düzenle:", t.title); if (nm && nm.trim()) updateDoc(taskRef(t.id), { title: nm.trim() }); },
+  taskDel: el => deleteDoc(taskRef(el.dataset.v)),
+  taskClearDone: () => { if (confirm("Tamamlanan görevler silinsin mi?")) batchDelete(tasks.filter(t => t.done).map(t => taskRef(t.id))); },
+  calPrev: () => { cal.m--; if (cal.m < 0) { cal.m = 11; cal.y--; } renderCalendar(); }, calNext: () => { cal.m++; if (cal.m > 11) { cal.m = 0; cal.y++; } renderCalendar(); },
+  calToday: () => { const d = new Date(); cal = { y: d.getFullYear(), m: d.getMonth(), sel: dayKey(d) }; renderCalendar(); }, calDay: el => { cal.sel = el.dataset.v; renderCalendar(); },
+  shareOpen: el => { const s = shared.find(x => x.id === el.dataset.v); if (s && getNote(s.noteId)) openNote(s.noteId); }, shareCopy: el => copy(shareUrl(el.dataset.v), "Paylaşım bağlantısı kopyalandı."),
+  restoreNote: () => { patchNote(curId, { trashed: false, updatedAt: Date.now() }); toast("Not geri yüklendi."); },
+  emptyTrash: () => { const t = notes.filter(n => n.trashed); if (t.length && confirm(`Çöp kutusundaki ${t.length} not kalıcı olarak silinsin mi?`)) batchDelete(t.map(n => noteRef(n.id))); },
+  set: el => { const k = el.dataset.k; let v = el.dataset.v; if (k === "dense") { S.dense = v === "1"; store.set("dnote-dense", v); } else { S[k] = v; store.set("dnote-" + k, v); } applySettings(); schedule(); },
+  setFont: el => { S.font = el.dataset.v; store.set("dnote-font", S.font); applySettings(); schedule(); },
+  notifPerm: () => { if (!("Notification" in window)) return toast("Bu tarayıcı bildirimleri desteklemiyor."); if (Notification.permission === "denied") return toast("Bildirimler tarayıcı ayarlarından engellenmiş."); Notification.requestPermission().then(() => schedule()); },
+  logout, qClear: () => { $("qIn").value = ""; renderSearch(); $("qIn").focus(); },
+  eTag: () => tagSheet(), eShare: () => shareSheet(), eMore: actionsSheet, eMove: () => moveSheet(), eRemind: () => remindSheet(),
+  findPrev: () => findRun(-1), findNext: () => findRun(1), findClose: closeFind, kbHide: () => { quill.blur(); $("eTitle").blur(); document.activeElement && document.activeElement.blur(); $("kbHide").hidden = true; }
+};
+$("fab").addEventListener("click", () => ACT[$("fab").dataset.act] && ACT[$("fab").dataset.act]());
+
+document.addEventListener("click", e => {
+  const nv = e.target.closest("[data-nav]");
+  if (nv) { const k = nv.dataset.nav; if (k === "more") return moreMenu(); return go(k); }
+  const a = e.target.closest("[data-act]");
+  if (a && ACT[a.dataset.act]) { if (a.id === "fab") return; return ACT[a.dataset.act](a); }
+  const g = e.target.closest("[data-go]"); if (g) return go(g.dataset.go);
+  const o = e.target.closest("[data-open]"); if (o) return openNote(o.dataset.open);
+});
+
+/* ================= Paylaşım görüntüleyici (giriş gerektirmez) ================= */
+async function openViewer(id) {
+  $("viewer").hidden = false; $("login").classList.remove("show");
+  try {
+    const s = await getDoc(doc(db, "shared", id)); if (!s.exists()) throw new Error("yok");
+    const d = s.data(); document.title = (d.title || "Not") + " – D-Note";
+    $("vTitle").textContent = d.title || "Başlıksız"; $("vDate").textContent = fmtDate(d.updatedAt);
+    const vq = new Quill("#vEditor", { theme: "snow", readOnly: true, modules: { toolbar: false } });
+    vq.setContents(vq.clipboard.convert(d.content || ""), "silent");
+  } catch (e) { $("vErr").hidden = false; }
+}
+
+hydrate();
+if ("serviceWorker" in navigator) {
+  const had = !!navigator.serviceWorker.controller; let reloaded = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => { if (had && !reloaded) { reloaded = true; location.reload(); } });
+  navigator.serviceWorker.register("sw.js").catch(() => {});
+}
+addEventListener("bip-ready", () => schedule()); addEventListener("appinstalled", () => { window.__bip = null; schedule(); });
 </script>
 </body>
 </html>
