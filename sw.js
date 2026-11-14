@@ -1,10 +1,10 @@
 // D-Note service worker: uygulamanın internetsiz açılmasını sağlar ve "Uygulamayı yükle" şartını karşılar
-const CACHE = "dnote-v6";
+const CACHE = "dnote-v7";
 const FONTS_CSS = "https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Dancing+Script:wght@400;700&family=Inter:wght@400;500;600;700&family=Lora:wght@400;700&family=Merriweather:wght@400;700&family=Nunito:wght@400;700&family=Open+Sans:wght@400;600;700&family=Playfair+Display:wght@400;700&family=Poppins:wght@400;600&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;700&family=Source+Code+Pro:wght@400;700&display=swap";
 const LOCAL = [
   "./", "index.html", "manifest.json",
   "logo.png", "logo-wordmark.png", "favicon.ico", "favicon-v3-32.png", "favicon-v3-64.png",
-  "icon-v3-192.png", "icon-v3-512.png", "icon-v3-maskable-512.png", "apple-touch-icon-v3.png"
+  "icon-v4-192.png", "icon-v4-512.png", "apple-touch-icon-v3.png"
 ];
 const REMOTE = [
   "https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css",

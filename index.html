@@ -1270,7 +1270,7 @@ function askNotif() { if ("Notification" in window && Notification.permission ==
 async function notify(title, body, tag) {
   toast("🔔 " + title);
   if (!("Notification" in window) || Notification.permission !== "granted") return;
-  try { const reg = await navigator.serviceWorker.ready; await reg.showNotification(title, { body, icon: "icon-v3-192.png", badge: "favicon-v3-32.png", tag }); } catch (e) { try { new Notification(title, { body, icon: "icon-192.png" }); } catch (e2) {} }
+  try { const reg = await navigator.serviceWorker.ready; await reg.showNotification(title, { body, icon: "icon-v4-192.png", badge: "favicon-v3-32.png", tag }); } catch (e) { try { new Notification(title, { body, icon: "icon-192.png" }); } catch (e2) {} }
 }
 setInterval(() => {
   if (!uid) return; const now = Date.now();
