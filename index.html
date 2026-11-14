@@ -1019,7 +1019,7 @@ function saveNow() {
   if (!uid || !curId || loadedId !== curId) return;
   const n = getNote(curId); if (!n || n.trashed) return;
   const content = quill.root.innerHTML;
-  if (content.length > 950000) { if (!warned) { warned = true; toast("Bu not 1 MB sınırına ulaştı (görseller büyük). Kaydedilmedi; bazı görselleri silin."); } updateStatus("Not çok büyük – kaydedilmedi"); return; }
+  if (content.length > 950000) { if (!warned) { warned = true; toast("Bu not 1 MB sınırına ulaştı (Firestore sınırı). Kaydedilmedi; bazı görselleri silin."); } updateStatus("Not çok büyük – kaydedilmedi"); return; }
   warned = false;
   const data = { title: $("eTitle").value, content, plain: quill.getText().trim(), updatedAt: Date.now() };
   Object.assign(n, data);
@@ -1103,13 +1103,21 @@ document.addEventListener("focusout", () => setTimeout(() => { const a = documen
 function compressImage(src, max = 1200, q = 0.7) {
   return new Promise((res, rej) => {
     const img = new Image();
-    img.onload = () => { const k = Math.min(1, max / Math.max(img.width, img.height)); const c = document.createElement("canvas"); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k); const x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, c.width, c.height); x.drawImage(img, 0, 0, c.width, c.height); res(c.toDataURL("image/jpeg", q)); };
+    img.onload = () => { const k = Math.min(1, max / Math.max(img.width, img.height)); const c = document.createElement("canvas"); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k); const x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, c.width, c.height); x.drawImage(img, 0, 0, c.width, c.height); res((c.toDataURL("image/webp", q).startsWith("data:image/webp") ? c.toDataURL("image/webp", q) : c.toDataURL("image/jpeg", q))); };
     img.onerror = rej; img.src = src;
   });
 }
 async function imageFromFile(file) {
   if (!file) return; const url = URL.createObjectURL(file);
-  try { const data = await compressImage(url); URL.revokeObjectURL(url); addImage(data); } catch (e) { toast("Görsel okunamadı."); }
+  try {
+    // Firestore bir nota en fazla 1 MiB izin verir; görseli kalan yere sığana dek otomatik küçült
+    const used = (curId && loadedId === curId) ? quill.root.innerHTML.length : 0, room = 930000 - used;
+    let data = "";
+    for (const [m, q] of [[1600, .8], [1280, .7], [1024, .6], [800, .5], [600, .45], [420, .4]]) { data = await compressImage(url, m, q); if (data.length < room) break; }
+    URL.revokeObjectURL(url);
+    if (data.length >= room) return toast("Bu notta görsel için yer kalmadı (Firestore sınırı 1 MB). Görseli yeni bir notta kullanın.");
+    addImage(data);
+  } catch (e) { toast("Görsel okunamadı."); }
 }
 function addImage(data) {
   const put = () => { const r = selRange(); quill.insertEmbed(r.index, "image", data, "user"); quill.setSelection(r.index + 1, 0, "silent"); if (quill.root.innerHTML.length > 900000) { quill.history.undo(); toast("Not 1 MB sınırına ulaştı. Daha az/küçük görsel kullanın."); } };
