@@ -281,6 +281,7 @@ body[data-editor=open] #editorView{display:flex}
 #editor .ql-editor blockquote{border-left:4px solid var(--green);color:inherit;opacity:.9}
 #editor .ql-editor pre.ql-syntax{border-radius:8px;padding:12px 14px;font-size:.9em;overflow-x:auto}
 #editor .ql-editor code{background:var(--tile);border-radius:4px;padding:1px 5px;font-size:.92em}
+.ql-editor .dn-att{display:inline-block;max-width:100%;margin:6px 0;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--tile);font-size:13px;cursor:pointer;word-break:break-all}
 #editor .ql-editor hr{border:0;border-top:1px solid var(--line);margin:18px 0}
 #editor .ql-editor h1{font-size:1.7em}#editor .ql-editor h2{font-size:1.4em}#editor .ql-editor h3{font-size:1.18em}
 #editor .ql-editor ul[data-checked]>li::before{font-size:1.15em}
@@ -447,7 +448,8 @@ body[data-editor=open] #editorView{display:flex}
 <div id="menu" hidden></div>
 <div id="toasts"></div>
 <div id="printArea"></div>
-<input type="file" id="fileImg" accept="image/*" hidden>
+<input type="file" id="fileImg" accept="image/*" multiple hidden>
+<input type="file" id="fileAtt" multiple hidden>
 <input type="file" id="fileCam" accept="image/*" capture="environment" hidden>
 <input type="file" id="fileImport" accept=".json,.enex,.xml" hidden>
 
@@ -555,6 +557,7 @@ const ICONS = {
   kbhide: '<rect x="3" y="4" width="18" height="11" rx="2.5"/><path d="M7 8h.01M11 8h.01M15 8h.01M7 11.5h10M9 19l3 2.5 3-2.5"/>',
   template: '<rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 8h8M8 12h8M8 16h5"/>',
   users: '<circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0M16 5a3 3 0 0 1 0 6M18 14a5 5 0 0 1 3 5"/>',
+  attach: '<path d="M20 11l-8.5 8.5a5 5 0 0 1-7-7L13 4a3.5 3.5 0 0 1 5 5l-8.5 8.5a2 2 0 0 1-3-3L14 7"/>',
   download: '<path d="M12 4v11M7 11l5 5 5-5M5 20h14"/>',
   upload: '<path d="M12 16V5M7 9l5-5 5 5M5 20h14"/>',
   clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
@@ -601,6 +604,14 @@ const SizeA = Quill.import("attributors/style/size"); SizeA.whitelist = SIZE_LIS
 const BlockEmbed = Quill.import("blots/block/embed");
 class Divider extends BlockEmbed {}
 Divider.blotName = "divider"; Divider.tagName = "hr"; Quill.register(Divider);
+class Attach extends BlockEmbed {
+  static create(v) {
+    const n = super.create(); n.setAttribute("data-name", v.name || "dosya"); n.setAttribute("data-mime", v.mime || ""); n.setAttribute("data-src", v.src || ""); n.setAttribute("data-size", v.size || 0);
+    n.textContent = "📎 " + (v.name || "dosya") + (v.size ? "  (" + fmtBytes(v.size) + ")" : ""); return n;
+  }
+  static value(n) { return { name: n.getAttribute("data-name"), mime: n.getAttribute("data-mime"), src: n.getAttribute("data-src"), size: +n.getAttribute("data-size") || 0 }; }
+}
+Attach.blotName = "attach"; Attach.tagName = "div"; Attach.className = "dn-att"; Quill.register(Attach);
 
 const quill = new Quill("#editor", { theme: "snow", placeholder: "Yazmaya başlayın…", modules: { toolbar: false }, scrollingContainer: "#eScroll" });
 let lastRange = null;
@@ -1062,7 +1073,7 @@ function tbAction(k, anchor) {
     case "clean": { const r = selRange(); quill.removeFormat(r.index, r.length || 1, "user"); return updateTb(); }
     case "link": return makeLink();
     case "insert": return showMenu([
-      { i: "image", t: "Galeriden görsel", f: () => $("fileImg").click() }, { i: "camera", t: "Kamera", f: () => $("fileCam").click() }, { i: "mic", t: "Sesle yaz", f: () => startDictation() },
+      { i: "image", t: "Galeriden görsel", f: () => $("fileImg").click() }, { i: "attach", t: "Dosya ekle (PDF, belge…)", f: () => $("fileAtt").click() }, { i: "camera", t: "Kamera", f: () => $("fileCam").click() }, { i: "mic", t: "Sesle yaz", f: () => startDictation() },
       { i: "checkc", t: "Yapılacaklar kutusu", f: () => fmtSet("list", "unchecked") }, { i: "hr", t: "Ayırıcı çizgi", f: () => insertDivider() }, { i: "clock", t: "Tarih ve saat", f: () => insertText(new Date().toLocaleString("tr-TR", { dateStyle: "long", timeStyle: "short" })) }, { i: "link", t: "Bağlantı", f: () => makeLink() }
     ], { anchor, above: true });
     case "camera": return $("fileCam").click();
@@ -1107,24 +1118,66 @@ function compressImage(src, max = 1200, q = 0.7) {
     img.onerror = rej; img.src = src;
   });
 }
-async function imageFromFile(file) {
-  if (!file) return; const url = URL.createObjectURL(file);
+const readDataURL = f => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(f); });
+function fmtBytes(n) { return n < 1024 ? n + " B" : n < 1048576 ? Math.round(n / 1024) + " KB" : (n / 1048576).toFixed(1) + " MB"; }
+// Birden fazla görsel / dosya: sırayla işlenir. Firestore bir nota en fazla 1 MiB izin verir; görseller kalan yere sığana dek küçültülür.
+async function addFiles(fileList) {
+  const files = [...(fileList || [])]; if (!files.length) return;
+  const run = async () => {
+    let added = 0, skipped = 0;
+    for (const file of files) {
+      try {
+        const room = 930000 - quill.root.innerHTML.length;
+        let data = "", embed;
+        if (file.type.startsWith("image/")) {
+          const url = URL.createObjectURL(file);
+          try { for (const [m, q] of [[1600, .8], [1280, .7], [1024, .6], [800, .5], [600, .45], [420, .4]]) { data = await compressImage(url, m, q); if (data.length < room) break; } } finally { URL.revokeObjectURL(url); }
+          embed = ["image", data];
+        } else {
+          data = await readDataURL(file);
+          embed = ["attach", { name: file.name || "dosya", mime: file.type || "application/octet-stream", size: file.size, src: data }];
+        }
+        if (data.length >= room) { skipped++; continue; }
+        const r = selRange(); quill.insertEmbed(r.index, embed[0], embed[1], "user"); quill.setSelection(r.index + 1, 0, "silent"); added++;
+      } catch (e) { skipped++; }
+    }
+    if (skipped) toast(added ? `${added} dosya eklendi, ${skipped} dosya sığmadı (nota en fazla 1 MB).` : "Bu notta yer kalmadı (Firestore sınırı 1 MB). Dosyayı yeni bir notta deneyin.");
+    else if (added > 1) toast(added + " dosya eklendi.");
+  };
+  if (curId && loadedId === curId) run(); else createNote({}, () => setTimeout(run, 80));
+}
+function addImage(data) { const put = () => { const r = selRange(); quill.insertEmbed(r.index, "image", data, "user"); quill.setSelection(r.index + 1, 0, "silent"); }; if (curId && loadedId === curId) put(); else createNote({}, () => setTimeout(put, 80)); }
+$("fileImg").onchange = e => { addFiles(e.target.files); e.target.value = ""; };
+$("fileCam").onchange = e => { addFiles(e.target.files); e.target.value = ""; };
+$("fileAtt").onchange = e => { addFiles(e.target.files); e.target.value = ""; };
+
+/* ---------- Not içindeki görsel / dosyaya basılı tutunca indir ---------- */
+async function downloadEmbed(el) {
   try {
-    // Firestore bir nota en fazla 1 MiB izin verir; görseli kalan yere sığana dek otomatik küçült
-    const used = (curId && loadedId === curId) ? quill.root.innerHTML.length : 0, room = 930000 - used;
-    let data = "";
-    for (const [m, q] of [[1600, .8], [1280, .7], [1024, .6], [800, .5], [600, .45], [420, .4]]) { data = await compressImage(url, m, q); if (data.length < room) break; }
-    URL.revokeObjectURL(url);
-    if (data.length >= room) return toast("Bu notta görsel için yer kalmadı (Firestore sınırı 1 MB). Görseli yeni bir notta kullanın.");
-    addImage(data);
-  } catch (e) { toast("Görsel okunamadı."); }
+    const isImg = el.tagName === "IMG", src = isImg ? el.getAttribute("src") : el.dataset.src; if (!src) return;
+    const mime = isImg ? ((src.match(/^data:([^;,]+)/) || [])[1] || "image/jpeg") : (el.dataset.mime || "application/octet-stream");
+    let name = isImg ? "gorsel-" + new Date().toISOString().slice(0, 10) + "." + ({ "image/jpeg": "jpg", "image/webp": "webp", "image/png": "png", "image/gif": "gif" }[mime] || "img") : (el.dataset.name || "dosya");
+    const blob = await (await fetch(src)).blob();
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 800); toast("İndiriliyor: " + name);
+  } catch (e) { toast("Dosya indirilemedi."); }
 }
-function addImage(data) {
-  const put = () => { const r = selRange(); quill.insertEmbed(r.index, "image", data, "user"); quill.setSelection(r.index + 1, 0, "silent"); if (quill.root.innerHTML.length > 900000) { quill.history.undo(); toast("Not 1 MB sınırına ulaştı. Daha az/küçük görsel kullanın."); } };
-  if (curId && loadedId === curId) put(); else createNote({}, () => setTimeout(put, 80));
-}
-$("fileImg").onchange = e => { imageFromFile(e.target.files[0]); e.target.value = ""; };
-$("fileCam").onchange = e => { imageFromFile(e.target.files[0]); e.target.value = ""; };
+(() => {
+  const SEL = ".ql-editor img, .ql-editor .dn-att";
+  let t = null, sx = 0, sy = 0, fired = false;
+  const ask = el => showMenu([{ i: "download", t: "İndir", f: () => downloadEmbed(el) }], { anchor: el });
+  document.addEventListener("pointerdown", e => {
+    const el = e.target.closest && e.target.closest(SEL); fired = false; clearTimeout(t); if (!el || e.pointerType === "mouse") return;
+    sx = e.clientX; sy = e.clientY; t = setTimeout(() => { fired = true; ask(el); }, 500);
+  }, true);
+  document.addEventListener("pointermove", e => { if (t && (Math.abs(e.clientX - sx) > 8 || Math.abs(e.clientY - sy) > 8)) { clearTimeout(t); t = null; } }, true);
+  ["pointerup", "pointercancel"].forEach(ev => document.addEventListener(ev, () => {
+    clearTimeout(t); t = null;
+    if (fired) { const stop = e => { e.stopPropagation(); e.preventDefault(); }; document.addEventListener("click", stop, { capture: true, once: true }); setTimeout(() => document.removeEventListener("click", stop, true), 600); }   // basılı tutma sonrası gelen tıklama menüyü kapatmasın
+  }, true));
+  document.addEventListener("contextmenu", e => { const el = e.target.closest && e.target.closest(SEL); if (!el) return; e.preventDefault(); if (!fired) { fired = true; ask(el); } }, true);
+  document.addEventListener("click", e => { const el = e.target.closest && e.target.closest(".ql-editor .dn-att"); if (el) { e.preventDefault(); if (!fired) ask(el); fired = false; } }, true);
+})();
 
 /* ---------- Sesle yazma (Kaydedici) ---------- */
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition; let rec = null, recOn = false;
