@@ -31,6 +31,13 @@ Notlarınız her değiştiğinde Drive'ınızdaki **D-Note** klasörüne kendili
 URL tüm cihazlarınızda otomatik paylaşılır, bir kez girmeniz yeter. Kod yalnızca sizin D-Note girişinizi kabul eder; başkası URL'yi bilse bile yazamaz.
 
 ## 3) Yeni neler var?
+- **Yeni Ana Sayfa:** Alt menüde "Oluştur" yerine "Ana Sayfa". Not defterleri (resimli kartlar) ve hiçbir defterde olmayan bağımsız notlar burada görünür.
+- **Sıralama:** Ana sayfada bir not defterine ya da nota basılı tutup yukarı/aşağı sürükleyin, bırakınca sıra kaydedilir.
+- **Defter resmi/rengi:** Defterin ⋯ menüsü → Düzenle: ad, tema rengi, özel renk veya özel resim.
+- **Sağ alttaki + düğmesi:** Dokununca Yeni not / görev / defter / etkinlik / kamera / sesle not menüsü, uzun basınca seçtiğiniz eylem (varsayılan: Yeni not). Ayarlar → "Artı (+) düğmesine uzun basınca"dan değişir. Karalama defteri kaldırıldı.
+- **Hesap bilgisi** Ayarlar'a taşındı; "Yeni neler" ve "Yardım" da Ayarlar'da. Ayarlar'a Daha Fazla menüsündeki dişli ile girilir.
+- **Yazı ayarları:** Ayarlar → Not yazısı: başlık ve içerik için ayrı yazı tipi, boyut (10–32 px, 1'er 1'er), kalınlık; satır aralığı, kenar boşluğu, sayfa genişliği. Editördeki boyut menüsü de 10–48 arası tek tek.
+- **Listeler:** Onay kutuları, madde ve numaralar artık satır başından başlar.
 - **Google Drive otomatik yedek:** Drive'da D-Note/Notlar (her not .html), D-Note/Ekler (görsel ve dosyalar) ve d-note-yedek.json kendiliğinden güncellenir (Adım 4).
 - **1 MB not sınırı kalktı (görsel/dosya için):** Görseller ve dosyalar artık notun içine gömülmüyor, Firestore'da ayrı parçalar halinde saklanıyor. Dosya başına 20 MB'a kadar. Eski notlardaki görseller olduğu gibi çalışmaya devam eder.
 - **Kaydırma eylemleri:** Notlar listesinde bir notu **sola kaydırın** → Daha fazla / İndir / Sil. Çöp kutusunda: Geri yükle / Kalıcı sil.
