@@ -281,7 +281,8 @@ body[data-editor=open] #editorView{display:flex}
 #editor .ql-editor blockquote{border-left:4px solid var(--green);color:inherit;opacity:.9}
 #editor .ql-editor pre.ql-syntax{border-radius:8px;padding:12px 14px;font-size:.9em;overflow-x:auto}
 #editor .ql-editor code{background:var(--tile);border-radius:4px;padding:1px 5px;font-size:.92em}
-.ql-editor .dn-att{display:inline-block;max-width:100%;margin:6px 0;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--tile);font-size:13px;cursor:pointer;word-break:break-all}
+.ql-editor .dn-media[data-img="1"]{margin:8px 0;min-height:40px}.ql-editor .dn-media img{display:block;max-width:100%;height:auto;border-radius:8px}
+.ql-editor .dn-media[data-img="0"],.ql-editor .dn-att{display:inline-block;max-width:100%;margin:6px 0;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--tile);font-size:13px;cursor:pointer;word-break:break-all}
 #editor .ql-editor hr{border:0;border-top:1px solid var(--line);margin:18px 0}
 #editor .ql-editor h1{font-size:1.7em}#editor .ql-editor h2{font-size:1.4em}#editor .ql-editor h3{font-size:1.18em}
 #editor .ql-editor ul[data-checked]>li::before{font-size:1.15em}
@@ -459,7 +460,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/fireba
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut }
   from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, doc, setDoc, getDoc,
-  updateDoc, deleteDoc, onSnapshot, query, orderBy, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+  updateDoc, deleteDoc, onSnapshot, query, orderBy, where, writeBatch, getDocs } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
 // Firebase web yapılandırması (herkese açık bilgidir; asıl güvenlik firestore.rules ile sağlanır)
 const firebaseConfig = {
@@ -611,6 +612,17 @@ class Attach extends BlockEmbed {
   }
   static value(n) { return { name: n.getAttribute("data-name"), mime: n.getAttribute("data-mime"), src: n.getAttribute("data-src"), size: +n.getAttribute("data-size") || 0 }; }
 }
+const isImgMime = m => /^image\//.test(m || "");
+function mediaLabel(v) { return (isImgMime(v.mime) ? "🖼 " : "📎 ") + (v.name || "dosya") + (v.size ? "  (" + fmtBytes(v.size) + ")" : ""); }
+class Media extends BlockEmbed {
+  static create(v) {
+    const n = super.create(); n.setAttribute("data-mid", v.mid); n.setAttribute("data-name", v.name || "dosya"); n.setAttribute("data-mime", v.mime || ""); n.setAttribute("data-size", v.size || 0);
+    n.setAttribute("data-img", isImgMime(v.mime) ? "1" : "0"); if (v.thumb) n.setAttribute("data-thumb", v.thumb);
+    n.textContent = mediaLabel(v); return n;
+  }
+  static value(n) { return { mid: n.getAttribute("data-mid"), name: n.getAttribute("data-name"), mime: n.getAttribute("data-mime"), size: +n.getAttribute("data-size") || 0, thumb: n.getAttribute("data-thumb") || "" }; }
+}
+Media.blotName = "media"; Media.tagName = "div"; Media.className = "dn-media"; Quill.register(Media);
 Attach.blotName = "attach"; Attach.tagName = "div"; Attach.className = "dn-att"; Quill.register(Attach);
 
 const quill = new Quill("#editor", { theme: "snow", placeholder: "Yazmaya başlayın…", modules: { toolbar: false }, scrollingContainer: "#eScroll" });
@@ -669,6 +681,7 @@ else onAuthStateChanged(auth, u => {
     schedule(); updateStatus();
   }, e => console.warn(e)));
   unsubs.push(onSnapshot(query(ucol("tasks"), orderBy("createdAt")), s => { tasks = s.docs.map(d => ({ id: d.id, ...d.data() })); schedule(); }, e => console.warn(e)));
+  unsubs.push(onSnapshot(doc(db, "users", uid, "meta", "drive"), s => { if (!s.exists()) return; const u = s.data().url || ""; if (u !== driveUrl) { driveUrl = u; store.set("dnote-driveurl", u); } }, e => console.warn(e)));
   unsubs.push(onSnapshot(doc(db, "users", uid, "meta", "scratch"), s => {
     scratchSnap = s.exists() ? s.data() : null;
     const t = $("scratch"); if (document.activeElement !== t) t.value = (scratchSnap && scratchSnap.text) || "";
@@ -756,7 +769,7 @@ function renderScreen() {
 }
 
 /* ---------- Not satırı ---------- */
-function firstImg(n) { const m = /<img[^>]+src="(data:image\/[^"]+)"/.exec(n.content || ""); return m ? m[1] : null; }
+function firstImg(n) { const c = n.content || "", m = /<img[^>]+src="(data:image\/[^"]+)"/.exec(c) || /data-thumb="(data:image\/[^"]+)"/.exec(c); return m ? m[1] : null; }
 function snippet(n, q) {
   const t = (n.plain || "").replace(/\s+/g, " ").trim();
   if (!q) return esc(t.slice(0, 220));
@@ -936,6 +949,7 @@ function renderSettings() {
      ${canInstall() ? `<div class="srow" data-act="install">${ic("download")}<div class="st">Uygulamayı yükle<small>Ana ekrana ekle, tam ekran çalıştır</small></div></div>` : ""}
      <div class="srow" data-act="notifPerm">${ic("bell")}<div class="st">Hatırlatıcı bildirimleri<small>${nperm === "granted" ? "Açık" : nperm === "denied" ? "Tarayıcıdan engellenmiş" : nperm === "yok" ? "Bu tarayıcı desteklemiyor" : "Kapalı – açmak için dokunun"}</small></div></div>
      <div class="setg">Veri</div>
+     <div class="srow" data-act="driveSheet">${ic("upload")}<div class="st">Google Drive otomatik yedek<small>${driveUrl ? (driveErr ? "Hata: " + esc(driveErr) : +store.get("dnote-lastbackup", 0) ? "Açık · son yedek: " + fmtDT(+store.get("dnote-lastbackup", 0)) : "Açık") : "Kapalı · notlar Drive'a kendiliğinden yedeklenir"}</small></div></div>
      <div class="srow" data-act="exportAll">${ic("download")}<div class="st">Tüm notları yedekle (.json)<small>Notlar, defterler ve görevler tek dosyada</small></div></div>
      <div class="srow" data-act="importAny">${ic("upload")}<div class="st">İçe aktar<small>Evernote (.enex) veya D-Note yedeği (.json)</small></div></div>
      <div class="setg">Hakkında</div><div class="srow" style="cursor:default"><div class="st">D-Note<small>Bulut senkron · çevrimdışı çalışır · Firebase</small></div></div>
@@ -1029,13 +1043,13 @@ function saveNow() {
   clearTimeout(saveTimer); saveTimer = null;
   if (!uid || !curId || loadedId !== curId) return;
   const n = getNote(curId); if (!n || n.trashed) return;
-  const content = quill.root.innerHTML;
+  const content = cleanHTML();
   if (content.length > 950000) { if (!warned) { warned = true; toast("Bu not 1 MB sınırına ulaştı (Firestore sınırı). Kaydedilmedi; bazı görselleri silin."); } updateStatus("Not çok büyük – kaydedilmedi"); return; }
   warned = false;
   const data = { title: $("eTitle").value, content, plain: quill.getText().trim(), updatedAt: Date.now() };
   Object.assign(n, data);
   setDoc(noteRef(curId), data, { merge: true });
-  if (n.shareId) setDoc(doc(db, "shared", n.shareId), { ownerUid: uid, noteId: n.id, title: data.title, content, updatedAt: data.updatedAt }, { merge: true }).catch(() => {});
+  if (n.shareId) { const sid = n.shareId; inlineHTML(900000).then(c => setDoc(doc(db, "shared", sid), { ownerUid: uid, noteId: n.id, title: data.title, content: c, updatedAt: data.updatedAt }, { merge: true })).catch(() => {}); }
 }
 addEventListener("pagehide", flushSave);
 document.addEventListener("visibilitychange", () => { if (document.hidden) flushSave(); });
@@ -1055,6 +1069,27 @@ const TB = [["plus", "insert"], ["camera", "camera"], ["mic", "dictate"], ["chec
 $("fbar").innerHTML = TB.map(x => x === "|" ? `<span class="tbs"></span>` : `<button class="tb ${x[1] === "insert" ? "add" : ""}" data-tb="${x[1]}" title="${x[1]}">${ic(x[0])}</button>`).join("");
 $("fbar").addEventListener("mousedown", e => e.preventDefault());
 $("fbar").addEventListener("click", e => { const b = e.target.closest("[data-tb]"); if (b) tbAction(b.dataset.tb, b); });
+function cleanHTML() {   // kaydedilecek HTML: yüklenmiş medya görüntüleri çıkarılır, yalnızca küçük referans kalır
+  const c = quill.root.cloneNode(true);
+  c.querySelectorAll(".dn-media").forEach(e => { e.removeAttribute("data-h"); e.textContent = mediaLabel({ name: e.dataset.name, mime: e.dataset.mime, size: +e.dataset.size }); });
+  return c.innerHTML;
+}
+const inlineCache = new Map();
+async function inlineHTML(max) {   // paylaşım / dışa aktarma: yüklenmiş görselleri nota gömülü olarak ekler (max verilirse sığdığı kadar)
+  const c = quill.root.cloneNode(true); let used = c.innerHTML.length;
+  for (const e of [...c.querySelectorAll(".dn-media")]) {
+    const label = mediaLabel({ name: e.dataset.name, mime: e.dataset.mime, size: +e.dataset.size });
+    if (e.dataset.img === "1") {
+      try {
+        let d = max && inlineCache.get(e.dataset.mid);
+        if (!d) { const b = await getMediaBlob(e.dataset.mid, e.dataset.mime), url = URL.createObjectURL(b); try { d = await compressImage(url, max ? 900 : 4000, max ? .55 : .9); } finally { URL.revokeObjectURL(url); } if (max) inlineCache.set(e.dataset.mid, d); }
+        if (!max || used + d.length < max) { used += d.length; const p = document.createElement("p"); p.innerHTML = `<img src="${d}">`; e.replaceWith(p); continue; }
+      } catch (err) { }
+    }
+    e.textContent = label;
+  }
+  return c.innerHTML;
+}
 function selRange() { return quill.getSelection() || lastRange || { index: Math.max(0, quill.getLength() - 1), length: 0 }; }
 function fmt(name, val) { const r = selRange(); quill.setSelection(r.index, r.length, "silent"); const cur = quill.getFormat(); quill.format(name, cur[name] === val ? false : val, "user"); updateTb(); }
 function fmtSet(name, val) { const r = selRange(); quill.setSelection(r.index, r.length, "silent"); quill.format(name, val, "user"); updateTb(); }
@@ -1120,28 +1155,62 @@ function compressImage(src, max = 1200, q = 0.7) {
 }
 const readDataURL = f => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(f); });
 function fmtBytes(n) { return n < 1024 ? n + " B" : n < 1048576 ? Math.round(n / 1024) + " KB" : (n / 1048576).toFixed(1) + " MB"; }
-// Birden fazla görsel / dosya: sırayla işlenir. Firestore bir nota en fazla 1 MiB izin verir; görseller kalan yere sığana dek küçültülür.
+// Görsel ve dosyalar notun içine GÖMÜLMEZ: parçalara bölünüp users/{uid}/media altında ayrı Firestore belgelerinde saklanır (1 MB not sınırı kalkar).
+const MAX_FILE = 20 * 1048576, CHUNK = 700000, mediaCache = new Map();
+async function uploadMedia(mid, blob, meta) {
+  try {
+    const b64 = (await readDataURL(blob)).split(",")[1], n = Math.ceil(b64.length / CHUNK) || 1;
+    for (let i = 0; i < n; i++) await setDoc(doc(db, "users", uid, "media", mid, "parts", String(i).padStart(4, "0")), { i, d: b64.slice(i * CHUNK, (i + 1) * CHUNK) });
+    await setDoc(doc(db, "users", uid, "media", mid), { name: meta.name, mime: meta.mime, size: meta.size, chunks: n, createdAt: Date.now() });
+  } catch (e) { console.warn(e); toast("Dosya buluta yüklenemedi: " + meta.name); }
+}
+async function getMediaBlob(mid, mime) {
+  if (mediaCache.has(mid)) return mediaCache.get(mid);
+  try { const r = await (await caches.open("dnote-media")).match("/__media/" + mid); if (r) { const b = await r.blob(); mediaCache.set(mid, b); return b; } } catch (e) { }
+  const snap = await getDocs(query(collection(db, "users", uid, "media", mid, "parts"), orderBy("i")));
+  if (snap.empty) throw new Error("yok");
+  const blob = await (await fetch(`data:${mime || "application/octet-stream"};base64,${snap.docs.map(d => d.data().d).join("")}`)).blob();
+  mediaCache.set(mid, blob);
+  try { (await caches.open("dnote-media")).put("/__media/" + mid, new Response(blob, { headers: { "content-type": blob.type } })); } catch (e) { }
+  return blob;
+}
+function hydrateMedia(root) {
+  root.querySelectorAll('.dn-media[data-img="1"]:not([data-h])').forEach(el => {
+    el.dataset.h = "1"; const img = document.createElement("img"); img.alt = el.dataset.name || ""; if (el.dataset.thumb) img.src = el.dataset.thumb; el.textContent = ""; el.appendChild(img);
+    const load = (tries) => getMediaBlob(el.dataset.mid, el.dataset.mime).then(b => { img.src = URL.createObjectURL(b); }).catch(() => { if (tries > 0) setTimeout(() => load(tries - 1), 6000); });
+    load(3);
+  });
+}
+new MutationObserver(() => hydrateMedia(quill.root)).observe(quill.root, { childList: true, subtree: true });
+async function purgeMedia(content) {
+  for (const m of String(content || "").matchAll(/data-mid="([^"]+)"/g)) {
+    try { const snap = await getDocs(collection(db, "users", uid, "media", m[1], "parts")); batchDelete([...snap.docs.map(d => d.ref), doc(db, "users", uid, "media", m[1])]); } catch (e) { }
+    mediaCache.delete(m[1]); try { (await caches.open("dnote-media")).delete("/__media/" + m[1]); } catch (e) { }
+  }
+}
 async function addFiles(fileList) {
   const files = [...(fileList || [])]; if (!files.length) return;
   const run = async () => {
     let added = 0, skipped = 0;
     for (const file of files) {
       try {
-        const room = 930000 - quill.root.innerHTML.length;
-        let data = "", embed;
-        if (file.type.startsWith("image/")) {
+        if (file.size > MAX_FILE) { skipped++; continue; }
+        const mid = randId(), isImg = file.type.startsWith("image/"); let blob = file, thumb = "", name = file.name || (isImg ? "gorsel.jpg" : "dosya");
+        if (isImg) {
           const url = URL.createObjectURL(file);
-          try { for (const [m, q] of [[1600, .8], [1280, .7], [1024, .6], [800, .5], [600, .45], [420, .4]]) { data = await compressImage(url, m, q); if (data.length < room) break; } } finally { URL.revokeObjectURL(url); }
-          embed = ["image", data];
-        } else {
-          data = await readDataURL(file);
-          embed = ["attach", { name: file.name || "dosya", mime: file.type || "application/octet-stream", size: file.size, src: data }];
+          try {
+            const full = await compressImage(url, 2000, .85); blob = await (await fetch(full)).blob(); thumb = await compressImage(url, 120, .5);
+            name = name.replace(/\.[^.]+$/, "") + (blob.type === "image/webp" ? ".webp" : ".jpg");
+          } finally { URL.revokeObjectURL(url); }
         }
-        if (data.length >= room) { skipped++; continue; }
-        const r = selRange(); quill.insertEmbed(r.index, embed[0], embed[1], "user"); quill.setSelection(r.index + 1, 0, "silent"); added++;
+        const meta = { mid, name, mime: blob.type || "application/octet-stream", size: blob.size, thumb };
+        mediaCache.set(mid, blob);
+        try { (await caches.open("dnote-media")).put("/__media/" + mid, new Response(blob, { headers: { "content-type": meta.mime } })); } catch (e) { }
+        const r = selRange(); quill.insertEmbed(r.index, "media", meta, "user"); quill.setSelection(r.index + 1, 0, "silent");
+        uploadMedia(mid, blob, meta); added++;
       } catch (e) { skipped++; }
     }
-    if (skipped) toast(added ? `${added} dosya eklendi, ${skipped} dosya sığmadı (nota en fazla 1 MB).` : "Bu notta yer kalmadı (Firestore sınırı 1 MB). Dosyayı yeni bir notta deneyin.");
+    if (skipped) toast(`${added} dosya eklendi, ${skipped} dosya eklenemedi (en fazla 20 MB).`);
     else if (added > 1) toast(added + " dosya eklendi.");
   };
   if (curId && loadedId === curId) run(); else createNote({}, () => setTimeout(run, 80));
@@ -1154,6 +1223,11 @@ $("fileAtt").onchange = e => { addFiles(e.target.files); e.target.value = ""; };
 /* ---------- Not içindeki görsel / dosyaya basılı tutunca indir ---------- */
 async function downloadEmbed(el) {
   try {
+    const md = el.closest && el.closest(".dn-media");
+    if (md) {
+      const blob = await getMediaBlob(md.dataset.mid, md.dataset.mime), a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = md.dataset.name || "dosya"; document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 800); return toast("İndiriliyor: " + (md.dataset.name || "dosya"));
+    }
     const isImg = el.tagName === "IMG", src = isImg ? el.getAttribute("src") : el.dataset.src; if (!src) return;
     const mime = isImg ? ((src.match(/^data:([^;,]+)/) || [])[1] || "image/jpeg") : (el.dataset.mime || "application/octet-stream");
     let name = isImg ? "gorsel-" + new Date().toISOString().slice(0, 10) + "." + ({ "image/jpeg": "jpg", "image/webp": "webp", "image/png": "png", "image/gif": "gif" }[mime] || "img") : (el.dataset.name || "dosya");
@@ -1163,7 +1237,7 @@ async function downloadEmbed(el) {
   } catch (e) { toast("Dosya indirilemedi."); }
 }
 (() => {
-  const SEL = ".ql-editor img, .ql-editor .dn-att";
+  const SEL = ".ql-editor img, .ql-editor .dn-att, .ql-editor .dn-media";
   let t = null, sx = 0, sy = 0, fired = false;
   const ask = el => showMenu([{ i: "download", t: "İndir", f: () => downloadEmbed(el) }], { anchor: el });
   document.addEventListener("pointerdown", e => {
@@ -1176,7 +1250,7 @@ async function downloadEmbed(el) {
     if (fired) { const stop = e => { e.stopPropagation(); e.preventDefault(); }; document.addEventListener("click", stop, { capture: true, once: true }); setTimeout(() => document.removeEventListener("click", stop, true), 600); }   // basılı tutma sonrası gelen tıklama menüyü kapatmasın
   }, true));
   document.addEventListener("contextmenu", e => { const el = e.target.closest && e.target.closest(SEL); if (!el) return; e.preventDefault(); if (!fired) { fired = true; ask(el); } }, true);
-  document.addEventListener("click", e => { const el = e.target.closest && e.target.closest(".ql-editor .dn-att"); if (el) { e.preventDefault(); if (!fired) ask(el); fired = false; } }, true);
+  document.addEventListener("click", e => { const el = e.target.closest && e.target.closest(".ql-editor .dn-att, .ql-editor .dn-media[data-img=\"0\"]"); if (el) { e.preventDefault(); if (!fired) ask(el); fired = false; } }, true);
 })();
 
 /* ---------- Sesle yazma (Kaydedici) ---------- */
@@ -1263,8 +1337,8 @@ function exportSheet() {
   const n = getNote(curId);
   openSheet(`${shHead("Dışa aktar")}<div class="sh-p">Notu bilgisayarınıza dosya olarak indirin.</div>
     <button class="arow" data-x="html">${ic("download")}<span class="st">HTML dosyası (.html)</span></button><button class="arow" data-x="txt">${ic("download")}<span class="st">Düz metin (.txt)</span></button>`);
-  $("sheet").onclick = e => { if (e.target.closest("[data-act=closeSheet]")) return closeAll(); const b = e.target.closest("[data-x]"); if (!b) return; saveNow();
-    if (b.dataset.x === "html") download(fileSafe(n.title) + ".html", "text/html", `<!doctype html><html lang="tr"><meta charset="utf-8"><title>${esc(n.title)}</title><body style="font-family:sans-serif;max-width:760px;margin:30px auto"><h1>${esc(n.title)}</h1>${quill.root.innerHTML}</body></html>`);
+  $("sheet").onclick = async e => { if (e.target.closest("[data-act=closeSheet]")) return closeAll(); const b = e.target.closest("[data-x]"); if (!b) return; saveNow();
+    if (b.dataset.x === "html") download(fileSafe(n.title) + ".html", "text/html", `<!doctype html><html lang="tr"><meta charset="utf-8"><title>${esc(n.title)}</title><body style="font-family:sans-serif;max-width:760px;margin:30px auto"><h1>${esc(n.title)}</h1>${await inlineHTML(0)}</body></html>`);
     else download(fileSafe(n.title) + ".txt", "text/plain", (n.title ? n.title + "\n\n" : "") + quill.getText()); closeAll(); };
 }
 
@@ -1303,7 +1377,7 @@ function shareSheet() {
     : `<div class="sh-p">Notunuz için herkese açık, salt okunur bir bağlantı oluşturun. Bağlantıya sahip kişiler notu açabilir.</div><div class="brow"><button class="btn" data-sh="make">${ic("link")} Bağlantı oluştur</button></div>`;
   openSheet(`${shHead("Paylaş")}${body}<div class="asep" style="margin-top:16px"></div><button class="arow" data-sh="text">${ic("share")}<span class="st">Metni paylaş…</span></button><button class="arow" data-sh="export">${ic("download")}<span class="st">Dosya olarak indir</span></button>`);
   $("sheet").onclick = async e => { if (e.target.closest("[data-act=closeSheet]")) return closeAll(); const b = e.target.closest("[data-sh]"); if (!b) return; const k = b.dataset.sh;
-    if (k === "make") { const sid = randId(); patchNote(n.id, { shareId: sid }); setDoc(doc(db, "shared", sid), { ownerUid: uid, noteId: n.id, title: n.title || "", content: quill.root.innerHTML, updatedAt: Date.now() }).catch(() => { patchNote(n.id, { shareId: null }); toast("Paylaşım kapalı: firestore.rules dosyasını güncelleyip yayınlayın (README Adım 3)."); }); setTimeout(shareSheet, 150); }
+    if (k === "make") { const sid = randId(); patchNote(n.id, { shareId: sid }); inlineHTML(900000).then(content => setDoc(doc(db, "shared", sid), { ownerUid: uid, noteId: n.id, title: n.title || "", content, updatedAt: Date.now() })).catch(() => { patchNote(n.id, { shareId: null }); toast("Paylaşım kapalı: firestore.rules dosyasını güncelleyip yayınlayın (README Adım 3)."); }); setTimeout(shareSheet, 150); }
     else if (k === "copy") copy(shareUrl(n.shareId), "Paylaşım bağlantısı kopyalandı.");
     else if (k === "native") { if (navigator.share) navigator.share({ title: n.title || "Not", url: shareUrl(n.shareId) }).catch(() => {}); else copy(shareUrl(n.shareId), "Bağlantı kopyalandı."); }
     else if (k === "stop") { if (!confirm("Paylaşım durdurulsun mu? Bağlantı çalışmaz olur.")) return; deleteDoc(doc(db, "shared", n.shareId)).catch(() => {}); patchNote(n.id, { shareId: null }); closeAll(); toast("Paylaşım durduruldu."); }
@@ -1340,6 +1414,74 @@ setInterval(() => {
 }, 20000);
 
 /* ---------- Dışa / içe aktarma ---------- */
+
+/* ---------- Google Drive otomatik yedek (Apps Script köprüsü) ---------- */
+// Notlar değiştikçe, kullanıcının kendi Google Apps Script'i aracılığıyla Drive'daki "D-Note" klasörüne yazılır (izin penceresi çıkmaz).
+let driveUrl = store.get("dnote-driveurl", ""), driveBusy = false, driveErr = "", dsync = (() => { try { return JSON.parse(store.get("dnote-dsync", "{}")); } catch (e) { return {}; } })();
+dsync.notes = dsync.notes || {}; dsync.media = dsync.media || {};
+const dsave = () => store.set("dnote-dsync", JSON.stringify(dsync));
+async function dCall(body) {
+  const token = await auth.currentUser.getIdToken();
+  const r = await fetch(driveUrl, { method: "POST", body: JSON.stringify({ token, ...body }) });   // başlıksız POST: tarayıcı ön kontrol (preflight) yapmaz
+  const j = await r.json(); if (!j.ok) throw new Error(j.error || "Bilinmeyen hata"); return j;
+}
+async function noteBackupHTML(n) {
+  const d = document.createElement("div"); d.innerHTML = n.content || "";
+  for (const e of [...d.querySelectorAll(".dn-media")]) {
+    const label = mediaLabel({ name: e.dataset.name, mime: e.dataset.mime, size: +e.dataset.size });
+    if (e.dataset.img === "1") {
+      try {
+        const b = await getMediaBlob(e.dataset.mid, e.dataset.mime), url = URL.createObjectURL(b); let img;
+        try { img = await compressImage(url, 1600, .8); } finally { URL.revokeObjectURL(url); }
+        const p = document.createElement("p"); p.innerHTML = `<img style="max-width:100%" src="${img}">`; e.replaceWith(p); continue;
+      } catch (err) { }
+    }
+    e.removeAttribute("contenteditable"); e.textContent = label + " (dosya: Ekler klasöründe)";
+  }
+  return `<!doctype html><html lang="tr"><meta charset="utf-8"><title>${esc(n.title || "Başlıksız")}</title><body style="font-family:sans-serif;max-width:760px;margin:30px auto"><h1>${esc(n.title || "Başlıksız")}</h1>${(n.tags || []).length ? `<p style="color:#888">${(n.tags || []).map(t => "#" + esc(t)).join(" ")}</p>` : ""}${d.innerHTML}</body></html>`;
+}
+async function driveTick(force) {
+  if (!driveUrl || !uid || !ready.notes || driveBusy || !navigator.onLine || (user && user.isAnonymous)) return;
+  const todo = notes.filter(n => n.trashed ? dsync.notes[n.id] !== "t" && dsync.notes[n.id] : dsync.notes[n.id] !== String(n.updatedAt || 0));
+  if (!todo.length && !force) return;
+  driveBusy = true; let changed = 0;
+  try {
+    for (const n of todo) {
+      if (curId === n.id && Date.now() - (n.updatedAt || 0) < 2500) continue;   // yazarken yarım hâlini gönderme
+      if (n.trashed) { await dCall({ action: "delNote", id: n.id }); dsync.notes[n.id] = "t"; }
+      else {
+        for (const m of String(n.content || "").matchAll(/data-mid="([^"]+)"[^>]*?data-name="([^"]*)"[^>]*?data-mime="([^"]*)"/g)) {
+          if (dsync.media[m[1]]) continue;
+          const b = await getMediaBlob(m[1], m[3]); await dCall({ action: "putMedia", mid: m[1], name: m[2], mime: m[3], b64: (await readDataURL(b)).split(",")[1] }); dsync.media[m[1]] = 1;
+        }
+        await dCall({ action: "putNote", id: n.id, title: n.title || "Başlıksız", html: await noteBackupHTML(n) }); dsync.notes[n.id] = String(n.updatedAt || 0);
+      }
+      changed++; dsave();
+    }
+    if (changed || force) {
+      await dCall({ action: "putJson", json: JSON.stringify({ app: "D-Note", version: 2, exportedAt: Date.now(), notebooks: notebooks.map(x => ({ ...x })), notes: notes.map(x => ({ ...x })), tasks: tasks.map(x => ({ ...x })) }) });
+      store.set("dnote-lastbackup", Date.now()); driveErr = "";
+    }
+  } catch (e) { console.warn(e); driveErr = String(e && e.message || e).slice(0, 120); }
+  finally { driveBusy = false; if (route.p === "settings") showRoute(); }
+}
+setInterval(() => driveTick(false), 8000);
+addEventListener("online", () => driveTick(false)); document.addEventListener("visibilitychange", () => { if (document.hidden) driveTick(false); });
+function driveSheet() {
+  openSheet(`${shHead("Google Drive otomatik yedek")}
+    <div class="sh-p">Notlarınız değiştikçe Drive'ınızdaki <b>D-Note</b> klasörüne kendiliğinden yedeklenir. Kurulum için README'deki <b>Adım 4</b>'ü bir kez yapın, sonra Apps Script'in verdiği <b>Web uygulaması URL</b>'sini buraya yapıştırın.</div>
+    <input type="text" id="drUrl" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off" value="${esc(driveUrl)}">
+    <div class="sh-p" id="drSt" style="margin-top:8px">${driveUrl ? (driveErr ? "Son hata: " + esc(driveErr) : +store.get("dnote-lastbackup", 0) ? "Son yedek: " + fmtDT(+store.get("dnote-lastbackup", 0)) : "Henüz yedek alınmadı.") : "Henüz bağlanmadı."}</div>
+    <div class="brow"><button class="btn sec" data-act="closeSheet">Kapat</button><button class="btn" id="drSave">Kaydet ve yedekle</button></div>`);
+  $("drSave").onclick = async () => {
+    const v = $("drUrl").value.trim(); if (v && !/^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec$/.test(v)) { $("drSt").textContent = "Bu bir Apps Script Web uygulaması URL'sine benzemiyor (…/exec ile bitmeli)."; return; }
+    driveUrl = v; store.set("dnote-driveurl", v); setDoc(doc(db, "users", uid, "meta", "drive"), { url: v }).catch(() => {});
+    if (!v) { $("drSt").textContent = "Bağlantı kaldırıldı."; return; }
+    $("drSt").textContent = "Bağlantı deneniyor…";
+    try { await dCall({ action: "ping" }); $("drSt").textContent = "Bağlandı. Yedekleme başladı…"; dsync.notes = {}; dsync.media = {}; dsave(); await driveTick(true); $("drSt").textContent = driveErr ? "Hata: " + driveErr : "Tamam. Drive'da D-Note klasörüne bakabilirsiniz."; }
+    catch (e) { $("drSt").textContent = "Bağlanılamadı: " + String(e.message || e).slice(0, 120); }
+  };
+}
 function exportAll() {
   const strip = x => { const { id, ...r } = x; return { id, ...r }; };
   download("d-note-yedek-" + dayKey(Date.now()) + ".json", "application/json", JSON.stringify({ app: "D-Note", version: 2, exportedAt: Date.now(), notebooks: notebooks.map(strip), notes: notes.map(strip), tasks: tasks.map(strip) }));
@@ -1410,7 +1552,7 @@ const ACT = {
     $("sheet").onclick = e => { if (e.target.closest("[data-act=closeSheet]")) closeAll(); }; },
   newNote: () => createNote(), newTask: newTaskSheet, newEvent: newEventSheet,
   newNotebook: () => { const name = prompt("Not defteri adı:"); if (!name || !name.trim()) return; setDoc(nbRef(doc(ucol("notebooks")).id), { name: name.trim(), createdAt: Date.now(), shortcut: false }); toast("Not defteri oluşturuldu."); },
-  record: () => startDictation(), camera: () => $("fileCam").click(), importAny: () => $("fileImport").click(), exportAll,
+  record: () => startDictation(), camera: () => $("fileCam").click(), importAny: () => $("fileImport").click(), exportAll, driveSheet,
   scratchMenu: el => showMenu([{ i: "notes", t: "Nota dönüştür", f: () => { const t = $("scratch").value.trim(); if (!t) return toast("Karalama defteri boş."); const html = t.split(/\n/).map(l => `<p>${esc(l) || "<br>"}</p>`).join(""); $("scratch").value = ""; scratchSave(); createNote({ title: t.split(/\n/)[0].slice(0, 60), content: html, plain: t }); } }, { i: "trash", t: "Temizle", f: () => { $("scratch").value = ""; scratchSave(); } }], { anchor: el, right: true }),
   sortMenu: el => showMenu([["updated", "Güncelleme tarihi"], ["created", "Oluşturma tarihi"], ["title", "Başlık (A–Z)"]].map(([v, t]) => ({ i: S.sort === v ? "check" : "filter", t, f: () => { S.sort = v; store.set("dnote-sort", v); schedule(); } })), { anchor: el, right: true }),
   notesMenu: el => showMenu([{ i: "notes", t: S.dense ? "Ayrıntılı görünüm" : "Kompakt görünüm", f: () => { S.dense = !S.dense; store.set("dnote-dense", S.dense ? "1" : "0"); schedule(); } }, { i: "noteplus", t: "Yeni not", f: () => createNote() }], { anchor: el, right: true }),
@@ -1440,7 +1582,7 @@ const ACT = {
   calToday: () => { const d = new Date(); cal = { y: d.getFullYear(), m: d.getMonth(), sel: dayKey(d) }; renderCalendar(); }, calDay: el => { cal.sel = el.dataset.v; renderCalendar(); },
   shareOpen: el => { const s = shared.find(x => x.id === el.dataset.v); if (s && getNote(s.noteId)) openNote(s.noteId); }, shareCopy: el => copy(shareUrl(el.dataset.v), "Paylaşım bağlantısı kopyalandı."),
   restoreNote: () => { patchNote(curId, { trashed: false, updatedAt: Date.now() }); toast("Not geri yüklendi."); },
-  emptyTrash: () => { const t = notes.filter(n => n.trashed); if (t.length && confirm(`Çöp kutusundaki ${t.length} not kalıcı olarak silinsin mi?`)) batchDelete(t.map(n => noteRef(n.id))); },
+  emptyTrash: () => { const t = notes.filter(n => n.trashed); if (t.length && confirm(`Çöp kutusundaki ${t.length} not kalıcı olarak silinsin mi?`)) { t.forEach(n => purgeMedia(n.content)); batchDelete(t.map(n => noteRef(n.id))); } },
   set: el => { const k = el.dataset.k; let v = el.dataset.v; if (k === "dense") { S.dense = v === "1"; store.set("dnote-dense", v); } else { S[k] = v; store.set("dnote-" + k, v); } applySettings(); schedule(); },
   setFont: el => { S.font = el.dataset.v; store.set("dnote-font", S.font); applySettings(); schedule(); },
   notifPerm: () => { if (!("Notification" in window)) return toast("Bu tarayıcı bildirimleri desteklemiyor."); if (Notification.permission === "denied") return toast("Bildirimler tarayıcı ayarlarından engellenmiş."); Notification.requestPermission().then(() => schedule()); },
@@ -1513,7 +1655,7 @@ function swAction(k, id, el) {
   const n = getNote(id); if (!n) return;
   if (k === "del") { swClose(); patchNote(id, { trashed: true, updatedAt: Date.now() }); toast("Not çöp kutusuna taşındı."); return schedule(); }
   if (k === "restore") { swClose(); patchNote(id, { trashed: false, updatedAt: Date.now() }); toast("Not geri yüklendi."); return schedule(); }
-  if (k === "purge") { swClose(); if (confirm("Bu not kalıcı olarak silinsin mi?")) deleteDoc(noteRef(id)); return; }
+  if (k === "purge") { swClose(); if (confirm("Bu not kalıcı olarak silinsin mi?")) { purgeMedia(n.content); deleteDoc(noteRef(id)); } return; }
   if (k === "dl") { swClose(); return swDownload(n); }
   if (k === "more") {
     showMenu([

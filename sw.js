@@ -1,5 +1,5 @@
 // D-Note service worker: uygulamanın internetsiz açılmasını sağlar ve "Uygulamayı yükle" şartını karşılar
-const CACHE = "dnote-v7";
+const CACHE = "dnote-v8";
 const FONTS_CSS = "https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Dancing+Script:wght@400;700&family=Inter:wght@400;500;600;700&family=Lora:wght@400;700&family=Merriweather:wght@400;700&family=Nunito:wght@400;700&family=Open+Sans:wght@400;600;700&family=Playfair+Display:wght@400;700&family=Poppins:wght@400;600&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;700&family=Source+Code+Pro:wght@400;700&display=swap";
 const LOCAL = [
   "./", "index.html", "manifest.json",
@@ -28,7 +28,7 @@ self.addEventListener("install", e => {
 self.addEventListener("activate", e => {
   e.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))   // eski sürümleri sil
+      .then(keys => Promise.all(keys.filter(k => k !== CACHE && k !== "dnote-media").map(k => caches.delete(k))))   // eski sürümleri sil
       .then(() => self.clients.claim())
   );
 });
