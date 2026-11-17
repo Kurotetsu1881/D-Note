@@ -1,3 +1,16 @@
+# D-Note – Bu güncelleme
+
+**GitHub'a yüklenecek 3 dosya:** `index.html`, `sw.js`, `logo-home.png` (yeni logo dosyası). Yükledikten 1-2 dk sonra uygulamayı kapatıp açın.
+
+- Ana sayfa: başlıklar ve "+ Yeni not defteri" kaldırıldı; satırlar daha ince, yazılar daha küçük; üstte yeni logo + tarih; arama çubuğu daha ince.
+- Tüm Notlar sayfası da aynı ince ölçüye getirildi.
+- Alt çubuk kısaldı. Ana Sayfa ↔ Notlar ↔ Not defterleri arasında sağa/sola kaydırarak geçilir (not satırında sola kaydırma yine satır eylemleridir; satır dışında kaydırın).
+- **Şifre:** Ayarlar → Güvenlik. Tek bir şifre belirlenir; "Uygulama girişinde şifre iste" açılırsa uygulama açılırken şifre sorulur. Not defterini (⋯ → Kilitle) veya notu (not menüsü → Kilitle) kilitleyebilirsiniz. Kilitli not listede "Kilitli not" görünür, açmak için şifre ister; bir kez girince 5 dk açık kalır.
+  - Önemli: Bu bir ekran kilididir; notlar şifreli saklanmaz (Firebase ve Drive yedeğinde okunabilir durumdadır). "Şifremi unuttum" Google ile yeniden giriş yaptırıp şifreyi kaldırır.
+  - Firestore kuralınız zaten bu yolu kapsıyor, yeni kural gerekmez.
+
+---
+
 # D-Note – Güncelleme Rehberi
 
 ## 1) GitHub'a yüklenecek dosyalar

@@ -46,6 +46,16 @@ input,textarea,select{font:inherit;color:inherit}
 .sp{flex:1}
 
 /* ---------- Giriş / paylaşım görüntüleyici ---------- */
+#lockscr{position:fixed;inset:0;z-index:300;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px}
+#lockscr[hidden]{display:none}
+#lockscr img{width:130px;margin-bottom:8px}
+#lockMsg{font-weight:600;font-size:15px}
+#lockscr input{width:100%;max-width:280px;border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:12px;text-align:center;font-size:18px;letter-spacing:3px;outline:0}
+#lockscr input:focus{border-color:var(--green)}
+#lockscr .btn{width:100%;max-width:280px}
+#lockErr{color:var(--red);font-size:12px;min-height:16px}
+#lockForgot{color:var(--muted);font-size:12px;cursor:pointer;text-decoration:underline}
+.sheet input[type=password]{width:100%;border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:10px 12px;outline:0;font-size:13px;margin-bottom:8px}
 #login{display:none;min-height:100%;align-items:center;justify-content:center;flex-direction:column;gap:14px;text-align:center;padding:24px;background:#f7f7f5;color:#1c1c1e;position:fixed;inset:0;z-index:100}
 #login.show{display:flex}
 #login img{width:min(230px,62vw);height:auto;margin-bottom:6px}
@@ -68,7 +78,9 @@ input,textarea,select{font:inherit;color:inherit}
 #app.show{display:block}
 #side{display:none}
 #main{position:absolute;inset:0;overflow:hidden}
-.scr{display:none;position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;padding:0 16px calc(130px + env(safe-area-inset-bottom));background:var(--bg);-webkit-overflow-scrolling:touch}
+.scr{display:none;position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;padding:0 16px calc(120px + env(safe-area-inset-bottom));background:var(--bg);-webkit-overflow-scrolling:touch;touch-action:pan-y}
+@keyframes inL{from{transform:translateX(36px);opacity:.25}to{transform:none;opacity:1}}@keyframes inR{from{transform:translateX(-36px);opacity:.25}to{transform:none;opacity:1}}
+.scr.slL{animation:inL .2s ease-out}.scr.slR{animation:inR .2s ease-out}
 .scr.on{display:block}
 .top{display:flex;align-items:center;gap:4px;padding:calc(12px + env(safe-area-inset-top)) 0 6px;min-height:62px}
 .ttl{margin:0;font-size:17.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -83,7 +95,7 @@ input,textarea,select{font:inherit;color:inherit}
 .homehead{text-align:center;margin:6px 0 16px}
 .homehead h1{margin:0;font-size:21.5px;font-weight:700}
 .hdate{color:var(--muted);margin-top:3px;font-size:12.5px}
-.searchbox{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;border:1px solid #cfcfd6;border-radius:12px;padding:0 14px;height:44px;font-size:12.5px;color:var(--muted);background:var(--bg)}
+.searchbox{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;border:1px solid #cfcfd6;border-radius:10px;padding:0 12px;height:34px;font-size:12px;color:var(--muted);background:var(--bg);margin-bottom:12px}
 [data-theme=dark] .searchbox{border-color:#3a3b40}
 .bigcards{display:grid;grid-template-columns:1.12fr 1fr;gap:12px;margin:22px 0 12px}
 .bigcard{position:relative;height:104px;border-radius:13px;color:#fff;overflow:hidden;font-weight:600;font-size:13.5px;display:block}
@@ -108,30 +120,30 @@ input,textarea,select{font:inherit;color:inherit}
 .nwrap .nrow{position:relative;z-index:1;background:var(--bg);border-bottom:0;touch-action:pan-y;transition:transform .22s ease;will-change:transform;-webkit-user-select:none;user-select:none}
 .nwrap .nrow:active,.nwrap .nrow.cur{background:var(--sel)}
 .nwrap.drag .nrow{transition:none}
-.nact{position:absolute;top:0;right:0;bottom:0;display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:0 12px;visibility:hidden}
+.nact{position:absolute;top:0;right:0;bottom:0;display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:0 12px;visibility:hidden}
 .nwrap.reveal .nact{visibility:visible}
-.nact button{display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:0;color:var(--muted);font:inherit;font-size:10.5px;cursor:pointer;width:56px;padding:0}
-.nact button .cir{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff}
-.nact button .ic{width:19px;height:19px}
+.nact button{display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:0;color:var(--muted);font:inherit;font-size:9.5px;cursor:pointer;width:52px;padding:0}
+.nact button .cir{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff}
+.nact button .ic{width:17px;height:17px}
 .nact .c-more .cir{background:#8e8e93}.nact .c-dl .cir{background:#2f7df6}.nact .c-del .cir{background:#e5484d}.nact .c-ok .cir{background:#00a82d}
 
-.nrow{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:12px;padding:14px 16px 12px;border-bottom:1px solid var(--line);cursor:pointer}
+.nrow{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:10px;padding:9px 14px 8px;border-bottom:1px solid var(--line);cursor:pointer}
 .nrow:active,.nrow.cur{background:var(--sel)}
 .nmain{min-width:0}
-.nt{font-size:14.5px;font-weight:600;line-height:1.3;display:flex;gap:6px;align-items:center}
+.nt{font-size:13px;font-weight:600;line-height:1.25;display:flex;gap:6px;align-items:center}
 .nt span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.nt .ic{width:13px;height:13px;color:var(--green);flex:none}
-.ns{color:var(--muted);font-size:12px;margin-top:4px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+.nt .ic{width:12px;height:12px;color:var(--green);flex:none}
+.ns{color:var(--muted);font-size:11px;margin-top:2px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
 .ns mark,.sres mark{background:#ffe27a;color:#222;border-radius:3px;padding:0 1px}
-.nth{width:70px;height:70px;border-radius:10px;object-fit:cover;grid-row:1/3;grid-column:2;align-self:start}
-.nm{grid-column:1/3;margin-top:11px;display:flex;gap:7px;align-items:center;flex-wrap:wrap;color:var(--muted);font-size:11px}
-.chip{background:var(--chip);color:var(--chipt);border-radius:7px;padding:3px 9px;font-size:11px;display:inline-flex;align-items:center;gap:4px;max-width:100%}
+.nth{width:50px;height:50px;border-radius:8px;object-fit:cover;grid-row:1/3;grid-column:2;align-self:start}
+.nm{grid-column:1/3;margin-top:5px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;color:var(--muted);font-size:10px}
+.chip{background:var(--chip);color:var(--chipt);border-radius:6px;padding:1px 7px;font-size:10px;display:inline-flex;align-items:center;gap:4px;max-width:100%}
 .chip .ic{width:12px;height:12px}
 .chip.pill{border-radius:20px;font-size:12px;padding:6px 13px}
 .chip.rem{background:#fff0d6;color:#8a5a00}
 [data-theme=dark] .chip.rem{background:#4a3a14;color:#ffd98a}
 .nrow.dense .ns,.nrow.dense .nth{display:none}
-.nrow.dense .nm{margin-top:6px}
+.nrow.dense .nm{margin-top:3px}
 .lrow{display:flex;align-items:center;gap:12px;padding:13px 16px;margin:0 -16px;border-bottom:1px solid var(--line);cursor:pointer}
 .lrow .lt{flex:1;font-size:15px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lrow .lc{color:var(--muted);font-size:13.5px}
@@ -141,21 +153,21 @@ input,textarea,select{font:inherit;color:inherit}
 .empty .ic{width:38px;height:38px;opacity:.5;margin-bottom:8px}
 :root{--homebg:#f3f3f5}[data-theme=dark]{--homebg:#0f1011}[data-theme=sepia]{--homebg:#ece1c8}
 #scr-home{background:var(--homebg)}
-.htop{display:grid;grid-template-columns:72px 1fr 72px;align-items:center;min-height:40px;padding-top:calc(6px + env(safe-area-inset-top));padding-bottom:0}
+.htop{display:grid;grid-template-columns:72px 1fr 72px;align-items:center;min-height:40px;padding-top:calc(8px + env(safe-area-inset-top));padding-bottom:6px}
 .hside{display:flex;align-items:center}.hside.r{justify-content:flex-end}
-.htop .homehead{margin:0}.hdate{font-size:11.5px;color:var(--muted);margin-top:2px}
+.htop .homehead{margin:0;display:flex;flex-direction:column;align-items:center}.hlogo{height:40px;width:auto;display:block}[data-theme=dark] .hlogo{background:#f3f3f5;border-radius:12px;padding:3px 10px}.hdate{font-size:11px;color:var(--muted);margin-top:3px}
 .cards{margin:0 0 4px}
-.cards .nwrap{border-radius:14px;margin-bottom:10px;border:0;background:var(--bg)}
-.cards .nwrap .nrow{border-radius:14px}
-.nbcard{position:relative;display:flex;align-items:stretch;background:var(--bg);border-radius:14px;margin-bottom:10px;min-height:84px;overflow:hidden;cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:pan-y}
+.cards .nwrap{border-radius:12px;margin-bottom:8px;border:0;background:var(--bg)}
+.cards .nwrap .nrow{border-radius:12px}
+.nbcard{position:relative;display:flex;align-items:stretch;background:var(--bg);border-radius:12px;margin-bottom:8px;min-height:60px;overflow:hidden;cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:pan-y}
 .nbcard:active{background:var(--sel)}
-.nbimg{width:84px;flex:none;display:flex;align-items:center;justify-content:center;background:var(--accbg);color:var(--acc)}
+.nbimg{width:60px;flex:none;display:flex;align-items:center;justify-content:center;background:var(--accbg);color:var(--acc)}
 .nbimg img{width:100%;height:100%;object-fit:cover;display:block}
-.nbimg .ic{width:30px;height:30px}
-.nbinfo{flex:1;min-width:0;padding:11px 10px 9px 14px;display:flex;flex-direction:column;justify-content:space-between}
-.nbname{font-size:15px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:30px}
-.nbfoot{display:flex;align-items:flex-end;justify-content:space-between;color:var(--muted);font-size:11.5px}
-.nbfoot .cnt{display:inline-flex;align-items:center;gap:4px}.nbfoot .cnt .ic{width:14px;height:14px}
+.nbimg .ic{width:24px;height:24px}
+.nbinfo{flex:1;min-width:0;padding:8px 8px 7px 12px;display:flex;flex-direction:column;justify-content:space-between}
+.nbname{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:26px;display:flex;align-items:center;gap:5px}.nbname .ic{width:12px;height:12px;color:var(--muted);flex:none}
+.nbfoot{display:flex;align-items:flex-end;justify-content:space-between;color:var(--muted);font-size:10px}
+.nbfoot .cnt{display:inline-flex;align-items:center;gap:4px}.nbfoot .cnt .ic{width:12px;height:12px}
 .nbmore{position:absolute;top:4px;right:2px}
 .sorting{position:relative;z-index:30;box-shadow:0 10px 28px rgba(0,0,0,.28);transition:none!important;opacity:.97;transform-origin:center}
 .sort-active{touch-action:none}
@@ -180,11 +192,11 @@ input,textarea,select{font:inherit;color:inherit}
 .stp .sv{display:flex;align-items:center;gap:6px}
 .stp button{width:34px;height:34px;border-radius:50%;background:var(--tile);font-size:18px;line-height:1;color:var(--text)}
 .stp b{min-width:54px;text-align:center;font-size:14px}
-.fab{position:fixed;right:16px;bottom:calc(84px + env(safe-area-inset-bottom));width:54px;height:54px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);z-index:19}
+.fab{position:fixed;right:16px;bottom:calc(72px + env(safe-area-inset-bottom));width:54px;height:54px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);z-index:19}
 .fab .ic{width:24px;height:24px}.fab{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:manipulation}
-#nav{position:fixed;left:14px;right:14px;bottom:calc(12px + env(safe-area-inset-bottom));height:60px;background:var(--card);border:1px solid var(--line);border-radius:30px;box-shadow:var(--shadow);display:flex;padding:5px;gap:2px;z-index:20}
-.nv{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;border-radius:25px;font-size:10.5px;color:var(--text)}
-.nv .ic{width:21px;height:21px}
+#nav{position:fixed;left:14px;right:14px;bottom:calc(10px + env(safe-area-inset-bottom));height:48px;background:var(--card);border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow);display:flex;padding:4px;gap:2px;z-index:20}
+.nv{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;border-radius:20px;font-size:9.5px;color:var(--text)}
+.nv .ic{width:18px;height:18px}
 .nv.on{background:var(--accbg);color:var(--acc);font-weight:600}
 body[data-p=search] #nav,body[data-p=search] .fab,body[data-editor=open] #nav,body[data-editor=open] .fab{display:none}
 
@@ -390,6 +402,15 @@ body[data-editor=open] #editorView{display:flex}
   <article class="vbody"><h1 id="vTitle"></h1><div class="vd" id="vDate"></div><div id="vEditor"></div><div id="vErr" class="empty" hidden>Bu not bulunamadı ya da paylaşımı durdurulmuş.</div></article>
 </div>
 
+<div id="lockscr" hidden>
+  <img src="logo-wordmark.png" alt="">
+  <div id="lockMsg">Şifrenizi girin</div>
+  <input type="password" id="lockIn" placeholder="Şifre" autocomplete="current-password">
+  <button class="btn" id="lockOk">Aç</button>
+  <div id="lockErr"></div>
+  <a id="lockForgot">Şifremi unuttum</a>
+</div>
+
 <div id="app">
   <aside id="side">
     <div class="brand"><img src="logo.png" alt=""> D-Note</div>
@@ -402,13 +423,11 @@ body[data-editor=open] #editorView{display:flex}
     <section class="scr" id="scr-home">
       <div class="top htop">
         <span class="hside"></span>
-        <div class="homehead"><h1>D-Note</h1><div class="hdate" id="homeDate"></div></div>
+        <div class="homehead"><img class="hlogo" src="logo-home.png" alt="D-Note"><div class="hdate" id="homeDate"></div></div>
         <span class="hside r"><button class="orb" id="orbInstall" data-act="install" hidden title="Uygulamayı yükle"><span data-ic="bolt"></span></button></span>
       </div>
       <button class="searchbox" data-go="search"><span>Herhangi bir notu, görevi veya belgeyi bulun</span><span data-ic="search"></span></button>
-      <div class="sech" id="hNbH"><h2>Not Defterleri</h2><a data-act="newNotebook">+ Yeni not defteri</a></div>
       <div id="homeNb" class="cards" data-sort="nb"></div>
-      <div class="sech" id="hNoteH"><h2>Notlar</h2><a data-go="notes">Tümü</a></div>
       <div id="homeNotes" class="cards" data-sort="note"></div>
       <div id="homeEmpty"></div>
     </section>
@@ -486,7 +505,7 @@ body[data-editor=open] #editorView{display:flex}
 <script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js" crossorigin="anonymous"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut }
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, reauthenticateWithPopup, onAuthStateChanged, signOut }
   from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, doc, setDoc, getDoc,
   updateDoc, deleteDoc, onSnapshot, query, orderBy, where, writeBatch, getDocs } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
@@ -522,6 +541,7 @@ const randId = () => Array.from(crypto.getRandomValues(new Uint8Array(12)), b =>
 
 const ICONS = {
   edit: '<path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/>',
+  lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
   plusc: '<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>',
   search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>',
@@ -706,8 +726,9 @@ if (SHARE_ID) openViewer(SHARE_ID);
 else onAuthStateChanged(auth, u => {
   unsubs.forEach(f => f()); unsubs = [];
   user = u;
-  if (!u) { uid = null; notes = []; notebooks = []; tasks = []; curId = null; loadedId = null; ready.notes = false; $("app").classList.remove("show"); $("login").classList.add("show"); return; }
+  if (!u) { uid = null; secInit = false; $("lockscr").hidden = true; notes = []; notebooks = []; tasks = []; curId = null; loadedId = null; ready.notes = false; $("app").classList.remove("show"); $("login").classList.add("show"); return; }
   uid = u.uid;
+  if (sec.hash && sec.appLock && !isUnlocked()) showLockScreen();
   $("login").classList.remove("show"); $("app").classList.add("show");
   qsa("[data-av]").forEach(e => e.innerHTML = avatarInner()); $("sName").textContent = u.displayName || u.email || "";
   unsubs.push(onSnapshot(query(ucol("notebooks"), orderBy("createdAt")), s => { notebooks = s.docs.map(d => ({ id: d.id, ...d.data() })); schedule(); }, e => console.warn(e)));
@@ -719,6 +740,12 @@ else onAuthStateChanged(auth, u => {
     schedule(); updateStatus();
   }, e => console.warn(e)));
   unsubs.push(onSnapshot(query(ucol("tasks"), orderBy("createdAt")), s => { tasks = s.docs.map(d => ({ id: d.id, ...d.data() })); schedule(); }, e => console.warn(e)));
+  unsubs.push(onSnapshot(doc(db, "users", uid, "meta", "security"), s => {
+    sec = s.exists() ? s.data() : {}; secCache();
+    if (!secInit) { secInit = true; if (sec.hash && sec.appLock && !isUnlocked()) showLockScreen(); }
+    if (!(sec.hash && sec.appLock)) $("lockscr").hidden = true;
+    schedule();
+  }, e => console.warn(e)));
   unsubs.push(onSnapshot(doc(db, "users", uid, "meta", "drive"), s => { if (!s.exists()) return; const u = s.data().url || ""; if (u !== driveUrl) { driveUrl = u; store.set("dnote-driveurl", u); } }, e => console.warn(e)));
   unsubs.push(onSnapshot(query(collection(db, "shared"), where("ownerUid", "==", uid)), s => {
     sharedErr = false; shared = s.docs.map(d => ({ id: d.id, ...d.data() })); schedule();
@@ -744,6 +771,7 @@ const GENERIC = ["notes", "notebooks", "calendar", "tags", "shared", "shortcuts"
 GENERIC.forEach(k => $("main").insertAdjacentHTML("beforeend", `<section class="scr" id="scr-${k}"><div class="top" id="top-${k}"></div><div class="count" id="count-${k}" hidden></div><div id="body-${k}"></div></section>`));
 function pushState(extra = {}) { const d = (history.state && history.state.d || 0) + 1; depth = d; history.pushState({ route, note: curId, d, ...extra }, ""); }
 function go(p, a = {}) {
+  if (p === "notes" && a.nb && nbLockedId(a.nb) && sec.hash && !isUnlocked()) return askPassword(() => go(p, a), "Kilitli not defteri");
   closeAll();
   if (curId && innerWidth <= 860) { flushSave(); curId = null; loadedId = null; } // masaüstünde açık not yanda kalır
   route = { p, a };
@@ -771,6 +799,7 @@ function updateNav() {
   const fab = $("fab"); fab.hidden = !["home", "notes", "notebooks", "tasks"].includes(p); if (!fab.dataset.i) { fab.innerHTML = ic("plus"); fab.dataset.i = "1"; }
 }
 function openNote(id, after) {
+  { const n0 = getNote(id); if (n0 && lockedNow(n0)) return askPassword(() => openNote(id, after), "Kilitli not"); }
   closeAll(); if (curId && curId !== id) flushSave();
   const had = !!curId; curId = id; loadedId = null; afterLoad = after || null;
   if (had) history.replaceState({ route, note: id, d: history.state ? history.state.d : 0 }, ""); else pushState();
@@ -811,12 +840,12 @@ function snippet(n, q) {
   return (s > 0 ? "…" : "") + esc(part).replace(new RegExp(esc(q).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "ig"), m => `<mark>${m}</mark>`);
 }
 function noteRow(n, q = "") {
-  const im = firstImg(n);
+  const lk = lockedNow(n), im = lk ? null : firstImg(n);
   const b = (c, i, t, k) => `<button class="${c}" data-sw="${k}" data-id="${n.id}"><span class="cir">${ic(i)}</span>${t}</button>`;
   const acts = n.trashed ? b("c-ok", "undo", "Geri yükle", "restore") + b("c-del", "trash", "Kalıcı sil", "purge")
     : b("c-more", "dots", "Daha fazla", "more") + b("c-dl", "download", "İndir", "dl") + b("c-del", "trash", "Sil", "del");
-  return `<div class="nwrap" data-w="${n.trashed ? 112 : 204}"><div class="nact">${acts}</div><div class="nrow ${S.dense ? "dense" : ""} ${n.id === curId ? "cur" : ""}" data-open="${n.id}">
-    <div class="nmain"><div class="nt">${n.pinned ? ic("pin") : ""}<span>${esc(n.title) || "Başlıksız"}</span></div><div class="ns">${snippet(n, q) || "<i>Boş not</i>"}</div></div>
+  return `<div class="nwrap" data-w="${n.trashed ? 104 : 186}"><div class="nact">${acts}</div><div class="nrow ${S.dense ? "dense" : ""} ${n.id === curId ? "cur" : ""}" data-open="${n.id}">
+    <div class="nmain"><div class="nt">${n.pinned ? ic("pin") : ""}${lockFlag(n) ? ic("lock") : ""}<span>${esc(n.title) || "Başlıksız"}</span></div><div class="ns">${lk ? "<i>Kilitli not</i>" : (snippet(n, q) || "<i>Boş not</i>")}</div></div>
     ${im ? `<img class="nth" src="${im}" alt="">` : ""}
     <div class="nm"><span>${fmtDate(S.sort === "created" ? n.createdAt : n.updatedAt)}</span>${n.reminder ? `<span class="chip rem">${ic("bell")}${fmtDT(n.reminder)}</span>` : ""}${(n.tags || []).slice(0, 3).map(t => `<span class="chip">${esc(t)}</span>`).join("")}</div></div></div>`;
 }
@@ -839,19 +868,96 @@ function nbCard(b) {
   const cnt = live().filter(n => nbKey(n) === b.id).length;
   const last = Math.max(b.createdAt || 0, ...live().filter(n => nbKey(n) === b.id).map(n => n.updatedAt || 0));
   return `<div class="nbcard" data-act="nbOpen" data-v="${b.id}" data-sk="${b.id}"><div class="nbimg" style="${b.color && !b.img ? "background:" + esc(b.color) + ";color:#fff" : ""}">${b.img ? `<img src="${b.img}" alt="">` : ic("book")}</div>
-    <div class="nbinfo"><div class="nbname">${esc(b.name)}</div><div class="nbfoot"><span>${fmtDate(last)}</span><span class="cnt">${ic("notes")}${cnt}</span></div></div>
+    <div class="nbinfo"><div class="nbname">${b.locked && sec.hash ? ic("lock") : ""}<span style="overflow:hidden;text-overflow:ellipsis">${esc(b.name)}</span></div><div class="nbfoot"><span>${fmtDate(last)}</span><span class="cnt">${ic("notes")}${cnt}</span></div></div>
     <button class="tbtn sm nbmore" data-act="nbMenu" data-v="${b.id}">${ic("dots")}</button></div>`;
 }
 function renderHome() {
   if (window.__sorting) return;
   $("homeDate").textContent = new Date().toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric", weekday: "long" });
   const nbs = nbList();
-  $("hNbH").hidden = !nbs.length; $("homeNb").innerHTML = nbs.map(nbCard).join("");
+  $("homeNb").innerHTML = nbs.map(nbCard).join("");
   const free = orderItems(live().filter(n => nbKey(n) === null), "homeOrd").sort((a, b) => (b.homePinned ? 1 : 0) - (a.homePinned ? 1 : 0));
-  $("hNoteH").hidden = !free.length;
   $("homeNotes").innerHTML = free.map(n => noteRow(n).replace('<div class="nwrap"', `<div class="nwrap" data-sk="${n.id}"`)).join("");
   $("homeEmpty").innerHTML = !nbs.length && !free.length ? emptyHTML("notes", "Burada henüz not yok.<br>Yeni bir not oluşturmak için + düğmesine dokunun.") : "";
   $("orbInstall").hidden = !canInstall();
+}
+
+/* ---------- Şifre / kilit ---------- */
+// Tek bir ana şifre; uygulama girişi, not defteri ve not kilidi için kullanılır. Yalnızca özet (PBKDF2) saklanır.
+let sec = (() => { try { return JSON.parse(store.get("dnote-sec", "{}")) || {}; } catch (e) { return {}; } })(), unlockUntil = 0, secInit = false, pwFails = 0, pwBlock = 0, hiddenAt = 0;
+const secRef = () => doc(db, "users", uid, "meta", "security");
+const secCache = () => store.set("dnote-sec", JSON.stringify({ salt: sec.salt || null, hash: sec.hash || null, appLock: !!sec.appLock }));
+const b64 = buf => btoa(String.fromCharCode(...new Uint8Array(buf)));
+const unb64 = x => Uint8Array.from(atob(x), c => c.charCodeAt(0));
+async function hashPw(pw, salt) {
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(pw), "PBKDF2", false, ["deriveBits"]);
+  return b64(await crypto.subtle.deriveBits({ name: "PBKDF2", salt: unb64(salt), iterations: 150000, hash: "SHA-256" }, key, 256));
+}
+const isUnlocked = () => Date.now() < unlockUntil;
+function setUnlocked() { unlockUntil = Date.now() + 5 * 60e3; schedule(); setTimeout(schedule, 5 * 60e3 + 500); }
+const nbLockedId = id => !!(id && (notebooks.find(b => b.id === id) || {}).locked);
+const lockFlag = n => !!(sec.hash && (n.locked || nbLockedId(nbKey(n))));       // kilitli olarak işaretli mi
+const lockedNow = n => lockFlag(n) && !isUnlocked();                              // şu an kilidi kapalı mı
+async function tryPw(pw) {
+  if (Date.now() < pwBlock) return { ok: false, msg: `Çok fazla deneme. ${Math.ceil((pwBlock - Date.now()) / 1000)} sn bekleyin.` };
+  if (sec.hash && await hashPw(pw, sec.salt) === sec.hash) { pwFails = 0; setUnlocked(); return { ok: true }; }
+  if (++pwFails >= 5) { pwBlock = Date.now() + 30e3; pwFails = 0; }
+  return { ok: false, msg: "Şifre yanlış." };
+}
+async function savePw(pw) {
+  const salt = b64(crypto.getRandomValues(new Uint8Array(16))), hash = await hashPw(pw, salt);
+  sec = { ...sec, salt, hash }; secCache(); await setDoc(secRef(), { salt, hash, appLock: !!sec.appLock }, { merge: true }); setUnlocked();
+}
+async function clearPw() { sec = { salt: null, hash: null, appLock: false }; secCache(); await setDoc(secRef(), sec, { merge: true }); schedule(); }
+function setAppLock(v) { sec.appLock = v; secCache(); setDoc(secRef(), { appLock: v }, { merge: true }); schedule(); }
+function showLockScreen(msg) { $("lockscr").hidden = false; $("lockMsg").textContent = msg || "Şifrenizi girin"; $("lockIn").value = ""; $("lockErr").textContent = ""; setTimeout(() => $("lockIn").focus(), 80); }
+async function lockSubmit() {
+  const r = await tryPw($("lockIn").value);
+  if (r.ok) { $("lockscr").hidden = true; $("lockIn").value = ""; } else { $("lockErr").textContent = r.msg; $("lockIn").value = ""; }
+}
+$("lockOk").onclick = lockSubmit; $("lockIn").addEventListener("keydown", e => { if (e.key === "Enter") lockSubmit(); });
+$("lockForgot").onclick = async () => {
+  if (!confirm("Google hesabınızla yeniden giriş yapılarak şifre kaldırılacak. Devam edilsin mi?")) return;
+  try { await reauthenticateWithPopup(auth.currentUser, new GoogleAuthProvider()); await clearPw(); $("lockscr").hidden = true; toast("Şifre kaldırıldı. Ayarlar'dan yenisini belirleyebilirsiniz.", 4500); }
+  catch (e) { $("lockErr").textContent = "Doğrulama yapılamadı."; }
+};
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) { hiddenAt = Date.now(); return; }
+  if (hiddenAt && Date.now() - hiddenAt > 60e3) { unlockUntil = 0; if (uid && sec.hash && sec.appLock) showLockScreen(); schedule(); }
+  hiddenAt = 0;
+});
+function askPassword(cb, title = "Şifreyi girin") {
+  openSheet(`${shHead(title)}<input type="password" id="apIn" placeholder="Şifre" autocomplete="current-password"><div class="sh-p" id="apErr" style="color:var(--red);min-height:16px"></div><div class="brow"><button class="btn" id="apOk">Aç</button></div>`, { mount: () => setTimeout(() => $("apIn") && $("apIn").focus(), 80) });
+  const go1 = async () => { const r = await tryPw($("apIn").value); if (r.ok) { closeAll(); cb(); } else { $("apErr").textContent = r.msg; $("apIn").value = ""; } };
+  $("sheet").onclick = e => { if (e.target.closest("[data-act=closeSheet]")) return closeAll(); if (e.target.closest("#apOk")) go1(); };
+  $("apIn").addEventListener("keydown", e => { if (e.key === "Enter") go1(); });
+}
+function pwSheet(after) {
+  const has = !!sec.hash;
+  openSheet(`${shHead(has ? "Şifreyi değiştir" : "Şifre belirle")}
+    <div class="sh-p">${has ? "Mevcut şifrenizi girin, sonra yenisini yazın." : "Bu şifre uygulama girişi, not defterleri ve notlar için kullanılır. Unutmamaya dikkat edin."}</div>
+    ${has ? `<input type="password" id="pwOld" placeholder="Mevcut şifre" autocomplete="current-password">` : ""}
+    <input type="password" id="pwNew" placeholder="Yeni şifre (en az 4 karakter)" autocomplete="new-password">
+    <input type="password" id="pwNew2" placeholder="Yeni şifre (tekrar)" autocomplete="new-password">
+    <div class="sh-p" id="pwErr" style="color:var(--red);min-height:16px"></div>
+    <div class="brow">${has ? `<button class="btn sec" id="pwRm" style="color:var(--red)">Şifreyi kaldır</button>` : ""}<button class="btn" id="pwOk">Kaydet</button></div>`);
+  const err = m => { $("pwErr").textContent = m; };
+  const needOld = async () => { if (!has) return true; const r = await tryPw($("pwOld").value); if (!r.ok) err(r.msg); return r.ok; };
+  $("sheet").onclick = async e => {
+    if (e.target.closest("[data-act=closeSheet]")) return closeAll();
+    if (e.target.closest("#pwRm")) { if (!(await needOld())) return; if (!confirm("Şifre kaldırılsın mı? Kilitli notlar ve defterler şifresiz açılır.")) return; await clearPw(); closeAll(); return toast("Şifre kaldırıldı."); }
+    if (e.target.closest("#pwOk")) {
+      if (!(await needOld())) return; const a = $("pwNew").value;
+      if (a.length < 4) return err("Şifre en az 4 karakter olmalı."); if (a !== $("pwNew2").value) return err("Şifreler aynı değil.");
+      await savePw(a); closeAll(); toast("Şifre kaydedildi."); if (after) after();
+    }
+  };
+}
+function toggleLock(obj, upd) {
+  if (!sec.hash) { toast("Önce bir şifre belirleyin."); return pwSheet(() => toggleLock(obj, upd)); }
+  const apply = () => { upd(!obj.locked); toast(!obj.locked ? "Kilit kaldırıldı." : "Kilitlendi."); };
+  if (obj.locked && !isUnlocked()) return askPassword(apply, "Kilidi kaldırmak için şifre");
+  apply();
 }
 
 /* ---------- Notlar ---------- */
@@ -1007,6 +1113,10 @@ function renderSettings() {
      <div class="setg">Artı (+) düğmesine uzun basınca</div>
      ${Object.entries(FAB_ACTS).map(([k, [l]]) => `<div class="frow" data-act="setFabLong" data-v="${k}"><div class="fn">${l}</div>${S.fabLong === k ? ic("check") : ""}</div>`).join("")}
      <div class="setg">Not listesi</div>${seg("dense", [["0", "Ayrıntılı"], ["1", "Kompakt"]])}
+     <div class="setg">Güvenlik</div>
+     <div class="srow" data-act="pwSheet">${ic("lock")}<div class="st">Şifre<small>${sec.hash ? "Belirlendi · değiştirmek veya kaldırmak için dokunun" : "Belirlenmedi · uygulama, defter ve notları kilitlemek için"}</small></div></div>
+     <div class="srow" data-act="toggleAppLock">${ic("lock")}<div class="st">Uygulama girişinde şifre iste<small>Açılışta ve 1 dakikadan uzun arka planda kalınca</small></div><span class="swt ${sec.appLock && sec.hash ? "on" : ""}"></span></div>
+     <div class="srow" style="cursor:default">${ic("info")}<div class="st"><small style="margin:0">Bir not defterini veya notu kilitlemek için ⋯ menüsünden "Kilitle"yi seçin. Kilitli içerik listede gizlenir, açmak için şifre sorulur.</small></div></div>
      <div class="setg">Uygulama</div>
      <div class="srow" data-act="whatsNew">${ic("megaphone")}<div class="st">Yeni neler</div></div>
      <div class="srow" data-act="help">${ic("help")}<div class="st">Yardım</div></div>
@@ -1025,7 +1135,7 @@ function renderSearch() {
   const q = $("qIn").value.trim(); $("qClear").hidden = !q;
   if (!q) { const m = tagCounts(), keys = Object.keys(m).sort(); $("searchRes").innerHTML = (keys.length ? `<div class="subh">Etiketler</div><div class="chips">${keys.map(t => `<span class="chip" data-act="tagOpen" data-v="${esc(t)}">${esc(t)}</span>`).join("")}</div>` : "") + emptyHTML("search", "Başlık, metin veya etiket yazarak arayın."); return; }
   const lq = q.toLowerCase();
-  const res = live().filter(n => ((n.title || "") + " " + (n.plain || "") + " " + (n.tags || []).join(" ")).toLowerCase().includes(lq))
+  const res = live().filter(n => ((n.title || "") + " " + (lockedNow(n) ? "" : (n.plain || "")) + " " + (n.tags || []).join(" ")).toLowerCase().includes(lq))
     .sort((a, b) => ((b.title || "").toLowerCase().includes(lq) ? 1 : 0) - ((a.title || "").toLowerCase().includes(lq) ? 1 : 0) || b.updatedAt - a.updatedAt);
   const tr = tasks.filter(t => t.title.toLowerCase().includes(lq));
   $("searchRes").innerHTML = `<div class="count" style="margin-top:0">${res.length} NOT</div>` + (res.length ? `<div class="lst sres">${res.map(n => noteRow(n, q)).join("")}</div>` : emptyHTML("search", "Sonuç bulunamadı.")) +
@@ -1359,7 +1469,7 @@ function actionsSheet() {
     <div class="asep"></div>
     ${row("tag", "tagplus", "Etiket ekle", { chev: 1 })}${row("remind", "bellplus", n.reminder ? "Hatırlatıcı: " + fmtDT(n.reminder) : "Hatırlatıcı ekle", { chev: 1 })}
     <div class="asep"></div>
-    ${row("shortcut", n.shortcut ? "star" : "starplus", n.shortcut ? "Kısayollardan kaldır" : "Kısayollara ekle")}${row("pin", "pin", n.pinned ? "Not defterinden sabitlemeyi kaldır" : "Not defterine sabitle")}${row("homepin", "pin", n.homePinned ? "Giriş sayfasından kaldır" : "Giriş sayfasına sabitle")}
+    ${row("lock", "lock", n.locked ? "Kilidi kaldır" : "Kilitle")}${row("shortcut", n.shortcut ? "star" : "starplus", n.shortcut ? "Kısayollardan kaldır" : "Kısayollara ekle")}${row("pin", "pin", n.pinned ? "Not defterinden sabitlemeyi kaldır" : "Not defterine sabitle")}${row("homepin", "pin", n.homePinned ? "Giriş sayfasından kaldır" : "Giriş sayfasına sabitle")}
     <div class="asep"></div>
     ${row("offline", "download", "Çevrimdışı kullanılabilir", { sw: true })}
     <div class="asep"></div>
@@ -1379,6 +1489,7 @@ function noteAction(k) {
     case "suggest": { closeAll(); const t = suggestTitle(); if (!t) return toast("Önerilecek yeterli metin yok."); $("eTitle").value = t; autoGrow(); scheduleSave(); return toast("Başlık eklendi: " + t); }
     case "tag": return tagSheet();
     case "remind": return remindSheet();
+    case "lock": { closeAll(); return toggleLock(n, v => patchNote(n.id, { locked: v })); }
     case "shortcut": patchNote(n.id, { shortcut: !n.shortcut }); closeAll(); return toast(n.shortcut ? "Kısayollara eklendi." : "Kısayollardan kaldırıldı.");
     case "pin": patchNote(n.id, { pinned: !n.pinned }); closeAll(); return toast(n.pinned ? "Not sabitlendi." : "Sabitleme kaldırıldı.");
     case "homepin": patchNote(n.id, { homePinned: !n.homePinned }); closeAll(); return toast(n.homePinned ? "Giriş sayfasına sabitlendi." : "Giriş sayfasından kaldırıldı.");
@@ -1713,6 +1824,30 @@ window.__sorting = false;
   document.addEventListener("contextmenu", e => { if (e.target.closest && e.target.closest("#homeNb, #homeNotes")) e.preventDefault(); });
 })();
 
+
+/* ---------- Ana Sayfa / Notlar / Not defterleri arasında sağa-sola kaydırma ---------- */
+const TABS = ["home", "notes", "notebooks"];
+(() => {
+  let st = null;
+  document.addEventListener("pointerdown", e => {
+    st = null;
+    if (e.pointerType === "mouse" || innerWidth > 860 || !TABS.includes(route.p) || (route.p === "notes" && route.a && (route.a.nb !== undefined || route.a.tag)) || window.__sorting || document.body.dataset.editor === "open") return;
+    if (e.target.closest("input,textarea,select,.nact,.nbmore,#sheet,#menu,#nav,#fab,#lockscr")) return;
+    if (!e.target.closest("#main")) return;
+    st = { x: e.clientX, y: e.clientY, id: e.pointerId, row: !!e.target.closest(".nwrap"), open: !!document.querySelector(".nwrap.reveal") };
+  }, true);
+  const fin = e => {
+    if (!st || e.pointerId !== st.id) return; const s = st; st = null;
+    if (e.type === "pointercancel") return;
+    const dx = e.clientX - s.x, dy = e.clientY - s.y;
+    if (window.__sorting || s.open || Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.8) return;
+    const d = dx < 0 ? 1 : -1; if (d === 1 && s.row) return;   // satırda sola kaydırma = satır eylemleri
+    const j = TABS.indexOf(route.p) + d; if (j < 0 || j >= TABS.length) return;
+    go(TABS[j]); const sc = $("scr-" + TABS[j]); sc.classList.remove("slL", "slR"); void sc.offsetWidth; sc.classList.add(d > 0 ? "slL" : "slR");
+  };
+  document.addEventListener("pointerup", fin, true); document.addEventListener("pointercancel", fin, true);
+})();
+
 /* ---------- Sağ alttaki + düğmesi (dokun: menü, uzun bas: seçili eylem) ---------- */
 const FAB_ACTS = {
   note: ["Yeni not", () => createNote()], task: ["Yeni görev", () => newTaskSheet()], notebook: ["Yeni not defteri", () => nbEditSheet(null)],
@@ -1747,6 +1882,7 @@ const ACT = {
     if (!b) return; showMenu([
     { i: "edit", t: "Düzenle (ad, resim, renk)", f: () => nbEditSheet(id) },
     { i: "notes", t: "Notları göster", f: () => go("notes", { nb: id }) },
+    { i: "lock", t: b.locked ? "Kilidi kaldır" : "Kilitle", f: () => toggleLock(b, v => { b.locked = v; updateDoc(nbRef(b.id), { locked: v }); schedule(); }) },
     { i: b.shortcut ? "star" : "starplus", t: b.shortcut ? "Kısayollardan kaldır" : "Kısayollara ekle", f: () => updateDoc(nbRef(id), { shortcut: !b.shortcut }) },
     { i: "trash", t: "Sil", red: 1, f: () => { if (confirm(`"${b.name}" silinsin mi? Notlar silinmez, "Genel" defterine taşınır.`)) { notes.filter(n => n.notebookId === id).forEach(n => patchNote(n.id, { notebookId: null })); deleteDoc(nbRef(id)); } } }], { anchor: el, right: true }); },
   tagOpen: el => go("notes", { tag: el.dataset.v }),
@@ -1767,6 +1903,8 @@ const ACT = {
   shareOpen: el => { const s = shared.find(x => x.id === el.dataset.v); if (s && getNote(s.noteId)) openNote(s.noteId); }, shareCopy: el => copy(shareUrl(el.dataset.v), "Paylaşım bağlantısı kopyalandı."),
   restoreNote: () => { patchNote(curId, { trashed: false, updatedAt: Date.now() }); toast("Not geri yüklendi."); },
   emptyTrash: () => { const t = notes.filter(n => n.trashed); if (t.length && confirm(`Çöp kutusundaki ${t.length} not kalıcı olarak silinsin mi?`)) { t.forEach(n => purgeMedia(n.content)); batchDelete(t.map(n => noteRef(n.id))); } },
+  pwSheet: () => pwSheet(),
+  toggleAppLock: () => { if (!sec.hash) { toast("Önce bir şifre belirleyin."); return pwSheet(() => setAppLock(true)); } if (sec.appLock) return askPassword(() => setAppLock(false), "Uygulama kilidini kapat"); setAppLock(true); toast("Uygulama girişinde şifre istenecek."); },
   stepNum: el => setNum(el.dataset.k, (+S[el.dataset.k] || 0) + (+el.dataset.d)),
   typoReset: () => { ["tfont", "esize", "tsize", "eweight", "tweight", "elh", "pagew", "padx"].forEach(k => { try { localStorage.removeItem("dnote-" + k); } catch (e) { } }); Object.assign(S, { tfont: "", esize: 14, tsize: 24, eweight: "400", tweight: "700", elh: "1.6", pagew: "900", padx: "22" }); applySettings(); schedule(); toast("Yazı ayarları varsayılana döndü."); },
   setFabLong: el => { S.fabLong = el.dataset.v; store.set("dnote-fabLong", S.fabLong); schedule(); },
@@ -1836,6 +1974,7 @@ function swClose(except) { document.querySelectorAll(".nwrap.reveal").forEach(w 
   }, true);
 })();
 function swDownload(n) {
+  if (lockedNow(n)) return askPassword(() => swDownload(n), "Kilitli not");
   const d = document.createElement("div"); d.innerHTML = n.content || "";
   download(fileSafe(n.title) + ".html", "text/html", `<!doctype html><html lang="tr"><meta charset="utf-8"><title>${esc(n.title)}</title><body style="font-family:sans-serif;max-width:760px;margin:30px auto"><h1>${esc(n.title)}</h1>${d.innerHTML}</body></html>`);
   toast("Not indirildi.");
