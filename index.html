@@ -163,12 +163,13 @@ input,textarea,select{font:inherit;color:inherit}
 .nbimg{width:var(--hthumb,34px);height:var(--hthumb,34px);flex:none;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:var(--accbg);color:var(--acc)}
 .nbimg img{width:100%;height:100%;object-fit:cover;display:block}
 .nbimg .ic{width:calc(var(--hthumb,34px)*.5);height:calc(var(--hthumb,34px)*.5)}
-.nbname{flex:1;min-width:0;font-family:var(--hfont,inherit);font-size:var(--hsize,13px);font-weight:600;white-space:nowrap;display:flex;align-items:center;gap:5px}.nbname .ic{width:12px;height:12px;color:var(--green);flex:none}
+.nbname{flex:1;min-width:0;font-family:var(--hfont,inherit);font-size:var(--hnb,13px);font-weight:600;white-space:nowrap;display:flex;align-items:center;gap:5px}.nbname .ic{width:12px;height:12px;color:var(--green);flex:none}
 .nbcnt{display:inline-flex;align-items:center;gap:4px;color:var(--muted);font-size:11px}.nbcnt .ic{width:12px;height:12px}
 .nbmore,.nrmore{flex:none}
 .nrmore{position:absolute;right:2px;top:50%;transform:translateY(-50%);z-index:2}
 .nwrap .nrow{padding-right:38px}
-#homeNotes .nt{font-family:var(--hfont,inherit);font-size:var(--hsize,13px)}
+#homeNotes .nt{font-family:var(--htfont,inherit);font-size:var(--hsize,13px)}
+#homeNotes .ns{font-family:var(--hsfont,inherit);font-size:var(--hsnip,11px)}
 .nm:empty{display:none}
 .sorting{position:relative;z-index:30;box-shadow:0 10px 28px rgba(0,0,0,.28);transition:none!important;opacity:.97;transform-origin:center}
 .sort-active{touch-action:none}
@@ -340,9 +341,11 @@ body[data-editor=open] #editorView{display:flex}
 .ql-editor .dn-media[data-img="0"],.ql-editor .dn-att{display:inline-block;max-width:100%;margin:6px 0;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--tile);font-size:13px;cursor:pointer;word-break:break-all}
 #editor .ql-editor hr{border:0;border-top:1px solid var(--line);margin:18px 0}
 #editor .ql-editor h1{font-size:1.7em}#editor .ql-editor h2{font-size:1.4em}#editor .ql-editor h3{font-size:1.18em}
-#editor .ql-editor ul[data-checked]>li::before{font-size:1.15em}
+#editor .ql-editor ul[data-checked]>li::before{font-size:1.15em;display:inline-block;text-decoration:none}
+#editor .ql-editor ul[data-checked=true]>li,#vEditor .ql-editor ul[data-checked=true]>li{text-decoration:line-through;text-decoration-thickness:1.5px;color:var(--muted);opacity:.75}
 .fbar{display:flex;align-items:center;gap:2px;overflow-x:auto;padding:5px 8px calc(5px + env(safe-area-inset-bottom));margin:0 10px 8px;background:var(--card);border:1px solid var(--line);border-radius:28px;box-shadow:var(--shadow);flex:none;scrollbar-width:none}
 .fbar::-webkit-scrollbar{display:none}
+@media(min-width:861px){.fbar{cursor:grab;-webkit-user-select:none;user-select:none}.fbar.dragging{cursor:grabbing}}
 .tb{width:40px;height:40px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;flex:none}
 .tb.on{background:var(--accbg);color:var(--acc)}
 .tb.add{background:var(--acc);color:#fff;border-radius:50%}
@@ -634,12 +637,24 @@ const FONTS = [
 const fontCss = n => { const f = FONTS.find(x => x.n === n) || FONTS[0]; return `"${f.n}",${f.g}`; };
 const SIZES = { small: 12, normal: 14, large: 16, xl: 19 };
 const SIZE_LBL = { small: "Küçük", normal: "Normal", large: "Büyük", xl: "Çok büyük" };
-const numS = (k, d) => { const v = parseFloat(store.get("dnote-" + k, "")); return isFinite(v) ? v : d; };
+// Görünüm (yazı) ayarları bilgisayar (geniş ekran) ve telefon için AYRI saklanır
+const isDesk = () => innerWidth > 860;
+const TYPO = ["font", "tfont", "esize", "tsize", "eweight", "tweight", "elh", "pagew", "padx", "hfont", "htfont", "hsfont", "hsize", "hnb", "hsnip", "hthumb"];
+const skey = k => "dnote-" + (isDesk() && TYPO.includes(k) ? "d-" : "") + k;
+const rawS = k => { let v = store.get(skey(k), null); if (v === null && isDesk()) v = store.get("dnote-" + k, null); return v; };   // bilgisayarda kayıt yoksa eski ortak değere bakar
+const strS = (k, d) => { const v = rawS(k); return v === null ? d : v; };
+const numS = (k, d) => { const v = parseFloat(rawS(k)); return isFinite(v) ? v : d; };
 const legacySize = { small: 12, normal: 14, large: 16, xl: 19 }[store.get("dnote-size", "")];
-const S = { theme: store.get("dnote-theme", "light"), font: store.get("dnote-font", "Inter"), sort: store.get("dnote-sort", "updated"), dense: store.get("dnote-dense", "0") === "1",
-  tfont: store.get("dnote-tfont", ""), esize: numS("esize", legacySize || 14), tsize: numS("tsize", 24), eweight: store.get("dnote-eweight", "400"), tweight: store.get("dnote-tweight", "700"),
-  elh: store.get("dnote-elh", "1.6"), pagew: store.get("dnote-pagew", "900"), padx: store.get("dnote-padx", "22"), hfont: store.get("dnote-hfont", ""), hsize: numS("hsize", 13), hthumb: numS("hthumb", 34), fabLong: store.get("dnote-fabLong", "note") };
-const RANGES = { esize: [10, 32], tsize: [14, 48], hsize: [10, 24], hthumb: [24, 80] };
+const HDEF = { hsize: [13, 15], hnb: [13, 15], hsnip: [11, 13], hthumb: [34, 40] };   // [telefon, bilgisayar] varsayılanları
+const hdef = k => HDEF[k][isDesk() ? 1 : 0];
+const S = { theme: store.get("dnote-theme", "light"), sort: store.get("dnote-sort", "updated"), dense: store.get("dnote-dense", "0") === "1", fabLong: store.get("dnote-fabLong", "note") };
+function loadTypo() {
+  Object.assign(S, { font: strS("font", "Inter"), tfont: strS("tfont", ""), esize: numS("esize", legacySize || 14), tsize: numS("tsize", 24), eweight: strS("eweight", "400"), tweight: strS("tweight", "700"),
+    elh: strS("elh", "1.6"), pagew: strS("pagew", "900"), padx: strS("padx", "22"), hfont: strS("hfont", ""), htfont: strS("htfont", ""), hsfont: strS("hsfont", ""),
+    hsize: numS("hsize", hdef("hsize")), hnb: numS("hnb", hdef("hnb")), hsnip: numS("hsnip", hdef("hsnip")), hthumb: numS("hthumb", hdef("hthumb")) });
+}
+loadTypo();
+const RANGES = { esize: [10, 32], tsize: [14, 48], hsize: [10, 28], hnb: [10, 28], hsnip: [9, 24], hthumb: [24, 96] };
 function applySettings() {
   const dark = S.theme === "dark" || (S.theme === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
   const eff = S.theme === "sepia" ? "sepia" : (dark ? "dark" : "light");
@@ -648,10 +663,12 @@ function applySettings() {
   const r = document.documentElement.style;
   r.setProperty("--efont", fontCss(S.font)); r.setProperty("--esize", S.esize + "px"); r.setProperty("--eweight", S.eweight); r.setProperty("--elh", S.elh);
   r.setProperty("--tsize", S.tsize + "px"); r.setProperty("--tweight", S.tweight); if (S.tfont) r.setProperty("--tfont", fontCss(S.tfont)); else r.removeProperty("--tfont");
-  r.setProperty("--hsize", S.hsize + "px"); r.setProperty("--hthumb", S.hthumb + "px"); if (S.hfont) r.setProperty("--hfont", fontCss(S.hfont)); else r.removeProperty("--hfont");
+  r.setProperty("--hsize", S.hsize + "px"); r.setProperty("--hnb", S.hnb + "px"); r.setProperty("--hsnip", S.hsnip + "px"); r.setProperty("--hthumb", S.hthumb + "px");
+  [["hfont", "--hfont"], ["htfont", "--htfont"], ["hsfont", "--hsfont"]].forEach(([k, v]) => { if (S[k]) r.setProperty(v, fontCss(S[k])); else r.removeProperty(v); });
   r.setProperty("--epagew", S.pagew + "px"); r.setProperty("--epadx", S.padx + "px");
   try { autoGrow(); } catch (e) { }
 }
+let wasDesk = isDesk(); addEventListener("resize", () => { if (isDesk() !== wasDesk) { wasDesk = isDesk(); loadTypo(); applySettings(); schedule(); } });
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", () => { if (S.theme === "system") applySettings(); });
 applySettings();
 function fitViewport() { const vv = window.visualViewport; document.documentElement.style.setProperty("--vh", (vv ? vv.height : innerHeight) + "px"); }
@@ -881,6 +898,10 @@ function noteRow(n, q = "") {
     <div class="nm">${n.reminder ? `<span class="chip rem">${ic("bell")}${fmtDT(n.reminder)}</span>` : ""}${(n.tags || []).slice(0, 3).map(t => `<span class="chip">${esc(t)}</span>`).join("")}</div>${n.trashed ? "" : `<button class="tbtn sm nrmore" data-act="noteMenu" data-v="${n.id}">${ic("dots")}</button>`}</div></div>`;
 }
 function listNotes(a = {}) {
+  if (a.nb !== undefined && !a.trash) {   // not defteri içinde elle sıralama (nbOrd) varsa o sıra kullanılır
+    const base = live().filter(n => nbKey(n) === a.nb);
+    if (base.some(n => n.nbOrd != null)) return orderItems(base, "nbOrd").sort((x, y) => (y.pinned ? 1 : 0) - (x.pinned ? 1 : 0));
+  }
   let l = a.trash ? notes.filter(n => n.trashed) : live();
   if (a.nb !== undefined) l = l.filter(n => nbKey(n) === a.nb);
   if (a.tag) l = l.filter(n => (n.tags || []).includes(a.tag));
@@ -1129,7 +1150,7 @@ function renderSettings() {
   $("body-settings").innerHTML =
     `<div class="setg">Hesap</div><div class="srow" style="cursor:default"><span class="av" style="width:42px;height:42px">${avatarInner()}</span><div class="st">${esc((user && user.displayName) || "")}<small>${esc((user && user.email) || "")}</small></div></div>
      <div class="setg">Tema</div>${seg("theme", [["light", "Açık"], ["dark", "Koyu"], ["sepia", "Sepya"], ["system", "Sistem"]])}
-     <div class="setg">Not yazısı</div>
+     <div class="setg">Not yazısı · ${isDesk() ? "Bilgisayar" : "Telefon"}</div>
      <div class="setprev"><div class="pt">Not başlığı örneği</div><div class="pb">Hızlı kahverengi tilki tembel köpeğin üstünden atladı. Bu metin not içindeki yazının görünümünü gösterir.</div></div>
      <div class="setl">Başlık yazı tipi</div><select class="sel" data-sel="tfont"><option value="">Not yazısıyla aynı</option>${FONTS.map(f => `<option value="${esc(f.n)}" ${S.tfont === f.n ? "selected" : ""}>${esc(f.n)}</option>`).join("")}</select>
      <div class="stp"><span>Başlık boyutu</span><span class="sv"><button data-act="stepNum" data-k="tsize" data-d="-1">−</button><b data-lbl="tsize">${S.tsize} px</b><button data-act="stepNum" data-k="tsize" data-d="1">+</button></span></div>
@@ -1146,10 +1167,17 @@ function renderSettings() {
      <div class="srow" data-act="typoReset">${ic("restore")}<div class="st">Yazı ayarlarını sıfırla<small>Varsayılan boyut, kalınlık ve yazı tiplerine döner</small></div></div>
      <div class="setg">Artı (+) düğmesine uzun basınca</div>
      ${Object.entries(FAB_ACTS).map(([k, [l]]) => `<div class="frow" data-act="setFabLong" data-v="${k}"><div class="fn">${l}</div>${S.fabLong === k ? ic("check") : ""}</div>`).join("")}
-     <div class="setg">Ana sayfa görünümü</div>
-     <div class="setl">Not ve not defteri başlık yazı tipi</div><select class="sel" data-sel="hfont"><option value="">Varsayılan</option>${FONTS.map(f => `<option value="${esc(f.n)}" ${S.hfont === f.n ? "selected" : ""}>${esc(f.n)}</option>`).join("")}</select>
-     <div class="stp"><span>Başlık boyutu</span><span class="sv"><button data-act="stepNum" data-k="hsize" data-d="-1">−</button><b data-lbl="hsize">${S.hsize} px</b><button data-act="stepNum" data-k="hsize" data-d="1">+</button></span></div>
+     <div class="setg">Ana sayfa görünümü · ${isDesk() ? "Bilgisayar" : "Telefon"}</div>
+     <div class="srow" style="cursor:default">${ic("info")}<div class="st"><small style="margin:0">Bu bölümdeki ve yukarıdaki yazı ayarları yalnızca bu ekran türü (${isDesk() ? "bilgisayar / geniş ekran" : "telefon"}) için kaydedilir; diğeri etkilenmez.</small></div></div>
+     <div class="setl">Not defteri adı · yazı tipi</div><select class="sel" data-sel="hfont"><option value="">Varsayılan</option>${FONTS.map(f => `<option value="${esc(f.n)}" ${S.hfont === f.n ? "selected" : ""}>${esc(f.n)}</option>`).join("")}</select>
+     <div class="stp"><span>Not defteri adı · boyut</span><span class="sv"><button data-act="stepNum" data-k="hnb" data-d="-1">−</button><b data-lbl="hnb">${S.hnb} px</b><button data-act="stepNum" data-k="hnb" data-d="1">+</button></span></div>
+     <input type="range" class="rng" data-range="hnb" min="${RANGES.hnb[0]}" max="${RANGES.hnb[1]}" step="1" value="${S.hnb}">
+     <div class="setl">Not başlığı · yazı tipi</div><select class="sel" data-sel="htfont"><option value="">Varsayılan</option>${FONTS.map(f => `<option value="${esc(f.n)}" ${S.htfont === f.n ? "selected" : ""}>${esc(f.n)}</option>`).join("")}</select>
+     <div class="stp"><span>Not başlığı · boyut</span><span class="sv"><button data-act="stepNum" data-k="hsize" data-d="-1">−</button><b data-lbl="hsize">${S.hsize} px</b><button data-act="stepNum" data-k="hsize" data-d="1">+</button></span></div>
      <input type="range" class="rng" data-range="hsize" min="${RANGES.hsize[0]}" max="${RANGES.hsize[1]}" step="1" value="${S.hsize}">
+     <div class="setl">Not içeriği (altındaki yazı) · yazı tipi</div><select class="sel" data-sel="hsfont"><option value="">Varsayılan</option>${FONTS.map(f => `<option value="${esc(f.n)}" ${S.hsfont === f.n ? "selected" : ""}>${esc(f.n)}</option>`).join("")}</select>
+     <div class="stp"><span>Not içeriği (altındaki yazı) · boyut</span><span class="sv"><button data-act="stepNum" data-k="hsnip" data-d="-1">−</button><b data-lbl="hsnip">${S.hsnip} px</b><button data-act="stepNum" data-k="hsnip" data-d="1">+</button></span></div>
+     <input type="range" class="rng" data-range="hsnip" min="${RANGES.hsnip[0]}" max="${RANGES.hsnip[1]}" step="1" value="${S.hsnip}">
      <div class="stp"><span>Not defteri küçük resim boyutu</span><span class="sv"><button data-act="stepNum" data-k="hthumb" data-d="-2">−</button><b data-lbl="hthumb">${S.hthumb} px</b><button data-act="stepNum" data-k="hthumb" data-d="2">+</button></span></div>
      <input type="range" class="rng" data-range="hthumb" min="${RANGES.hthumb[0]}" max="${RANGES.hthumb[1]}" step="1" value="${S.hthumb}">
      <div class="srow" data-act="homeReset">${ic("restore")}<div class="st">Ana sayfa ayarlarını sıfırla</div></div>
@@ -1828,11 +1856,11 @@ function helpSheet() {
 
 /* ---------- Ayarlar: sayısal yazı boyutları ---------- */
 function setNum(k, v) {
-  const [lo, hi] = RANGES[k]; v = Math.max(lo, Math.min(hi, Math.round(+v || lo))); S[k] = v; store.set("dnote-" + k, String(v)); applySettings();
+  const [lo, hi] = RANGES[k]; v = Math.max(lo, Math.min(hi, Math.round(+v || lo))); S[k] = v; store.set(skey(k), String(v)); applySettings();
   qsa(`[data-lbl="${k}"]`).forEach(e => e.textContent = v + " px"); qsa(`[data-range="${k}"]`).forEach(e => { if (+e.value !== v) e.value = v; });
 }
 document.addEventListener("input", e => { const r = e.target.closest && e.target.closest("[data-range]"); if (r) setNum(r.dataset.range, r.value); });
-document.addEventListener("change", e => { const t = e.target.closest && e.target.closest("[data-sel]"); if (!t) return; S[t.dataset.sel] = t.value; store.set("dnote-" + t.dataset.sel, t.value); applySettings(); schedule(); });
+document.addEventListener("change", e => { const t = e.target.closest && e.target.closest("[data-sel]"); if (!t) return; S[t.dataset.sel] = t.value; store.set(skey(t.dataset.sel), t.value); applySettings(); schedule(); });
 
 /* ---------- Not defteri düzenleme (ad, renk, resim) ---------- */
 const NB_COLORS = ["#00a82d", "#2f7df6", "#e5484d", "#f5a000", "#8a56e6", "#e44d8f", "#14a3a3", "#6b7280"];
@@ -1930,6 +1958,17 @@ window.__sorting = false;
 })();
 
 
+/* ---------- Alt biçim çubuğu: fareyle tutup sürükle / tekerlekle kaydır (bilgisayar) ---------- */
+(() => {
+  const f = $("fbar"); let d = null;
+  f.addEventListener("pointerdown", e => { if (e.pointerType !== "mouse" || e.button !== 0) return; d = { x: e.clientX, sl: f.scrollLeft, m: false }; });
+  addEventListener("pointermove", e => { if (!d) return; const dx = e.clientX - d.x; if (!d.m && Math.abs(dx) > 4) { d.m = true; f.classList.add("dragging"); } if (d.m) { f.scrollLeft = d.sl - dx; e.preventDefault(); } });
+  const up = () => { if (d && d.m) { f.dataset.drag = "1"; setTimeout(() => { delete f.dataset.drag; }, 60); } f.classList.remove("dragging"); d = null; };
+  addEventListener("pointerup", up); addEventListener("pointercancel", up);
+  f.addEventListener("click", e => { if (f.dataset.drag) { e.stopPropagation(); e.preventDefault(); } }, true);
+  f.addEventListener("wheel", e => { if (f.scrollWidth > f.clientWidth && Math.abs(e.deltaY) > Math.abs(e.deltaX)) { f.scrollLeft += e.deltaY; e.preventDefault(); } }, { passive: false });
+})();
+
 /* ---------- Ana Sayfa / Notlar / Not defterleri arasında sağa-sola kaydırma ---------- */
 const tabs = () => navSet.filter(k => k !== "tasks" && k !== "calendar");
 (() => {
@@ -1981,7 +2020,7 @@ const ACT = {
   notesMenu: el => showMenu([{ i: "notes", t: S.dense ? "Ayrıntılı görünüm" : "Kompakt görünüm", f: () => { S.dense = !S.dense; store.set("dnote-dense", S.dense ? "1" : "0"); schedule(); } }, { i: "noteplus", t: "Yeni not", f: () => createNote() }], { anchor: el, right: true }),
   nbOpen: el => go("notes", { nb: el.dataset.v || null }),
   navEdit: () => navSheet(),
-  homeReset: () => { ["hfont", "hsize", "hthumb"].forEach(k => { try { localStorage.removeItem("dnote-" + k); } catch (e) { } }); Object.assign(S, { hfont: "", hsize: 13, hthumb: 34 }); applySettings(); schedule(); },
+  homeReset: () => { ["hfont", "htfont", "hsfont", "hsize", "hnb", "hsnip", "hthumb"].forEach(k => { try { localStorage.removeItem(skey(k)); } catch (e) { } }); loadTypo(); applySettings(); schedule(); },
   noteMenu: el => noteMoreMenu(el.dataset.v, el),
   nbMenu: el => { const id = el.dataset.v, b = notebooks.find(x => x.id === id);
     if (!id) return showMenu([
@@ -2015,11 +2054,11 @@ const ACT = {
   pwSheet: () => pwSheet(),
   toggleAppLock: () => { if (!sec.hash) { toast("Önce bir şifre belirleyin."); return pwSheet(() => setAppLock(true)); } if (sec.appLock) return askPassword(() => setAppLock(false), "Uygulama kilidini kapat"); setAppLock(true); toast("Uygulama girişinde şifre istenecek."); },
   stepNum: el => setNum(el.dataset.k, (+S[el.dataset.k] || 0) + (+el.dataset.d)),
-  typoReset: () => { ["tfont", "esize", "tsize", "eweight", "tweight", "elh", "pagew", "padx"].forEach(k => { try { localStorage.removeItem("dnote-" + k); } catch (e) { } }); Object.assign(S, { tfont: "", esize: 14, tsize: 24, eweight: "400", tweight: "700", elh: "1.6", pagew: "900", padx: "22" }); applySettings(); schedule(); toast("Yazı ayarları varsayılana döndü."); },
+  typoReset: () => { ["font", "tfont", "esize", "tsize", "eweight", "tweight", "elh", "pagew", "padx"].forEach(k => { try { localStorage.removeItem(skey(k)); } catch (e) { } }); loadTypo(); applySettings(); schedule(); toast("Yazı ayarları varsayılana döndü."); },
   setFabLong: el => { S.fabLong = el.dataset.v; store.set("dnote-fabLong", S.fabLong); schedule(); },
   whatsNew: () => whatsNew(), help: () => helpSheet(),
-  set: el => { const k = el.dataset.k; let v = el.dataset.v; if (k === "dense") { S.dense = v === "1"; store.set("dnote-dense", v); } else { S[k] = v; store.set("dnote-" + k, v); } applySettings(); schedule(); },
-  setFont: el => { S.font = el.dataset.v; store.set("dnote-font", S.font); applySettings(); schedule(); },
+  set: el => { const k = el.dataset.k; let v = el.dataset.v; if (k === "dense") { S.dense = v === "1"; store.set("dnote-dense", v); } else { S[k] = v; store.set(skey(k), v); } applySettings(); schedule(); },
+  setFont: el => { S.font = el.dataset.v; store.set(skey("font"), S.font); applySettings(); schedule(); },
   notifPerm: () => { if (!("Notification" in window)) return toast("Bu tarayıcı bildirimleri desteklemiyor."); if (Notification.permission === "denied") return toast("Bildirimler tarayıcı ayarlarından engellenmiş."); Notification.requestPermission().then(() => schedule()); },
   logout, qClear: () => { $("qIn").value = ""; renderSearch(); $("qIn").focus(); },
   eUndo: () => { quill.history.undo(); }, eRedo: () => { quill.history.redo(); },
@@ -2122,11 +2161,17 @@ function nbDetail(id) {
     ["Not sayısı", ns.length], ["Toplam kelime", words], ["Metin boyutu", fmtBytes(size)],
     ["Ek / resim sayısı", files], ["Eklerin boyutu", fmtBytes(fsize)], ["Kilit", b.locked ? "Kilitli" : "Yok"], ["Kısayol", b.shortcut ? "Evet" : "Hayır"]]);
 }
+function moveInNotebook(id, d) {
+  const nb = nbKey(getNote(id)), l = listNotes({ nb }), i = l.findIndex(n => n.id === id), j = i + d; if (i < 0 || j < 0 || j >= l.length) return;
+  [l[i], l[j]] = [l[j], l[i]]; const b = writeBatch(db); l.forEach((n, k) => { n.nbOrd = k; b.update(noteRef(n.id), { nbOrd: k }); }); b.commit().catch(e => console.warn(e)); schedule();
+}
 function noteMoreMenu(id, el) {
   const n = getNote(id); if (!n) return;
+  const inNb = route.p === "notes" && route.a && route.a.nb !== undefined && !n.trashed, lst = inNb ? listNotes({ nb: route.a.nb }) : [], pos = lst.findIndex(x => x.id === id);
   showMenu([
     { i: "notes", t: "Notu aç", f: () => openNote(id) },
     { i: "info", t: "Not detayı", f: () => noteDetail(id) },
+    ...(inNb && pos > 0 ? [{ i: "chevu", t: "Yukarı taşı", f: () => moveInNotebook(id, -1) }] : []), ...(inNb && pos >= 0 && pos < lst.length - 1 ? [{ i: "chevd", t: "Aşağı taşı", f: () => moveInNotebook(id, 1) }] : []),
     { i: "lock", t: n.locked ? "Kilidi kaldır" : "Kilitle", f: () => toggleLock(n, v => patchNote(id, { locked: v })) },
     { i: "pin", t: n.pinned ? "Not defterinden sabitlemeyi kaldır" : "Not defterine sabitle", f: () => { patchNote(id, { pinned: !n.pinned }); toast(n.pinned ? "Not sabitlendi." : "Sabitleme kaldırıldı."); schedule(); } },
     { i: "pin", t: n.homePinned ? "Giriş sayfasından kaldır" : "Giriş sayfasına sabitle", f: () => { patchNote(id, { homePinned: !n.homePinned }); toast(n.homePinned ? "Giriş sayfasına sabitlendi." : "Giriş sayfasından kaldırıldı."); schedule(); } },
