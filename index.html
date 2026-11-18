@@ -703,6 +703,9 @@ Attach.blotName = "attach"; Attach.tagName = "div"; Attach.className = "dn-att";
 
 const quill = new Quill("#editor", { theme: "snow", placeholder: "Yazmaya başlayın…", modules: { toolbar: false }, scrollingContainer: "#eScroll" });
 let lastRange = null;
+// Yapılacaklar kutusu: Quill hem touchstart hem (dokunmadan sonra üretilen) mousedown ile tik değiştirir → telefonda tek dokunuş iki kez çevirip eski haline getiriyordu. Dokunmadan sonraki sahte mousedown'u engelle.
+(() => { let lt = 0; quill.root.addEventListener("touchstart", () => { lt = Date.now(); }, { capture: true, passive: true });
+  quill.root.addEventListener("mousedown", e => { if (Date.now() - lt < 1200 && e.target.parentNode && e.target.parentNode.getAttribute && e.target.parentNode.getAttribute("data-checked") !== null) e.stopPropagation(); }, true); })();
 
 /* ================= Durum ================= */
 const SHARE_ID = new URLSearchParams(location.search).get("s");
