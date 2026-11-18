@@ -168,8 +168,8 @@ input,textarea,select{font:inherit;color:inherit}
 .nbmore,.nrmore{flex:none}
 .nrmore{position:absolute;right:2px;top:50%;transform:translateY(-50%);z-index:2}
 .nwrap .nrow{padding-right:38px}
-#homeNotes .nt{font-family:var(--htfont,inherit);font-size:var(--hsize,13px)}
-#homeNotes .ns{font-family:var(--hsfont,inherit);font-size:var(--hsnip,11px)}
+.nrow .nt{font-family:var(--htfont,inherit);font-size:var(--hsize,13px)}
+.nrow .ns{font-family:var(--hsfont,inherit);font-size:var(--hsnip,11px)}
 .nm:empty{display:none}
 .sorting{position:relative;z-index:30;box-shadow:0 10px 28px rgba(0,0,0,.28);transition:none!important;opacity:.97;transform-origin:center}
 .sort-active{touch-action:none}
@@ -355,7 +355,7 @@ body[data-editor=open] #editorView{display:flex}
 
 /* ---------- Masaüstü ---------- */
 @media(min-width:861px){
-  #app.show{display:grid;grid-template-columns:236px 400px minmax(0,1fr);grid-template-rows:minmax(0,1fr);height:100%;overflow:hidden}
+  #app.show{display:grid;grid-template-columns:236px clamp(380px,24vw,520px) minmax(0,1fr);grid-template-rows:minmax(0,1fr);height:100%;overflow:hidden}
   #side,#main,#editorView{min-height:0;max-height:100%}
   #side{display:flex;flex-direction:column;background:var(--side);border-right:1px solid var(--line);padding-top:12px;min-height:0}
   #main{position:relative;border-right:1px solid var(--line)}
@@ -641,7 +641,7 @@ const SIZE_LBL = { small: "Küçük", normal: "Normal", large: "Büyük", xl: "�
 const isDesk = () => innerWidth > 860;
 const TYPO = ["font", "tfont", "esize", "tsize", "eweight", "tweight", "elh", "pagew", "padx", "hfont", "htfont", "hsfont", "hsize", "hnb", "hsnip", "hthumb"];
 const skey = k => "dnote-" + (isDesk() && TYPO.includes(k) ? "d-" : "") + k;
-const rawS = k => { let v = store.get(skey(k), null); if (v === null && isDesk()) v = store.get("dnote-" + k, null); return v; };   // bilgisayarda kayıt yoksa eski ortak değere bakar
+const rawS = k => { let v = store.get(skey(k), null); if (v === null && isDesk() && k !== "pagew" && k !== "padx") v = store.get("dnote-" + k, null); return v; };   // bilgisayarda kayıt yoksa eski ortak değere bakar
 const strS = (k, d) => { const v = rawS(k); return v === null ? d : v; };
 const numS = (k, d) => { const v = parseFloat(rawS(k)); return isFinite(v) ? v : d; };
 const legacySize = { small: 12, normal: 14, large: 16, xl: 19 }[store.get("dnote-size", "")];
@@ -650,7 +650,7 @@ const hdef = k => HDEF[k][isDesk() ? 1 : 0];
 const S = { theme: store.get("dnote-theme", "light"), sort: store.get("dnote-sort", "updated"), dense: store.get("dnote-dense", "0") === "1", fabLong: store.get("dnote-fabLong", "note") };
 function loadTypo() {
   Object.assign(S, { font: strS("font", "Inter"), tfont: strS("tfont", ""), esize: numS("esize", legacySize || 14), tsize: numS("tsize", 24), eweight: strS("eweight", "400"), tweight: strS("tweight", "700"),
-    elh: strS("elh", "1.6"), pagew: strS("pagew", "900"), padx: strS("padx", "22"), hfont: strS("hfont", ""), htfont: strS("htfont", ""), hsfont: strS("hsfont", ""),
+    elh: strS("elh", "1.6"), pagew: strS("pagew", isDesk() ? "100000" : "900"), padx: strS("padx", isDesk() ? "34" : "22"), hfont: strS("hfont", ""), htfont: strS("htfont", ""), hsfont: strS("hsfont", ""),
     hsize: numS("hsize", hdef("hsize")), hnb: numS("hnb", hdef("hnb")), hsnip: numS("hsnip", hdef("hsnip")), hthumb: numS("hthumb", hdef("hthumb")) });
 }
 loadTypo();
@@ -900,7 +900,7 @@ function noteRow(n, q = "") {
 function listNotes(a = {}) {
   if (a.nb !== undefined && !a.trash) {   // not defteri içinde elle sıralama (nbOrd) varsa o sıra kullanılır
     const base = live().filter(n => nbKey(n) === a.nb);
-    if (base.some(n => n.nbOrd != null)) return orderItems(base, "nbOrd").sort((x, y) => (y.pinned ? 1 : 0) - (x.pinned ? 1 : 0));
+    if (base.some(n => n.nbOrd != null)) return orderItems(base, "nbOrd");
   }
   let l = a.trash ? notes.filter(n => n.trashed) : live();
   if (a.nb !== undefined) l = l.filter(n => nbKey(n) === a.nb);
@@ -1022,7 +1022,8 @@ function renderNotes() {
   const acts = (filtered ? "" : `<button class="tbtn" data-go="search">${ic("search")}</button>`) + tb("sortMenu", "filter") + tb("notesMenu", "dots");
   $("top-notes").innerHTML = filtered ? subTop(title, acts) : mainTop(acts, "Tüm Notlar");
   const l = listNotes(a); const c = $("count-notes"); c.hidden = false; c.textContent = l.length + " NOT";
-  $("body-notes").innerHTML = l.length ? `<div class="lst">${l.map(n => noteRow(n)).join("")}</div>` : emptyHTML("notes", "Burada henüz not yok.<br>Yeni bir not oluşturmak için + düğmesine dokunun.");
+  const srt = a.nb !== undefined && !a.tag && l.length > 1;
+  $("body-notes").innerHTML = l.length ? `<div class="lst" ${srt ? 'data-sort="nbnote"' : ""}>${l.map(n => srt ? noteRow(n).replace('<div class="nwrap"', `<div class="nwrap" data-sk="${n.id}"`) : noteRow(n)).join("")}</div>` : emptyHTML("notes", "Burada henüz not yok.<br>Yeni bir not oluşturmak için + düğmesine dokunun.");
 }
 
 /* ---------- Not defterleri ---------- */
@@ -1163,12 +1164,12 @@ function renderSettings() {
      <div class="setg">Sayfa yapısı</div>
      <div class="setl">Satır aralığı</div>${seg("elh", [["1.3", "Sık"], ["1.6", "Normal"], ["1.9", "Geniş"], ["2.2", "Çok geniş"]])}
      <div class="setl">Kenar boşluğu</div>${seg("padx", [["12", "Dar"], ["22", "Normal"], ["34", "Geniş"]])}
-     <div class="setl">Sayfa genişliği (bilgisayar / tablet)</div>${seg("pagew", [["640", "Dar"], ["760", "Orta"], ["900", "Geniş"], ["1100", "Çok geniş"]])}
+     <div class="setl">Sayfa genişliği (bilgisayar / tablet)</div>${seg("pagew", [["640", "Dar"], ["760", "Orta"], ["900", "Geniş"], ["1100", "Çok geniş"], ["100000", "Tam"]])}
      <div class="srow" data-act="typoReset">${ic("restore")}<div class="st">Yazı ayarlarını sıfırla<small>Varsayılan boyut, kalınlık ve yazı tiplerine döner</small></div></div>
      <div class="setg">Artı (+) düğmesine uzun basınca</div>
      ${Object.entries(FAB_ACTS).map(([k, [l]]) => `<div class="frow" data-act="setFabLong" data-v="${k}"><div class="fn">${l}</div>${S.fabLong === k ? ic("check") : ""}</div>`).join("")}
-     <div class="setg">Ana sayfa görünümü · ${isDesk() ? "Bilgisayar" : "Telefon"}</div>
-     <div class="srow" style="cursor:default">${ic("info")}<div class="st"><small style="margin:0">Bu bölümdeki ve yukarıdaki yazı ayarları yalnızca bu ekran türü (${isDesk() ? "bilgisayar / geniş ekran" : "telefon"}) için kaydedilir; diğeri etkilenmez.</small></div></div>
+     <div class="setg">Ana sayfa ve not listeleri · ${isDesk() ? "Bilgisayar" : "Telefon"}</div>
+     <div class="srow" style="cursor:default">${ic("info")}<div class="st"><small style="margin:0">Not başlığı ve içeriği ayarları ana sayfada, not defteri içinde ve Tüm Notlar listesinde geçerlidir. Bu bölümdeki ve yukarıdaki yazı ayarları yalnızca bu ekran türü (${isDesk() ? "bilgisayar / geniş ekran" : "telefon"}) için kaydedilir; diğeri etkilenmez.</small></div></div>
      <div class="setl">Not defteri adı · yazı tipi</div><select class="sel" data-sel="hfont"><option value="">Varsayılan</option>${FONTS.map(f => `<option value="${esc(f.n)}" ${S.hfont === f.n ? "selected" : ""}>${esc(f.n)}</option>`).join("")}</select>
      <div class="stp"><span>Not defteri adı · boyut</span><span class="sv"><button data-act="stepNum" data-k="hnb" data-d="-1">−</button><b data-lbl="hnb">${S.hnb} px</b><button data-act="stepNum" data-k="hnb" data-d="1">+</button></span></div>
      <input type="range" class="rng" data-range="hnb" min="${RANGES.hnb[0]}" max="${RANGES.hnb[1]}" step="1" value="${S.hnb}">
@@ -1908,7 +1909,7 @@ window.__sorting = false;
   const GAP = 0;
   document.addEventListener("pointerdown", e => {
     if (e.pointerType === "mouse" && e.button !== 0) return;
-    const c = e.target.closest && e.target.closest("#homeNb[data-sort], #homeNotes[data-sort]"); clearTimeout(timer); pend = null;
+    const c = e.target.closest && e.target.closest("#homeNb[data-sort], #homeNotes[data-sort], #body-notes [data-sort]"); clearTimeout(timer); pend = null;
     if (!c || e.target.closest(".nact, .nbmore, .nrmore")) return;
     const item = e.target.closest(".nbcard, .nwrap"); if (!item || item.parentNode !== c) return;
     pend = { c, item, id: e.pointerId, x: e.clientX, y: e.clientY }; timer = setTimeout(begin, 450);
@@ -1917,7 +1918,7 @@ window.__sorting = false;
     if (!pend) return; const { c, item, y } = pend; pend = null;
     const items = [...c.children].filter(x => x.dataset.sk); if (items.length < 2) return;
     if (typeof swClose === "function") swClose();
-    const sc = $("scr-home"), idx = items.indexOf(item);
+    const sc = c.closest(".scr") || $("scr-home"), idx = items.indexOf(item);
     st = { c, item, items, idx, newIdx: idx, mids: items.map(x => x.offsetTop + x.offsetHeight / 2), h: item.offsetHeight + GAP, startY: y, y, sc, s0: sc.scrollTop };
     window.__sorting = true; item.classList.add("sorting"); items.forEach(x => { if (x !== item) x.style.transition = "transform .16s"; });
     try { navigator.vibrate && navigator.vibrate(18); } catch (err) { }
@@ -1947,14 +1948,14 @@ window.__sorting = false;
     rest.forEach(x => s.c.appendChild(x));
     if (s.newIdx !== s.idx) {
       const kind = s.c.dataset.sort, ids = rest.map(x => x.dataset.sk), b = writeBatch(db);
-      ids.forEach((id, i) => { if (kind === "nb") { const o = notebooks.find(x => x.id === id); if (o) o.ord = i; b.update(nbRef(id), { ord: i }); } else { const o = getNote(id); if (o) o.homeOrd = i; b.update(noteRef(id), { homeOrd: i }); } });
+      ids.forEach((id, i) => { if (kind === "nbnote") { const o = getNote(id); if (o) o.nbOrd = i; b.update(noteRef(id), { nbOrd: i }); } else if (kind === "nb") { const o = notebooks.find(x => x.id === id); if (o) o.ord = i; b.update(nbRef(id), { ord: i }); } else { const o = getNote(id); if (o) o.homeOrd = i; b.update(noteRef(id), { homeOrd: i }); } });
       b.commit().catch(err => console.warn(err));
     }
     swallow = true; setTimeout(() => { swallow = false; }, 400); window.__sorting = false; setTimeout(() => schedule(), 50);
   };
   ["pointerup", "pointercancel"].forEach(ev => document.addEventListener(ev, () => { clearTimeout(timer); pend = null; end(); }, true));
   document.addEventListener("click", e => { if (swallow) { e.stopPropagation(); e.preventDefault(); swallow = false; } }, true);
-  document.addEventListener("contextmenu", e => { if (e.target.closest && e.target.closest("#homeNb, #homeNotes")) e.preventDefault(); });
+  document.addEventListener("contextmenu", e => { if (e.target.closest && e.target.closest("#homeNb, #homeNotes, #body-notes [data-sort]")) e.preventDefault(); });
 })();
 
 
