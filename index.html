@@ -155,7 +155,7 @@ input,textarea,select{font:inherit;color:inherit}
 #scr-home{background:var(--bg)}
 .htop{display:grid;grid-template-columns:72px 1fr 72px;align-items:center;min-height:40px;padding-top:calc(8px + env(safe-area-inset-top));padding-bottom:6px}
 .hside{display:flex;align-items:center}.hside.r{justify-content:flex-end}
-.htop .homehead{margin:0;display:flex;flex-direction:column;align-items:center}.hlogo{height:44px;width:auto;display:block}[data-theme=dark] .hlogo{background:#f3f3f5;border-radius:12px;padding:3px 10px}.hdate{font-size:11px;color:var(--muted);margin-top:6px}
+.htop .homehead{margin:0;display:flex;flex-direction:column;align-items:center;justify-items:center;text-align:center;width:100%}.hlogo{height:40px;width:auto;display:block;margin:0 auto}[data-theme=dark] .hlogo{background:#f3f3f5;border-radius:12px;padding:3px 10px}.hdate{font-size:11px;color:var(--muted);margin-top:6px}
 .cards{margin:0 0 4px}
 .nbcard{position:relative;display:flex;align-items:center;gap:12px;padding:8px 6px 8px 14px;background:var(--bg);border-bottom:1px solid var(--line);cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:pan-y}
 .nbcard:active{background:var(--sel)}
@@ -171,8 +171,8 @@ input,textarea,select{font:inherit;color:inherit}
 .nm:empty{display:none}
 .sorting{position:relative;z-index:30;box-shadow:0 10px 28px rgba(0,0,0,.28);transition:none!important;opacity:.97;transform-origin:center}
 .sort-active{touch-action:none}
-.nbprev{width:96px;height:96px;border-radius:18px;margin:6px auto 12px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:var(--accbg);color:var(--acc)}
-.nbprev img{width:100%;height:100%;object-fit:cover}.nbprev .ic{width:38px;height:38px}
+.nbprev{width:150px;height:150px;border-radius:26px;margin:6px auto 12px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:var(--accbg);color:var(--acc)}
+.nbprev img{width:100%;height:100%;object-fit:cover}.nbprev .ic{width:60px;height:60px}
 .nbmodes{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;margin-bottom:10px;font-size:13px}
 .nbmodes label{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
 .nbopt{display:flex;justify-content:center;gap:10px;margin-bottom:10px;min-height:36px;align-items:center}
@@ -423,7 +423,7 @@ body[data-editor=open] #editorView{display:flex}
     <section class="scr" id="scr-home">
       <div class="top htop">
         <span class="hside"></span>
-        <div class="homehead"><img class="hlogo" src="logo-home.png" alt="D-Note"><div class="hdate" id="homeDate"></div></div>
+        <div class="homehead"><img class="hlogo" src="logo-text.png" alt="D-Note"><div class="hdate" id="homeDate"></div></div>
         <span class="hside r"><button class="orb" id="orbInstall" data-act="install" hidden title="Uygulamayı yükle"><span data-ic="bolt"></span></button></span>
       </div>
       <button class="searchbox" data-go="search"><span>Herhangi bir notu, görevi veya belgeyi bulun</span><span data-ic="search"></span></button>
@@ -449,9 +449,7 @@ body[data-editor=open] #editorView{display:flex}
   <button class="fab" id="fab" hidden aria-label="Oluştur"></button>
 
   <nav id="nav">
-    <button class="nv" data-nav="home"><span data-ic="home"></span><span>Ana Sayfa</span></button>
-    <button class="nv" data-nav="notes"><span data-ic="notes"></span><span>Notlar</span></button>
-    <button class="nv" data-nav="notebooks"><span data-ic="book"></span><span>Not defterleri</span></button>
+    <span id="navSlots" style="display:contents"></span>
     <button class="nv" data-nav="more"><span data-ic="dots"></span><span>Daha Fazla</span></button>
   </nav>
 
@@ -792,8 +790,38 @@ addEventListener("popstate", e => {
   if ((st.note || null) !== curId) { flushSave(); curId = st.note || null; loadedId = null; }
   showRoute();
 });
+/* ---------- Alt çubuk özelleştirme ---------- */
+const NAVOPT = [["home", "home", "Ana Sayfa"], ["notes", "notes", "Notlar"], ["notebooks", "book", "Not defterleri"], ["shortcuts", "star", "Kısayollar"], ["tasks", "checkc", "Görevler"], ["calendar", "calendar", "Takvim"], ["tags", "tag", "Etiketler"], ["shared", "users", "Paylaşılan"], ["templates", "template", "Şablonlar"], ["trash", "trash", "Çöp Kutusu"]];
+const NAV_DEF = ["home", "notes", "notebooks"];
+let navSet = (() => { try { const a = JSON.parse(store.get("dnote-nav", "null")); if (Array.isArray(a) && a.length === 3 && new Set(a).size === 3 && a.every(k => NAVOPT.some(o => o[0] === k))) return a; } catch (e) { } return NAV_DEF.slice(); })();
+const navInfo = k => NAVOPT.find(o => o[0] === k);
+function buildNav() {
+  $("navSlots").innerHTML = navSet.map(k => { const [, i, t] = navInfo(k); return `<button class="nv" data-nav="${k}"><span data-ic="${i}"></span><span>${t}</span></button>`; }).join("");
+  hydrate($("navSlots"));
+}
+function navSheet() {
+  openSheet(`${shHead("Alt çubuğu düzenle")}<div class="sh-p">Bir konuma dokunup yerine gelecek sayfayı seçin. Seçtiğiniz sayfa çubukta zaten varsa iki konum yer değiştirir.</div>
+    ${navSet.map((k, i) => { const [, ico, t] = navInfo(k); return `<button class="arow" data-slot="${i}">${ic(ico)}<span class="st">${i + 1}. konum: ${t}</span>${ic("chev")}</button>`; }).join("")}
+    <button class="arow" data-slot="reset">${ic("restore")}<span class="st">Varsayılana döndür</span></button>`);
+  $("sheet").onclick = e => {
+    if (e.target.closest("[data-act=closeSheet]")) return closeAll();
+    const b = e.target.closest("[data-slot]"); if (!b) return;
+    if (b.dataset.slot === "reset") { navSet = NAV_DEF.slice(); navSave(); return navSheet(); }
+    navPick(+b.dataset.slot);
+  };
+}
+function navPick(idx) {
+  openSheet(`${shHead(`${idx + 1}. konum`)}${NAVOPT.map(([k, ico, t]) => `<button class="arow" data-pick="${k}">${ic(ico)}<span class="st">${t}</span>${navSet[idx] === k ? ic("check") : navSet.includes(k) ? `<span class="badge">${navSet.indexOf(k) + 1}. konumda</span>` : ""}</button>`).join("")}`);
+  $("sheet").onclick = e => {
+    if (e.target.closest("[data-act=closeSheet]")) return navSheet();
+    const b = e.target.closest("[data-pick]"); if (!b) return; const k = b.dataset.pick, j = navSet.indexOf(k);
+    if (j >= 0 && j !== idx) { navSet[j] = navSet[idx]; } navSet[idx] = k; navSave(); navSheet();
+  };
+}
+function navSave() { store.set("dnote-nav", JSON.stringify(navSet)); buildNav(); updateNav(); if (route.p === "home") schedule(); }
+buildNav();
 function updateNav() {
-  const p = route.p, on = p === "home" ? "home" : p === "notes" ? "notes" : p === "notebooks" ? "notebooks" : p === "search" ? "" : "more";
+  const p = route.p, on = navSet.includes(p) ? p : p === "search" ? "" : "more";
   qsa(".nv").forEach(b => b.classList.toggle("on", b.dataset.nav === on));
   qsa(".sn").forEach(b => b.classList.toggle("on", b.dataset.go === p && !(p === "notes" && route.a && (route.a.nb !== undefined || route.a.tag))));
   const fab = $("fab"); fab.hidden = !["home", "notes", "notebooks", "tasks"].includes(p); if (!fab.dataset.i) { fab.innerHTML = ic("plus"); fab.dataset.i = "1"; }
@@ -1115,6 +1143,7 @@ function renderSettings() {
      <div class="srow" data-act="typoReset">${ic("restore")}<div class="st">Yazı ayarlarını sıfırla<small>Varsayılan boyut, kalınlık ve yazı tiplerine döner</small></div></div>
      <div class="setg">Artı (+) düğmesine uzun basınca</div>
      ${Object.entries(FAB_ACTS).map(([k, [l]]) => `<div class="frow" data-act="setFabLong" data-v="${k}"><div class="fn">${l}</div>${S.fabLong === k ? ic("check") : ""}</div>`).join("")}
+     <div class="srow" data-act="navEdit">${ic("move")}<div class="st">Alt çubuğu düzenle<small>Simgelerin yerini değiştirin veya başka sayfalarla değiştirin</small></div></div>
      <div class="setg">Not listesi</div>${seg("dense", [["0", "Ayrıntılı"], ["1", "Kompakt"]])}
      <div class="setg">Güvenlik</div>
      <div class="srow" data-act="pwSheet">${ic("lock")}<div class="st">Şifre<small>${sec.hash ? "Belirlendi · değiştirmek veya kaldırmak için dokunun" : "Belirlenmedi · uygulama, defter ve notları kilitlemek için"}</small></div></div>
@@ -1713,7 +1742,7 @@ function profileMenu(anchor) {
     ...(canInstall() ? [{ i: "download", t: "Uygulamayı yükle", f: () => ACT.install() }] : []), { i: "logout", t: "Oturumu kapat", red: 1, f: logout }], { anchor, right: false });
 }
 function moreMenu() {
-  showMenu([["star", "Kısayollar", "shortcuts"], ["checkc", "Görevler", "tasks"], ["calendar", "Takvim", "calendar"], ["tag", "Etiketler", "tags"], ["users", "Paylaşılan", "shared"], ["template", "Şablonlar", "templates"], ["trash", "Çöp Kutusu", "trash"]].map(([i, t, p]) => ({ i, t, f: () => go(p) })), { dock: true });
+  showMenu(NAVOPT.filter(o => !navSet.includes(o[0])).map(([p, i, t]) => ({ i, t: p === "notes" ? "Tüm Notlar" : t, f: () => go(p) })), { dock: true });
 }
 function whatsNew() {
   openSheet(`${shHead("Yeni Neler")}<div class="sh-p"><b>Ana Sayfa</b> – hızlı not, görev, etkinlik, kamera, kaydedici ve karalama defteri.<br><b>Zengin metin</b> – yazı tipi, boyut, renk, vurgu, hizalama, kod, alıntı, onay kutuları.<br><b>Görevler, Takvim, Hatırlatıcılar</b><br><b>Şablonlar, Kısayollar, Sabitleme</b><br><b>Paylaşım bağlantısı</b>, yazdırma, dışa aktarma<br><b>Evernote (.enex) içe aktarma</b><br><b>Çevrimdışı çalışma</b> ve otomatik bulut eşitleme</div>`);
@@ -1830,12 +1859,12 @@ window.__sorting = false;
 
 
 /* ---------- Ana Sayfa / Notlar / Not defterleri arasında sağa-sola kaydırma ---------- */
-const TABS = ["home", "notes", "notebooks"];
+const tabs = () => navSet.filter(k => k !== "tasks" && k !== "calendar");
 (() => {
   let st = null;
   document.addEventListener("pointerdown", e => {
     st = null;
-    if (e.pointerType === "mouse" || innerWidth > 860 || !TABS.includes(route.p) || (route.p === "notes" && route.a && (route.a.nb !== undefined || route.a.tag)) || window.__sorting || document.body.dataset.editor === "open") return;
+    if (e.pointerType === "mouse" || innerWidth > 860 || !tabs().includes(route.p) || (route.p === "notes" && route.a && (route.a.nb !== undefined || route.a.tag)) || window.__sorting || document.body.dataset.editor === "open") return;
     if (e.target.closest("input,textarea,select,.nact,.nbmore,.nrmore,#sheet,#menu,#nav,#fab,#lockscr")) return;
     if (!e.target.closest("#main")) return;
     st = { x: e.clientX, y: e.clientY, id: e.pointerId, row: !!e.target.closest(".nwrap"), open: !!document.querySelector(".nwrap.reveal") };
@@ -1846,8 +1875,8 @@ const TABS = ["home", "notes", "notebooks"];
     const dx = e.clientX - s.x, dy = e.clientY - s.y;
     if (window.__sorting || s.open || Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.8) return;
     const d = dx < 0 ? 1 : -1; if (d === 1 && s.row) return;   // satırda sola kaydırma = satır eylemleri
-    const j = TABS.indexOf(route.p) + d; if (j < 0 || j >= TABS.length) return;
-    go(TABS[j]); const sc = $("scr-" + TABS[j]); sc.classList.remove("slL", "slR"); void sc.offsetWidth; sc.classList.add(d > 0 ? "slL" : "slR");
+    const j = tabs().indexOf(route.p) + d; if (j < 0 || j >= tabs().length) return;
+    const tp = tabs()[j]; go(tp); const sc = $("scr-" + tp); sc.classList.remove("slL", "slR"); void sc.offsetWidth; sc.classList.add(d > 0 ? "slL" : "slR");
   };
   document.addEventListener("pointerup", fin, true); document.addEventListener("pointercancel", fin, true);
 })();
@@ -1879,6 +1908,7 @@ const ACT = {
   sortMenu: el => showMenu([["updated", "Güncelleme tarihi"], ["created", "Oluşturma tarihi"], ["title", "Başlık (A–Z)"]].map(([v, t]) => ({ i: S.sort === v ? "check" : "filter", t, f: () => { S.sort = v; store.set("dnote-sort", v); schedule(); } })), { anchor: el, right: true }),
   notesMenu: el => showMenu([{ i: "notes", t: S.dense ? "Ayrıntılı görünüm" : "Kompakt görünüm", f: () => { S.dense = !S.dense; store.set("dnote-dense", S.dense ? "1" : "0"); schedule(); } }, { i: "noteplus", t: "Yeni not", f: () => createNote() }], { anchor: el, right: true }),
   nbOpen: el => go("notes", { nb: el.dataset.v || null }),
+  navEdit: () => navSheet(),
   noteMenu: el => noteMoreMenu(el.dataset.v, el),
   nbMenu: el => { const id = el.dataset.v, b = notebooks.find(x => x.id === id);
     if (!id) return showMenu([
