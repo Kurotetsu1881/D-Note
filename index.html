@@ -152,23 +152,23 @@ input,textarea,select{font:inherit;color:inherit}
 .empty{padding:48px 24px;font-size:12.5px;text-align:center;color:var(--muted);line-height:1.6}
 .empty .ic{width:38px;height:38px;opacity:.5;margin-bottom:8px}
 :root{--homebg:#f3f3f5}[data-theme=dark]{--homebg:#0f1011}[data-theme=sepia]{--homebg:#ece1c8}
-#scr-home{background:var(--homebg)}
+#scr-home{background:var(--bg)}
 .htop{display:grid;grid-template-columns:72px 1fr 72px;align-items:center;min-height:40px;padding-top:calc(8px + env(safe-area-inset-top));padding-bottom:6px}
 .hside{display:flex;align-items:center}.hside.r{justify-content:flex-end}
 .htop .homehead{margin:0;display:flex;flex-direction:column;align-items:center}.hlogo{height:44px;width:auto;display:block}[data-theme=dark] .hlogo{background:#f3f3f5;border-radius:12px;padding:3px 10px}.hdate{font-size:11px;color:var(--muted);margin-top:6px}
 .cards{margin:0 0 4px}
-.cards .nwrap{border-radius:12px;margin-bottom:8px;border:0;background:var(--bg)}
-.cards .nwrap .nrow{border-radius:12px}
-.nbcard{position:relative;display:flex;align-items:stretch;background:var(--bg);border-radius:12px;margin-bottom:8px;min-height:60px;overflow:hidden;cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:pan-y}
+.nbcard{position:relative;display:flex;align-items:center;gap:12px;padding:8px 6px 8px 14px;background:var(--bg);border-bottom:1px solid var(--line);cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:pan-y}
 .nbcard:active{background:var(--sel)}
-.nbimg{width:60px;flex:none;display:flex;align-items:center;justify-content:center;background:var(--accbg);color:var(--acc)}
+.nbcard:active{background:var(--sel)}
+.nbimg{width:34px;height:34px;flex:none;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:var(--accbg);color:var(--acc)}
 .nbimg img{width:100%;height:100%;object-fit:cover;display:block}
-.nbimg .ic{width:24px;height:24px}
-.nbinfo{flex:1;min-width:0;padding:8px 8px 7px 12px;display:flex;flex-direction:column;justify-content:space-between}
-.nbname{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:26px;display:flex;align-items:center;gap:5px}.nbname .ic{width:12px;height:12px;color:var(--muted);flex:none}
-.nbfoot{display:flex;align-items:flex-end;justify-content:space-between;color:var(--muted);font-size:10px}
-.nbfoot .cnt{display:inline-flex;align-items:center;gap:4px}.nbfoot .cnt .ic{width:12px;height:12px}
-.nbmore{position:absolute;top:4px;right:2px}
+.nbimg .ic{width:17px;height:17px}
+.nbname{flex:1;min-width:0;font-size:13px;font-weight:600;white-space:nowrap;display:flex;align-items:center;gap:5px}.nbname .ic{width:12px;height:12px;color:var(--green);flex:none}
+.nbcnt{display:inline-flex;align-items:center;gap:4px;color:var(--muted);font-size:11px}.nbcnt .ic{width:12px;height:12px}
+.nbmore,.nrmore{flex:none}
+.nrmore{position:absolute;right:2px;top:50%;transform:translateY(-50%);z-index:2}
+.nwrap .nrow{padding-right:38px}
+.nm:empty{display:none}
 .sorting{position:relative;z-index:30;box-shadow:0 10px 28px rgba(0,0,0,.28);transition:none!important;opacity:.97;transform-origin:center}
 .sort-active{touch-action:none}
 .nbprev{width:96px;height:96px;border-radius:18px;margin:6px auto 12px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:var(--accbg);color:var(--acc)}
@@ -229,7 +229,7 @@ body[data-p=search] #nav,body[data-p=search] .fab,body[data-editor=open] #nav,bo
 .seg button{flex:1;padding:8px 6px;border-radius:9px;text-align:center;font-size:12px}
 .seg button.on{background:var(--card);font-weight:600;box-shadow:0 1px 4px rgba(0,0,0,.12)}
 .frow{display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid var(--line);cursor:pointer}
-.frow .fn{flex:1;font-size:16px;line-height:1.2}
+.frow .fn{flex:1;font:inherit;font-size:13.5px;line-height:1.3}
 .frow small{display:block;font-family:Inter,sans-serif;font-size:10.5px;color:var(--muted)}
 .frow .ic{color:var(--green)}
 .srow{display:flex;align-items:center;gap:13px;padding:12px 4px;border-bottom:1px solid var(--line);cursor:pointer}
@@ -427,8 +427,8 @@ body[data-editor=open] #editorView{display:flex}
         <span class="hside r"><button class="orb" id="orbInstall" data-act="install" hidden title="Uygulamayı yükle"><span data-ic="bolt"></span></button></span>
       </div>
       <button class="searchbox" data-go="search"><span>Herhangi bir notu, görevi veya belgeyi bulun</span><span data-ic="search"></span></button>
-      <div id="homeNb" class="cards" data-sort="nb"></div>
-      <div id="homeNotes" class="cards" data-sort="note"></div>
+      <div id="homeNb" class="lst" data-sort="nb"></div>
+      <div id="homeNotes" class="lst" data-sort="note"></div>
       <div id="homeEmpty"></div>
     </section>
 
@@ -847,7 +847,7 @@ function noteRow(n, q = "") {
   return `<div class="nwrap" data-w="${n.trashed ? 104 : 186}"><div class="nact">${acts}</div><div class="nrow ${S.dense ? "dense" : ""} ${n.id === curId ? "cur" : ""}" data-open="${n.id}">
     <div class="nmain"><div class="nt">${n.pinned ? ic("pin") : ""}${lockFlag(n) ? ic("lock") : ""}<span>${esc(n.title) || "Başlıksız"}</span></div><div class="ns">${lk ? "<i>Kilitli not</i>" : (snippet(n, q) || "<i>Boş not</i>")}</div></div>
     ${im ? `<img class="nth" src="${im}" alt="">` : ""}
-    <div class="nm"><span>${fmtDate(S.sort === "created" ? n.createdAt : n.updatedAt)}</span>${n.reminder ? `<span class="chip rem">${ic("bell")}${fmtDT(n.reminder)}</span>` : ""}${(n.tags || []).slice(0, 3).map(t => `<span class="chip">${esc(t)}</span>`).join("")}</div></div></div>`;
+    <div class="nm">${n.reminder ? `<span class="chip rem">${ic("bell")}${fmtDT(n.reminder)}</span>` : ""}${(n.tags || []).slice(0, 3).map(t => `<span class="chip">${esc(t)}</span>`).join("")}</div>${n.trashed ? "" : `<button class="tbtn sm nrmore" data-act="noteMenu" data-v="${n.id}">${ic("dots")}</button>`}</div></div>`;
 }
 function listNotes(a = {}) {
   let l = a.trash ? notes.filter(n => n.trashed) : live();
@@ -866,9 +866,8 @@ const nbList = () => orderItems(notebooks, "ord");
 function nbThumb(b, cls = "nbi") { return b.img ? `<img class="${cls}" src="${b.img}" alt="">` : `<span class="${cls}" style="${b.color ? "background:" + esc(b.color) + ";color:#fff" : "background:var(--accbg);color:var(--acc)"}">${ic("book")}</span>`; }
 function nbCard(b) {
   const cnt = live().filter(n => nbKey(n) === b.id).length;
-  const last = Math.max(b.createdAt || 0, ...live().filter(n => nbKey(n) === b.id).map(n => n.updatedAt || 0));
   return `<div class="nbcard" data-act="nbOpen" data-v="${b.id}" data-sk="${b.id}"><div class="nbimg" style="${b.color && !b.img ? "background:" + esc(b.color) + ";color:#fff" : ""}">${b.img ? `<img src="${b.img}" alt="">` : ic("book")}</div>
-    <div class="nbinfo"><div class="nbname">${b.locked && sec.hash ? ic("lock") : ""}<span style="overflow:hidden;text-overflow:ellipsis">${esc(b.name)}</span></div><div class="nbfoot"><span>${fmtDate(last)}</span><span class="cnt">${ic("notes")}${cnt}</span></div></div>
+    <div class="nbname">${b.locked && sec.hash ? ic("lock") : ""}<span style="overflow:hidden;text-overflow:ellipsis">${esc(b.name)}</span></div><span class="nbcnt">${ic("notes")}${cnt}</span>
     <button class="tbtn sm nbmore" data-act="nbMenu" data-v="${b.id}">${ic("dots")}</button></div>`;
 }
 function renderHome() {
@@ -955,7 +954,11 @@ function pwSheet(after) {
 }
 function toggleLock(obj, upd) {
   if (!sec.hash) { toast("Önce bir şifre belirleyin."); return pwSheet(() => toggleLock(obj, upd)); }
-  const apply = () => { upd(!obj.locked); toast(!obj.locked ? "Kilit kaldırıldı." : "Kilitlendi."); };
+  const apply = () => {
+    const v = !obj.locked; upd(v);
+    if (v) { unlockUntil = 0; if (document.body.dataset.editor === "open" && curId === obj.id) closeNote(); }   // kilitlenince hemen kapanır
+    toast(v ? "Kilitlendi." : "Kilit kaldırıldı."); schedule();
+  };
   if (obj.locked && !isUnlocked()) return askPassword(apply, "Kilidi kaldırmak için şifre");
   apply();
 }
@@ -1469,7 +1472,7 @@ function actionsSheet() {
     <div class="asep"></div>
     ${row("tag", "tagplus", "Etiket ekle", { chev: 1 })}${row("remind", "bellplus", n.reminder ? "Hatırlatıcı: " + fmtDT(n.reminder) : "Hatırlatıcı ekle", { chev: 1 })}
     <div class="asep"></div>
-    ${row("lock", "lock", n.locked ? "Kilidi kaldır" : "Kilitle")}${row("shortcut", n.shortcut ? "star" : "starplus", n.shortcut ? "Kısayollardan kaldır" : "Kısayollara ekle")}${row("pin", "pin", n.pinned ? "Not defterinden sabitlemeyi kaldır" : "Not defterine sabitle")}${row("homepin", "pin", n.homePinned ? "Giriş sayfasından kaldır" : "Giriş sayfasına sabitle")}
+    ${row("detail", "info", "Not detayı")}${row("lock", "lock", n.locked ? "Kilidi kaldır" : "Kilitle")}${row("shortcut", n.shortcut ? "star" : "starplus", n.shortcut ? "Kısayollardan kaldır" : "Kısayollara ekle")}${row("pin", "pin", n.pinned ? "Not defterinden sabitlemeyi kaldır" : "Not defterine sabitle")}${row("homepin", "pin", n.homePinned ? "Giriş sayfasından kaldır" : "Giriş sayfasına sabitle")}
     <div class="asep"></div>
     ${row("offline", "download", "Çevrimdışı kullanılabilir", { sw: true })}
     <div class="asep"></div>
@@ -1489,6 +1492,7 @@ function noteAction(k) {
     case "suggest": { closeAll(); const t = suggestTitle(); if (!t) return toast("Önerilecek yeterli metin yok."); $("eTitle").value = t; autoGrow(); scheduleSave(); return toast("Başlık eklendi: " + t); }
     case "tag": return tagSheet();
     case "remind": return remindSheet();
+    case "detail": closeAll(); return noteDetail(n.id);
     case "lock": { closeAll(); return toggleLock(n, v => patchNote(n.id, { locked: v })); }
     case "shortcut": patchNote(n.id, { shortcut: !n.shortcut }); closeAll(); return toast(n.shortcut ? "Kısayollara eklendi." : "Kısayollardan kaldırıldı.");
     case "pin": patchNote(n.id, { pinned: !n.pinned }); closeAll(); return toast(n.pinned ? "Not sabitlendi." : "Sabitleme kaldırıldı.");
@@ -1772,11 +1776,11 @@ function nbEditSheet(id) {
 window.__sorting = false;
 (() => {
   let pend = null, timer = null, st = null, raf = 0, swallow = false;
-  const GAP = 10;
+  const GAP = 0;
   document.addEventListener("pointerdown", e => {
     if (e.pointerType === "mouse" && e.button !== 0) return;
     const c = e.target.closest && e.target.closest("#homeNb[data-sort], #homeNotes[data-sort]"); clearTimeout(timer); pend = null;
-    if (!c || e.target.closest(".nact, .nbmore")) return;
+    if (!c || e.target.closest(".nact, .nbmore, .nrmore")) return;
     const item = e.target.closest(".nbcard, .nwrap"); if (!item || item.parentNode !== c) return;
     pend = { c, item, id: e.pointerId, x: e.clientX, y: e.clientY }; timer = setTimeout(begin, 450);
   }, true);
@@ -1832,7 +1836,7 @@ const TABS = ["home", "notes", "notebooks"];
   document.addEventListener("pointerdown", e => {
     st = null;
     if (e.pointerType === "mouse" || innerWidth > 860 || !TABS.includes(route.p) || (route.p === "notes" && route.a && (route.a.nb !== undefined || route.a.tag)) || window.__sorting || document.body.dataset.editor === "open") return;
-    if (e.target.closest("input,textarea,select,.nact,.nbmore,#sheet,#menu,#nav,#fab,#lockscr")) return;
+    if (e.target.closest("input,textarea,select,.nact,.nbmore,.nrmore,#sheet,#menu,#nav,#fab,#lockscr")) return;
     if (!e.target.closest("#main")) return;
     st = { x: e.clientX, y: e.clientY, id: e.pointerId, row: !!e.target.closest(".nwrap"), open: !!document.querySelector(".nwrap.reveal") };
   }, true);
@@ -1875,6 +1879,7 @@ const ACT = {
   sortMenu: el => showMenu([["updated", "Güncelleme tarihi"], ["created", "Oluşturma tarihi"], ["title", "Başlık (A–Z)"]].map(([v, t]) => ({ i: S.sort === v ? "check" : "filter", t, f: () => { S.sort = v; store.set("dnote-sort", v); schedule(); } })), { anchor: el, right: true }),
   notesMenu: el => showMenu([{ i: "notes", t: S.dense ? "Ayrıntılı görünüm" : "Kompakt görünüm", f: () => { S.dense = !S.dense; store.set("dnote-dense", S.dense ? "1" : "0"); schedule(); } }, { i: "noteplus", t: "Yeni not", f: () => createNote() }], { anchor: el, right: true }),
   nbOpen: el => go("notes", { nb: el.dataset.v || null }),
+  noteMenu: el => noteMoreMenu(el.dataset.v, el),
   nbMenu: el => { const id = el.dataset.v, b = notebooks.find(x => x.id === id);
     if (!id) return showMenu([
       { i: "bookplus", t: "Yeniden adlandır", f: () => { const nm = (prompt("Yeni ad:", generalName) || "").trim(); if (!nm) return; generalName = nm; store.set("dnote-general", nm); schedule(); } },
@@ -1882,7 +1887,8 @@ const ACT = {
     if (!b) return; showMenu([
     { i: "edit", t: "Düzenle (ad, resim, renk)", f: () => nbEditSheet(id) },
     { i: "notes", t: "Notları göster", f: () => go("notes", { nb: id }) },
-    { i: "lock", t: b.locked ? "Kilidi kaldır" : "Kilitle", f: () => toggleLock(b, v => { b.locked = v; updateDoc(nbRef(b.id), { locked: v }); schedule(); }) },
+    { i: "info", t: "Not defteri detayı", f: () => nbDetail(id) },
+    { i: "lock", t: b.locked ? "Kilidi kaldır" : "Kilitle", f: () => toggleLock(b, v => { b.locked = v; updateDoc(nbRef(b.id), { locked: v }); }) },
     { i: b.shortcut ? "star" : "starplus", t: b.shortcut ? "Kısayollardan kaldır" : "Kısayollara ekle", f: () => updateDoc(nbRef(id), { shortcut: !b.shortcut }) },
     { i: "trash", t: "Sil", red: 1, f: () => { if (confirm(`"${b.name}" silinsin mi? Notlar silinmez, "Genel" defterine taşınır.`)) { notes.filter(n => n.notebookId === id).forEach(n => patchNote(n.id, { notebookId: null })); deleteDoc(nbRef(id)); } } }], { anchor: el, right: true }); },
   tagOpen: el => go("notes", { tag: el.dataset.v }),
@@ -1979,6 +1985,51 @@ function swDownload(n) {
   download(fileSafe(n.title) + ".html", "text/html", `<!doctype html><html lang="tr"><meta charset="utf-8"><title>${esc(n.title)}</title><body style="font-family:sans-serif;max-width:760px;margin:30px auto"><h1>${esc(n.title)}</h1>${d.innerHTML}</body></html>`);
   toast("Not indirildi.");
 }
+const fmtFull = t => t ? new Date(t).toLocaleString("tr-TR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
+const plainOf = n => (n.plain != null ? n.plain : (() => { const d = document.createElement("div"); d.innerHTML = n.content || ""; return d.textContent; })()) || "";
+function noteStats(n) {
+  const c = n.content || "", p = plainOf(n).trim(), words = p ? p.split(/\s+/).length : 0;
+  let files = 0, fsize = 0, imgs = 0; for (const m of c.matchAll(/<div[^>]*data-mid="[^"]*"[^>]*>/g)) { files++; const z = m[0].match(/data-size="(\d+)"/); fsize += z ? +z[1] : 0; if (/data-mime="image/.test(m[0])) imgs++; }
+  return { words, chars: p.length, text: new Blob([c]).size, files, imgs, fsize };
+}
+function detailSheet(title, rows) {
+  openSheet(`${shHead(title)}${rows.map(([k, v]) => `<div class="arow" style="cursor:default"><span class="st" style="color:var(--muted)">${k}</span><span style="text-align:right;max-width:60%;word-break:break-word">${v}</span></div>`).join("")}`);
+  $("sheet").onclick = e => { if (e.target.closest("[data-act=closeSheet]")) closeAll(); };
+}
+function noteDetail(id) {
+  const n = getNote(id); if (!n) return;
+  if (lockedNow(n)) return askPassword(() => noteDetail(id), "Kilitli not");
+  const t = noteStats(n), nb = nbKey(n);
+  detailSheet("Not detayı", [
+    ["Başlık", esc(n.title) || "Başlıksız"], ["Oluşturulma", fmtFull(n.createdAt)], ["Son değişiklik", fmtFull(n.updatedAt)],
+    ["Not defteri", nb ? esc((notebooks.find(b => b.id === nb) || {}).name) : esc(generalName)],
+    ["Kelime sayısı", t.words], ["Karakter sayısı", t.chars], ["Metin boyutu", fmtBytes(t.text)],
+    ["Resim", t.imgs], ["Ekli dosya", t.files - t.imgs], ["Eklerin boyutu", fmtBytes(t.fsize)],
+    ["Etiketler", (n.tags || []).length ? n.tags.map(esc).join(", ") : "—"], ["Hatırlatıcı", n.reminder ? fmtFull(n.reminder) : "—"],
+    ["Kilit", n.locked ? "Kilitli" : "Yok"], ["Paylaşım", n.shareId ? "Bağlantı var" : "Yok"]]);
+}
+function nbDetail(id) {
+  const b = notebooks.find(x => x.id === id); if (!b) return;
+  if (b.locked && sec.hash && !isUnlocked()) return askPassword(() => nbDetail(id), "Kilitli not defteri");
+  const ns = live().filter(n => nbKey(n) === id); let words = 0, size = 0, files = 0, fsize = 0;
+  ns.forEach(n => { const t = noteStats(n); words += t.words; size += t.text; files += t.files; fsize += t.fsize; });
+  const last = Math.max(0, ...ns.map(n => n.updatedAt || 0));
+  detailSheet("Not defteri detayı", [
+    ["Ad", esc(b.name)], ["Oluşturulma", fmtFull(b.createdAt)], ["Son değişiklik", last ? fmtFull(last) : "—"],
+    ["Not sayısı", ns.length], ["Toplam kelime", words], ["Metin boyutu", fmtBytes(size)],
+    ["Ek / resim sayısı", files], ["Eklerin boyutu", fmtBytes(fsize)], ["Kilit", b.locked ? "Kilitli" : "Yok"], ["Kısayol", b.shortcut ? "Evet" : "Hayır"]]);
+}
+function noteMoreMenu(id, el) {
+  const n = getNote(id); if (!n) return;
+  showMenu([
+    { i: "notes", t: "Notu aç", f: () => openNote(id) },
+    { i: "info", t: "Not detayı", f: () => noteDetail(id) },
+    { i: "lock", t: n.locked ? "Kilidi kaldır" : "Kilitle", f: () => toggleLock(n, v => patchNote(id, { locked: v })) },
+    { i: "pin", t: n.pinned ? "Not defterinden sabitlemeyi kaldır" : "Not defterine sabitle", f: () => { patchNote(id, { pinned: !n.pinned }); toast(n.pinned ? "Not sabitlendi." : "Sabitleme kaldırıldı."); schedule(); } },
+    { i: "pin", t: n.homePinned ? "Giriş sayfasından kaldır" : "Giriş sayfasına sabitle", f: () => { patchNote(id, { homePinned: !n.homePinned }); toast(n.homePinned ? "Giriş sayfasına sabitlendi." : "Giriş sayfasından kaldırıldı."); schedule(); } },
+    { i: n.shortcut ? "star" : "starplus", t: n.shortcut ? "Kısayollardan kaldır" : "Kısayollara ekle", f: () => { patchNote(id, { shortcut: !n.shortcut }); toast(n.shortcut ? "Kısayollara eklendi." : "Kısayollardan kaldırıldı."); schedule(); } }
+  ], { anchor: el, right: true });
+}
 function swAction(k, id, el) {
   const n = getNote(id); if (!n) return;
   if (k === "del") { swClose(); patchNote(id, { trashed: true, updatedAt: Date.now() }); toast("Not çöp kutusuna taşındı."); return schedule(); }
@@ -1986,12 +2037,7 @@ function swAction(k, id, el) {
   if (k === "purge") { swClose(); if (confirm("Bu not kalıcı olarak silinsin mi?")) { purgeMedia(n.content); deleteDoc(noteRef(id)); } return; }
   if (k === "dl") { swClose(); return swDownload(n); }
   if (k === "more") {
-    showMenu([
-      { i: "notes", t: "Notu aç", f: () => openNote(id) },
-      { i: "pin", t: n.pinned ? "Not defterinden sabitlemeyi kaldır" : "Not defterine sabitle", f: () => { patchNote(id, { pinned: !n.pinned }); toast(n.pinned ? "Not sabitlendi." : "Sabitleme kaldırıldı."); schedule(); } },
-      { i: "pin", t: n.homePinned ? "Giriş sayfasından kaldır" : "Giriş sayfasına sabitle", f: () => { patchNote(id, { homePinned: !n.homePinned }); toast(n.homePinned ? "Giriş sayfasına sabitlendi." : "Giriş sayfasından kaldırıldı."); schedule(); } },
-      { i: n.shortcut ? "star" : "starplus", t: n.shortcut ? "Kısayollardan kaldır" : "Kısayollara ekle", f: () => { patchNote(id, { shortcut: !n.shortcut }); toast(n.shortcut ? "Kısayollara eklendi." : "Kısayollardan kaldırıldı."); schedule(); } }
-    ], { anchor: el, right: true });
+    noteMoreMenu(id, el);
     swClose();
   }
 }

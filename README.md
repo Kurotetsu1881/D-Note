@@ -1,3 +1,15 @@
+# D-Note – Son güncelleme
+
+**Yüklenecek 3 dosya:** `index.html`, `sw.js`, `logo-home.png`. Sonra uygulamayı kapatıp açın.
+
+- Ana sayfa artık Tüm Notlar gibi beyaz ve ince çizgili liste; tarihler kaldırıldı.
+- Not ve not defteri satırlarındaki ⋯ menüsüne **Not detayı / Not defteri detayı** eklendi (oluşturulma, son değişiklik, kelime, karakter, boyut, ek sayısı vb.).
+- Tek not kilitleme düzeltildi (kilitlenince hemen kilitli görünür), notun ⋯ menüsüne de "Kilitle" eklendi.
+- Ayarlar'daki "+ uzun basınca" seçeneklerinin yazı tipi/boyutu diğerleriyle eşitlendi.
+- Logo yazıları yeniden ayarlandı.
+
+---
+
 # D-Note – Bu güncelleme
 
 **GitHub'a yüklenecek 3 dosya:** `index.html`, `sw.js`, `logo-home.png` (yeni logo dosyası). Yükledikten 1-2 dk sonra uygulamayı kapatıp açın.
