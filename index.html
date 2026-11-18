@@ -522,7 +522,7 @@ const firebaseConfig = {
 const fbApp = initializeApp(firebaseConfig);
 const auth = getAuth(fbApp);
 // Çevrimdışı mod: veriler cihazdaki yerel veritabanında saklanır, internet gelince otomatik eşitlenir
-const db = initializeFirestore(fbApp, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
+const db = initializeFirestore(fbApp, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }), experimentalAutoDetectLongPolling: true });
 
 /* ================= Yardımcılar ================= */
 const $ = id => document.getElementById(id);
@@ -1391,18 +1391,36 @@ async function processImage(file) {
     return { blob, thumb };
   } finally { if (src.close) src.close(); if (url) URL.revokeObjectURL(url); }
 }
-const MAX_FILE = 500 * 1048576, RAW = 524286 /* 3'ün katı → base64 parçaları birleştirilebilir */, mediaCache = new Map();
-async function uploadMedia(mid, blob, meta) {
-  const n = Math.ceil(blob.size / RAW) || 1;
-  for (let tr = 0; tr < 3; tr++) {
-    try {
-      for (let i = 0; i < n; i++) { const d = (await readDataURL(blob.slice(i * RAW, (i + 1) * RAW))).split(",")[1]; await setDoc(doc(db, "users", uid, "media", mid, "parts", String(i).padStart(4, "0")), { i, d }); }
-      await setDoc(doc(db, "users", uid, "media", mid), { name: meta.name, mime: meta.mime, size: meta.size, chunks: n, createdAt: Date.now() });
-      return true;
-    } catch (e) { console.warn(e); await new Promise(r => setTimeout(r, 1500 * (tr + 1))); }
-  }
-  toast("Dosya buluta yüklenemedi: " + meta.name); return false;
+const MAX_FILE = 500 * 1048576, RAW = 262143 /* 3'ün katı → base64 parçaları birleştirilebilir */, mediaCache = new Map();
+// Medya parçaları, Firestore'un yerel önbelleğini (telefonda dolup taşıyor) ve SDK kuyruğunu atlayarak doğrudan REST ile yazılır; olmazsa SDK'ya düşer.
+let lastUpErr = "";
+async function restPut(path, data) {
+  const t = await auth.currentUser.getIdToken(), f = {}; for (const [k, v] of Object.entries(data)) f[k] = typeof v === "number" ? { integerValue: String(v) } : { stringValue: v };
+  const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 90000);
+  try {
+    const r = await fetch(`https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents/${path}`, { method: "PATCH", headers: { Authorization: "Bearer " + t, "Content-Type": "application/json" }, body: JSON.stringify({ fields: f }), signal: ctl.signal });
+    if (!r.ok) throw new Error("HTTP " + r.status + " " + (await r.text()).replace(/\s+/g, " ").slice(0, 140));
+  } finally { clearTimeout(to); }
 }
+async function putDoc(path, data) {
+  try { await restPut(path, data); }
+  catch (e1) {
+    try { await Promise.race([setDoc(doc(db, ...path.split("/")), data), new Promise((_, rej) => setTimeout(() => rej(new Error("zaman aşımı")), 90000))]); }
+    catch (e2) { throw new Error((e1.message || e1) + " | " + (e2.code || e2.message || e2)); }
+  }
+}
+async function uploadMedia(mid, blob, meta) {
+  const n = Math.ceil(blob.size / RAW) || 1, base = `users/${uid}/media/${mid}`;
+  for (let tr = 0; tr < 4; tr++) {
+    try {
+      for (let i = 0; i < n; i++) { const d = (await readDataURL(blob.slice(i * RAW, (i + 1) * RAW))).split(",")[1]; await putDoc(`${base}/parts/${String(i).padStart(4, "0")}`, { i, d }); }
+      await putDoc(base, { name: meta.name, mime: meta.mime, size: meta.size, chunks: n, createdAt: Date.now() });
+      return true;
+    } catch (e) { lastUpErr = String(e.message || e); console.warn(e); await new Promise(r => setTimeout(r, 2000 * (tr + 1))); }
+  }
+  upFailed++; if (upFailed <= 2) toast("Buluta yüklenemedi: " + meta.name + " — " + lastUpErr.slice(0, 160) + " (otomatik tekrar denenecek)", 9000); return false;
+}
+let upFailed = 0;
 // yüklemeler sırayla (en çok 3 eşzamanlı) yapılır; ilerleme not başlığının yanında görünür
 const upQ = []; let upRun = 0, upTotal = 0, upDone = 0;
 const pendKey = "dnote-upq";
@@ -1422,6 +1440,7 @@ function pumpUp() {
   while (upRun < 3 && upQ.length) { const j = upQ.shift(); upRun++; uploadMedia(...j).then(ok => { if (ok) { const p = pendGet(); delete p[j[0]]; pendSet(p); } }).finally(() => { upBusy.delete(j[0]); upRun--; upDone++; pumpUp(); }); }
   if (upDone >= upTotal) { upTotal = upDone = 0; updateStatus(); } else updateStatus(`Dosyalar yükleniyor ${upDone}/${upTotal}`);
 }
+setInterval(() => { if (uid && !upQ.length && upRun === 0 && Object.keys(pendGet()).length) { upFailed = 0; resumeUploads(); } }, 45000);
 addEventListener("beforeunload", e => { if (upTotal > upDone) { e.preventDefault(); e.returnValue = ""; } });
 async function getMediaBlob(mid, mime) {
   if (mediaCache.has(mid)) return mediaCache.get(mid);
@@ -1436,7 +1455,7 @@ async function getMediaBlob(mid, mime) {
 function hydrateMedia(root) {
   root.querySelectorAll('.dn-media[data-img="1"]:not([data-h])').forEach(el => {
     el.dataset.h = "1"; const img = document.createElement("img"); img.alt = el.dataset.name || ""; if (el.dataset.thumb) img.src = el.dataset.thumb; el.textContent = ""; el.appendChild(img);
-    const load = (tries) => getMediaBlob(el.dataset.mid, el.dataset.mime).then(b => { img.src = URL.createObjectURL(b); }).catch(() => { if (tries > 0) setTimeout(() => load(tries - 1), 6000); });
+    const load = (tries) => getMediaBlob(el.dataset.mid, el.dataset.mime).then(b => { img.src = URL.createObjectURL(b); }).catch(() => { if (tries > 0) setTimeout(() => load(tries - 1), 6000); else { img.removeAttribute("src"); img.alt = "⚠ " + (el.dataset.name || "görsel") + " (henüz yüklenemedi)"; } });
     load(3);
   });
 }
