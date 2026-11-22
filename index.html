@@ -14,8 +14,8 @@
 <link rel="apple-touch-icon" href="apple-touch-icon-v3.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css" rel="stylesheet" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<link href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css" rel="stylesheet" crossorigin="anonymous" media="print" onload="this.media='all'">
 <script>
 // "Uygulamayı yükle" olayını erken yakala + temayı titremesiz uygula
 window.__bip = null;
@@ -26,6 +26,7 @@ try {
   document.documentElement.dataset.theme = t === "sepia" ? "sepia" : (dark ? "dark" : "light");
 } catch (e) { document.documentElement.dataset.theme = "light"; }
 </script>
+<style>#splash{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:#fff;transition:opacity .18s}[data-theme=dark] #splash{background:#17181a}[data-theme=sepia] #splash{background:#f6eedb}#splash img{width:84px;height:84px;border-radius:20px}</style>
 <style>
 :root{
   --bg:#fff;--text:#1c1c1e;--muted:#74747a;--line:#e7e7ea;--tile:#f2f2f4;--chip:#e7e7eb;--chipt:#3b3b40;
@@ -404,6 +405,7 @@ body[data-editor=open] #editorView{display:flex}
 </style>
 </head>
 <body data-p="home" data-editor="closed">
+<div id="splash"><img src="icon-v4-192.png" alt=""></div>
 
 <div id="login">
   <img src="logo-wordmark.png" alt="D-Note">
@@ -521,7 +523,7 @@ body[data-editor=open] #editorView{display:flex}
 <input type="file" id="fileCam" accept="image/*" capture="environment" hidden>
 <input type="file" id="fileImport" accept=".json,.enex,.xml" hidden>
 
-<script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js" crossorigin="anonymous" defer></script>
 <script>
 /* Açılış bekçisi + tanı kaydı: uygulama açılamazsa sessiz beyaz ekran yerine kurtarma ekranı gösterir */
 (function () {
@@ -540,7 +542,7 @@ body[data-editor=open] #editorView{display:flex}
   addEventListener("error", function (e) { add("hata: " + (e.message || "") + " @" + String(e.filename || "").split("/").pop() + ":" + (e.lineno || "")); });
   addEventListener("unhandledrejection", function (e) { var r = e.reason; add("söz hatası: " + ((r && (r.message || r.code)) || r)); });
   function rescue() {
-    if (window.__booted || document.getElementById("rescue")) return; add("Açılış 15 sn içinde tamamlanamadı");
+    if (window.__booted || document.getElementById("rescue")) return; add("Açılış 15 sn içinde tamamlanamadı"); var sp = document.getElementById("splash"); if (sp) sp.remove();
     var d = document.createElement("div"); d.id = "rescue"; d.style.cssText = "position:fixed;inset:0;z-index:9999;background:#fff;color:#111;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;text-align:center;font:15px system-ui,sans-serif";
     d.innerHTML = "<b style='font-size:18px'>D-Note açılamadı</b><div>Bağlantı veya önbellek sorunu olabilir.</div><button id='rsA' style='padding:10px 18px;border-radius:10px;border:0;background:#00a82d;color:#fff;font-size:15px'>Yeniden yükle</button><button id='rsB' style='padding:10px 18px;border-radius:10px;border:1px solid #bbb;background:#fff;font-size:14px'>Önbelleği temizle ve yükle</button><small style='color:#666'>Notlarınız silinmez; bulutta durur.</small>";
     document.body.appendChild(d);
@@ -817,15 +819,16 @@ $("btnLogin").onclick = async () => {
 function logout() { if (confirm("Oturum kapatılsın mı?")) signOut(auth); }
 
 window.__booted = true;
+window.hideSplash = () => { const e = document.getElementById("splash"); if (e) { e.style.opacity = "0"; setTimeout(() => e.remove(), 200); } };
 if (SHARE_ID) openViewer(SHARE_ID);
 else onAuthStateChanged(auth, u => {
   window.__booted = true;
   unsubs.forEach(f => f()); unsubs = [];
   user = u;
-  if (!u) { uid = null; secInit = false; $("lockscr").hidden = true; notes = []; notebooks = []; tasks = []; curId = null; loadedId = null; ready.notes = false; $("app").classList.remove("show"); $("login").classList.add("show"); return; }
+  if (!u) { uid = null; secInit = false; $("lockscr").hidden = true; notes = []; notebooks = []; tasks = []; curId = null; loadedId = null; ready.notes = false; $("app").classList.remove("show"); $("login").classList.add("show"); hideSplash(); return; }
   uid = u.uid;
   if (sec.hash && sec.appLock && !isUnlocked()) showLockScreen();
-  $("login").classList.remove("show"); $("app").classList.add("show");
+  $("login").classList.remove("show"); $("app").classList.add("show"); hideSplash();
   qsa("[data-av]").forEach(e => e.innerHTML = avatarInner()); $("sName").textContent = u.displayName || u.email || "";
   unsubs.push(onSnapshot(query(ucol("notebooks"), orderBy("createdAt")), s => { notebooks = s.docs.map(d => ({ id: d.id, ...d.data() })); schedule(); }, e => console.warn(e)));
   unsubs.push(onSnapshot(query(ucol("notes"), orderBy("updatedAt", "desc")), { includeMetadataChanges: true }, s => {
@@ -2982,7 +2985,7 @@ function swAction(k, id, el) {
 
 /* ================= Paylaşım görüntüleyici (giriş gerektirmez) ================= */
 async function openViewer(id) {
-  $("viewer").hidden = false; $("login").classList.remove("show");
+  $("viewer").hidden = false; $("login").classList.remove("show"); hideSplash();
   try {
     const s = await getDoc(doc(db, "shared", id)); if (!s.exists()) throw new Error("yok");
     const d = s.data(); document.title = (d.title || "Not") + " – D-Note";
