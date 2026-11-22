@@ -36,9 +36,46 @@
   ],
   "shortcuts": [
     {
-      "name": "Yeni not",
-      "short_name": "Yeni not",
-      "url": "./?new=1",
+      "name": "Yeni Not",
+      "short_name": "Yeni Not",
+      "description": "Boş bir not aç",
+      "url": "./?action=new",
+      "icons": [
+        {
+          "src": "icon-v4-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Sesli Not",
+      "short_name": "Sesli Not",
+      "description": "Konuşarak not yaz",
+      "url": "./?action=voice",
+      "icons": [
+        {
+          "src": "icon-v4-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Görev Ekle",
+      "short_name": "Görev",
+      "description": "Yeni görev ekle",
+      "url": "./?action=task",
+      "icons": [
+        {
+          "src": "icon-v4-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Görsel Not",
+      "short_name": "Görsel Not",
+      "description": "Çizim / şema tahtası",
+      "url": "./?action=visual",
       "icons": [
         {
           "src": "icon-v4-192.png",
@@ -46,5 +83,14 @@
         }
       ]
     }
-  ]
+  ],
+  "share_target": {
+    "action": "./",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
 }

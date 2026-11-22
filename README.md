@@ -89,3 +89,13 @@ Yüklü uygulamanın simgesi yalnızca yeniden yüklenince güncellenir:
 2. Tarayıcıda siteyi açıp **Ctrl+Shift+R** yapın.
 3. Adres çubuğundaki **Yükle** simgesiyle uygulamayı tekrar yükleyin. Masaüstü/görev çubuğu kısayolunu da yeniden oluşturun.
 Sekmedeki küçük simge hâlâ eskiyse sekmeyi kapatıp açın.
+
+## v21 yenilikleri
+- **Ses**: not içine ses dosyası ekleme ve anında kayıt (+ menüsü).
+- **Dikte sözlüğü**: Ayarlar → "Dikte sözlüğü"; yabancı terimleri (lavatory, galley, ceiling…) otomatik düzeltir, kendi kelimelerinizi ekleyebilirsiniz.
+- **Tablo**, **[[not bağlantıları]]** ve notun altında **"Bu nota bağlantı verenler"**.
+- **Görsel not**: çizim tahtası (kalem, şekil, ok, yazı, görsel kolaj, geri al, PNG indir). + butonu → "Yeni görsel not".
+- **Parmak izi ile açma**: Ayarlar → Güvenlik (her cihazda ayrı etkinleştirilir; şifre yedek olarak kalır).
+- **Yazı tipi seçici** kendi fontuyla; fontlar yalnızca seçilince yüklenir (daha hızlı açılış).
+- **Ana ekran kısayolları** (ikona uzun bas: Yeni Not, Sesli Not, Görev Ekle, Görsel Not) ve **Paylaş → D-Note** (yüklü uygulamada, Android).
+- Dosyalar: index.html, sw.js, manifest.json'u GitHub'a yükleyin; uygulamayı bir kez kapatıp açın (önbellek dnote-v21).

@@ -14,7 +14,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon-v3.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Dancing+Script:wght@400;700&family=Inter:wght@400;500;600;700&family=Lora:wght@400;700&family=Merriweather:wght@400;700&family=Nunito:wght@400;700&family=Open+Sans:wght@400;600;700&family=Playfair+Display:wght@400;700&family=Poppins:wght@400;600&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;700&family=Source+Code+Pro:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css" rel="stylesheet" crossorigin="anonymous">
 <script>
 // "Uygulamayı yükle" olayını erken yakala + temayı titremesiz uygula
@@ -185,6 +185,7 @@ input,textarea,select{font:inherit;color:inherit}
 .nbopt input[type=color]{width:34px;height:34px;padding:0;border:0;background:none}
 .lrow .nbi{width:28px;height:28px;border-radius:8px;object-fit:cover;flex:none;display:inline-flex;align-items:center;justify-content:center}
 .lrow .nbi .ic{width:16px;height:16px}
+.fpick{display:flex;align-items:center;justify-content:space-between;text-align:left}
 .sel{width:100%;height:42px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text);padding:0 10px;font-size:14px}
 .rng{width:100%;accent-color:var(--green)}
 .setl{font-size:12px;color:var(--muted);margin:10px 0 4px}
@@ -345,6 +346,17 @@ body[data-editor=open] #editorView{display:flex}
 #editor .ql-editor ul[data-checked=true]>li,#vEditor .ql-editor ul[data-checked=true]>li{text-decoration:line-through;text-decoration-thickness:1.5px;color:var(--muted);opacity:.75}
 .fbar{display:flex;align-items:center;gap:2px;overflow-x:auto;padding:5px 8px calc(5px + env(safe-area-inset-bottom));margin:0 10px 8px;background:var(--card);border:1px solid var(--line);border-radius:28px;box-shadow:var(--shadow);flex:none;scrollbar-width:none}
 .fbar::-webkit-scrollbar{display:none}
+.dn-nl{color:var(--acc);background:var(--accbg);border-radius:5px;padding:0 4px;cursor:pointer;text-decoration:none}
+#wlPop{position:fixed;z-index:56;min-width:220px;max-width:min(360px,calc(100vw - 16px));max-height:240px;overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:4px}
+#wlPop button{display:flex;gap:8px;align-items:center;width:100%;text-align:left;padding:9px 10px;border-radius:9px;font-size:13px}#wlPop button.on,#wlPop button:active{background:var(--sel)}#wlPop .ic{width:15px;height:15px;color:var(--muted);flex:none}
+#backlinks{margin:6px 0 40px;padding-top:10px;border-top:1px solid var(--line)}#backlinks h4{margin:0 0 6px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
+#backlinks button{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:8px 4px;font-size:13px;border-bottom:1px solid var(--line)}#backlinks .ic{width:15px;height:15px;color:var(--acc);flex:none}
+.dn-table{margin:8px 0}.dn-table .tw{overflow-x:auto}.dn-table table{border-collapse:collapse;min-width:100%}
+.dn-table td{border:1px solid var(--line);padding:6px 9px;min-width:72px;vertical-align:top;white-space:pre-wrap;word-break:break-word;outline:none;font-size:inherit;line-height:1.45}
+.dn-table tr:first-child td{font-weight:600;background:var(--tile)}.dn-table td:focus{box-shadow:inset 0 0 0 2px var(--acc)}
+#tblBar{position:fixed;z-index:55;display:flex;gap:2px;padding:3px;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)}
+#tblBar button{font-size:11px;padding:6px 8px;border-radius:9px;white-space:nowrap}#tblBar button:active{background:var(--sel)}#tblBar .red{color:var(--red)}
+.audw{display:flex;flex-direction:column;gap:4px;padding:8px 10px;border:1px solid var(--line);border-radius:12px;background:var(--tile)}.audw .audn{font-size:12px;color:var(--muted)}.audw audio{width:100%;height:36px}
 @media(min-width:861px){.fbar{cursor:grab;-webkit-user-select:none;user-select:none}.fbar.dragging{cursor:grabbing}}
 .tb{width:40px;height:40px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;flex:none}
 .tb.on{background:var(--accbg);color:var(--acc)}
@@ -412,6 +424,7 @@ body[data-editor=open] #editorView{display:flex}
   <div id="lockMsg">Şifrenizi girin</div>
   <input type="password" id="lockIn" placeholder="Şifre" autocomplete="current-password">
   <button class="btn" id="lockOk">Aç</button>
+  <button class="btn sec" id="lockFp" hidden>Parmak izi ile aç</button>
   <div id="lockErr"></div>
   <a id="lockForgot">Şifremi unuttum</a>
 </div>
@@ -485,6 +498,7 @@ body[data-editor=open] #editorView{display:flex}
             <button class="tbtn sm" data-act="findClose"><span data-ic="x"></span></button>
           </div>
           <div id="editor"></div>
+          <div id="backlinks" hidden></div>
         </div>
       </div>
       <button class="kbhide" id="kbHide" data-act="kbHide" hidden><span data-ic="kbhide"></span></button>
@@ -501,6 +515,7 @@ body[data-editor=open] #editorView{display:flex}
 <input type="file" id="fileNb" accept="image/*" hidden>
 <input type="file" id="fileImg" accept="image/*" multiple hidden>
 <input type="file" id="fileAtt" multiple hidden>
+<input type="file" id="fileAud" accept="audio/*" multiple hidden>
 <input type="file" id="fileNb" accept="image/*" hidden>
 <input type="file" id="fileCam" accept="image/*" capture="environment" hidden>
 <input type="file" id="fileImport" accept=".json,.enex,.xml" hidden>
@@ -556,6 +571,8 @@ const ICONS = {
   tag: '<path d="M5 8l5-4a2 2 0 0 1 2.6 0l5 4a2 2 0 0 1 .8 1.6V19a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9.6A2 2 0 0 1 5 8z"/><circle cx="12" cy="10" r="1.3"/>',
   tagplus: '<path d="M5 8l5-4a2 2 0 0 1 2.6 0l5 4a2 2 0 0 1 .8 1.6V13M4 9.6V19a2 2 0 0 0 2 2h6"/><circle cx="12" cy="10" r="1.3"/><path d="M18 16v6M15 19h6"/>',
   trash: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/>',
+  audio: '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>',
+  table: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M9 4v16M15 4v16"/>',
   pin: '<path d="M9 3h6l-1 6 3 4H7l3-4zM12 13v8"/>',
   back: '<path d="M15 5l-7 7 7 7"/>',
   chev: '<path d="M9 5l7 7-7 7"/>', chevd: '<path d="M5 9l7 7 7-7"/>', chevu: '<path d="M5 15l7-7 7 7"/>',
@@ -620,7 +637,9 @@ const ICONS = {
   restore: '<path d="M4 12a8 8 0 1 0 3-6.2M4 4v5h5"/>',
   cloudoff: '<path d="M7 18a4 4 0 0 1-.5-8A6 6 0 0 1 18 9a4.5 4.5 0 0 1 0 9zM4 4l16 16"/>',
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/>',
-  home: '<path d="M4 11l8-7 8 7v9H4z"/>'
+  home: '<path d="M4 11l8-7 8 7v9H4z"/>',
+  pen: '<path d="M4 20l1-4L17 4l3 3L8 19z"/>',
+  grid: '<path d="M4 4h16v16H4zM4 12h16M12 4v16"/>'
 };
 const svg = n => `<svg viewBox="0 0 24 24">${ICONS[n] || ""}</svg>`;
 const ic = (n, c = "") => `<span class="ic ${c}">${svg(n)}</span>`;
@@ -634,6 +653,14 @@ const FONTS = [
   { n: "Roboto Mono", g: "monospace" }, { n: "Source Code Pro", g: "monospace" }, { n: "Caveat", g: "cursive" }, { n: "Dancing Script", g: "cursive" },
   { n: "Arial", g: "sans-serif" }, { n: "Georgia", g: "serif" }, { n: "Times New Roman", g: "serif" }, { n: "Courier New", g: "monospace" }
 ];
+// Yazı tipleri açılışta toplu indirilmez: yalnızca kullanılan / seçilen yazı tipi için <link> eklenir
+const fontLoaded = new Set(["Inter"]);
+function loadFont(n) {
+  if (!n || fontLoaded.has(n) || !FONTS.some(f => f.n === n)) return; fontLoaded.add(n);
+  const l = document.createElement("link"); l.rel = "stylesheet"; l.href = "https://fonts.googleapis.com/css2?family=" + n.replace(/ /g, "+") + ":wght@400;700&display=swap"; document.head.appendChild(l);
+}
+const loadAllFonts = () => FONTS.forEach(f => loadFont(f.n));
+const loadFontsIn = html => { const c = String(html || ""); if (c.includes("font")) FONTS.forEach(f => { if (c.includes(f.n)) loadFont(f.n); }); };
 const fontCss = n => { const f = FONTS.find(x => x.n === n) || FONTS[0]; return `"${f.n}",${f.g}`; };
 const SIZES = { small: 12, normal: 14, large: 16, xl: 19 };
 const SIZE_LBL = { small: "Küçük", normal: "Normal", large: "Büyük", xl: "Çok büyük" };
@@ -656,6 +683,7 @@ function loadTypo() {
 loadTypo();
 const RANGES = { esize: [10, 32], tsize: [14, 48], hsize: [10, 28], hnb: [10, 28], hsnip: [9, 24], hthumb: [24, 96] };
 function applySettings() {
+  [S.font, S.tfont, S.hfont, S.htfont, S.hsfont].forEach(loadFont);
   const dark = S.theme === "dark" || (S.theme === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
   const eff = S.theme === "sepia" ? "sepia" : (dark ? "dark" : "light");
   document.documentElement.dataset.theme = eff;
@@ -688,16 +716,31 @@ class Attach extends BlockEmbed {
   }
   static value(n) { return { name: n.getAttribute("data-name"), mime: n.getAttribute("data-mime"), src: n.getAttribute("data-src"), size: +n.getAttribute("data-size") || 0 }; }
 }
-const isImgMime = m => /^image\//.test(m || "");
-function mediaLabel(v) { return (isImgMime(v.mime) ? "🖼 " : "📎 ") + (v.name || "dosya") + (v.size ? "  (" + fmtBytes(v.size) + ")" : ""); }
+const isImgMime = m => /^image\//.test(m || ""), isAudMime = m => /^audio\//.test(m || "");
+function mediaLabel(v) { return (isImgMime(v.mime) ? "🖼 " : isAudMime(v.mime) ? "🎵 " : "📎 ") + (v.name || "dosya") + (v.size ? "  (" + fmtBytes(v.size) + ")" : ""); }
 class Media extends BlockEmbed {
   static create(v) {
     const n = super.create(); n.setAttribute("data-mid", v.mid); n.setAttribute("data-name", v.name || "dosya"); n.setAttribute("data-mime", v.mime || ""); n.setAttribute("data-size", v.size || 0);
-    n.setAttribute("data-img", isImgMime(v.mime) ? "1" : "0"); if (v.thumb) n.setAttribute("data-thumb", v.thumb);
+    n.setAttribute("data-img", isImgMime(v.mime) ? "1" : "0"); if (isAudMime(v.mime)) n.setAttribute("data-aud", "1"); if (v.thumb) n.setAttribute("data-thumb", v.thumb);
     n.textContent = mediaLabel(v); return n;
   }
   static value(n) { return { mid: n.getAttribute("data-mid"), name: n.getAttribute("data-name"), mime: n.getAttribute("data-mime"), size: +n.getAttribute("data-size") || 0, thumb: n.getAttribute("data-thumb") || "" }; }
 }
+class DTable extends BlockEmbed {   // düzenlenebilir tablo: değer = hücre metinleri (satır dizisi)
+  static create(v) {
+    const n = super.create(), rows = Array.isArray(v) && v.length ? v : [["", ""], ["", ""]], t = document.createElement("table"), w = document.createElement("div"); w.className = "tw";
+    rows.forEach(r => { const tr = t.insertRow(); (Array.isArray(r) ? r : [""]).forEach(c => { const td = tr.insertCell(); td.contentEditable = "true"; td.textContent = c == null ? "" : String(c); }); });
+    w.appendChild(t); n.appendChild(w); return n;
+  }
+  static value(n) { return [...n.querySelectorAll("tr")].map(tr => [...tr.cells].map(td => td.innerText.replace(/\n+$/, ""))); }
+}
+DTable.blotName = "dtable"; DTable.tagName = "div"; DTable.className = "dn-table"; Quill.register(DTable);
+const InlineB = Quill.import("blots/inline");
+class NoteLink extends InlineB {   // [[Not adı]] → tıklanabilir iç bağlantı (nota kimlikle bağlanır, başlık değişse de bozulmaz)
+  static create(v) { const n = super.create(); n.setAttribute("data-nid", v); n.setAttribute("title", "Notu aç"); return n; }
+  static formats(n) { return n.getAttribute("data-nid"); }
+}
+NoteLink.blotName = "nlink"; NoteLink.tagName = "SPAN"; NoteLink.className = "dn-nl"; Quill.register(NoteLink);
 Media.blotName = "media"; Media.tagName = "div"; Media.className = "dn-media"; Quill.register(Media);
 Attach.blotName = "attach"; Attach.tagName = "div"; Attach.className = "dn-att"; Quill.register(Attach);
 
@@ -761,6 +804,7 @@ else onAuthStateChanged(auth, u => {
     schedule(); updateStatus();
   }, e => console.warn(e)));
   unsubs.push(onSnapshot(query(ucol("tasks"), orderBy("createdAt")), s => { tasks = s.docs.map(d => ({ id: d.id, ...d.data() })); schedule(); }, e => console.warn(e)));
+  unsubs.push(onSnapshot(doc(db, "users", uid, "meta", "dict"), s => { if (s.exists() && Array.isArray(s.data().items)) { DICT = s.data(); store.set("dnote-dict", JSON.stringify(DICT)); } }, e => console.warn(e)));
   unsubs.push(onSnapshot(doc(db, "users", uid, "meta", "security"), s => {
     sec = s.exists() ? s.data() : {}; secCache();
     if (!secInit) { secInit = true; if (sec.hash && sec.appLock && !isUnlocked()) showLockScreen(); }
@@ -780,10 +824,18 @@ let rafPending = false;
 function schedule() { if (rafPending) return; rafPending = true; requestAnimationFrame(() => { rafPending = false; refreshAll(); }); }
 function refreshAll() { if (!uid) return; renderSide(); renderScreen(); syncEditor(); updateNav(); }
 
-function launch() { // ?n=ID, ?new=1, ?task=1 (kısayollar ve bağlantılar)
-  const p = new URLSearchParams(location.search); const n = p.get("n");
-  if (n && getNote(n)) openNote(n); else if (p.get("new")) createNote(); else if (p.get("task")) newTaskSheet();
+function launch() { // ?n=ID, ?new=1, ?task=1, ?action=new|voice|task|visual|record, paylaşım (?title&text&url) — kısayollar ve bağlantılar
+  const p = new URLSearchParams(location.search), n = p.get("n"), act = p.get("action") || (p.get("new") ? "new" : p.get("task") ? "task" : "");
+  const st = (p.get("title") || "").trim(), tx = (p.get("text") || "").trim(), ur = (p.get("url") || "").trim();
   if (location.search) history.replaceState(history.state, "", location.pathname);
+  if (n && getNote(n)) return openNote(n);
+  if (st || tx || ur) {   // başka uygulamadan paylaşılan metin / bağlantı → yeni not taslağı
+    const parts = [tx, ur].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i && !(i === 1 && tx.includes(ur)));
+    const title = st || (tx ? tx.split("\n")[0].slice(0, 80) : ur.slice(0, 80));
+    const html = parts.map(t => `<p>${esc(t).replace(/\n/g, "<br>")}</p>`).join("");
+    const id = createNote({ title, content: html, plain: parts.join(" ") }, () => {}); toast("Paylaşılan içerik yeni nota eklendi."); return;
+  }
+  if (act === "new") createNote(); else if (act === "task") newTaskSheet(); else if (act === "voice") createNote({}, () => startDictation()); else if (act === "visual") createVisual(); else if (act === "record") createNote({}, () => recordAudioSheet());
 }
 
 /* ================= Gezinme ================= */
@@ -807,6 +859,7 @@ function showRoute() {
 }
 function goBack() { if ((history.state && history.state.d) > 0) history.back(); else { route = { p: "notes", a: {} }; showRoute(); } }
 addEventListener("popstate", e => {
+  if (visOpen()) { visClose(true); return; }
   if (sheetOpen() || !$("menu").hidden) { closeAll(); history.go(1); return; } // geri tuşu önce açık pencereyi kapatır
   const st = e.state; if (!st) return;
   route = st.route || { p: "home", a: {} };
@@ -850,7 +903,7 @@ function updateNav() {
   const fab = $("fab"); fab.hidden = !["home", "notes", "notebooks", "tasks"].includes(p); if (!fab.dataset.i) { fab.innerHTML = ic("plus"); fab.dataset.i = "1"; }
 }
 function openNote(id, after) {
-  { const n0 = getNote(id); if (n0 && lockedNow(n0)) return askPassword(() => openNote(id, after), "Kilitli not"); }
+  { const n0 = getNote(id); if (n0 && lockedNow(n0)) return askPassword(() => openNote(id, after), "Kilitli not"); if (n0 && n0.kind === "visual") return openVisual(id); }
   closeAll(); if (curId && curId !== id) flushSave();
   const had = !!curId; curId = id; loadedId = null; afterLoad = after || null;
   if (had) history.replaceState({ route, note: id, d: history.state ? history.state.d : 0 }, ""); else pushState();
@@ -882,7 +935,7 @@ function renderScreen() {
 }
 
 /* ---------- Not satırı ---------- */
-function firstImg(n) { const c = n.content || "", m = /<img[^>]+src="(data:image\/[^"]+)"/.exec(c) || /data-thumb="(data:image\/[^"]+)"/.exec(c); return m ? m[1] : null; }
+function firstImg(n) { if (n.kind === "visual") return n.vthumb || null; const c = n.content || "", m = /<img[^>]+src="(data:image\/[^"]+)"/.exec(c) || /data-thumb="(data:image\/[^"]+)"/.exec(c); return m ? m[1] : null; }
 function snippet(n, q) {
   const t = (n.plain || "").replace(/\s+/g, " ").trim();
   if (!q) return esc(t.slice(0, 220));
@@ -896,7 +949,7 @@ function noteRow(n, q = "") {
   const acts = n.trashed ? b("c-ok", "undo", "Geri yükle", "restore") + b("c-del", "trash", "Kalıcı sil", "purge")
     : b("c-more", "dots", "Daha fazla", "more") + b("c-dl", "download", "İndir", "dl") + b("c-del", "trash", "Sil", "del");
   return `<div class="nwrap" data-w="${n.trashed ? 104 : 186}"><div class="nact">${acts}</div><div class="nrow ${S.dense ? "dense" : ""} ${n.id === curId ? "cur" : ""}" data-open="${n.id}">
-    <div class="nmain"><div class="nt">${n.pinned ? ic("pin") : ""}${lockFlag(n) ? ic("lock") : ""}<span>${esc(n.title) || "Başlıksız"}</span></div><div class="ns">${lk ? "<i>Kilitli not</i>" : (snippet(n, q) || "<i>Boş not</i>")}</div></div>
+    <div class="nmain"><div class="nt">${n.pinned ? ic("pin") : ""}${lockFlag(n) ? ic("lock") : ""}<span>${esc(n.title) || "Başlıksız"}</span></div><div class="ns">${lk ? "<i>Kilitli not</i>" : (snippet(n, q) || (n.kind === "visual" ? "<i>Görsel not</i>" : "<i>Boş not</i>"))}</div></div>
     ${im ? `<img class="nth" src="${im}" alt="">` : ""}
     <div class="nm">${n.reminder ? `<span class="chip rem">${ic("bell")}${fmtDT(n.reminder)}</span>` : ""}${(n.tags || []).slice(0, 3).map(t => `<span class="chip">${esc(t)}</span>`).join("")}</div>${n.trashed ? "" : `<button class="tbtn sm nrmore" data-act="noteMenu" data-v="${n.id}">${ic("dots")}</button>`}</div></div>`;
 }
@@ -962,9 +1015,33 @@ async function savePw(pw) {
   const salt = b64(crypto.getRandomValues(new Uint8Array(16))), hash = await hashPw(pw, salt);
   sec = { ...sec, salt, hash }; secCache(); await setDoc(secRef(), { salt, hash, appLock: !!sec.appLock }, { merge: true }); setUnlocked();
 }
-async function clearPw() { sec = { salt: null, hash: null, appLock: false }; secCache(); await setDoc(secRef(), sec, { merge: true }); schedule(); }
+/* ---------- Parmak izi / cihaz kilidi (WebAuthn) — bu cihaza özel ---------- */
+const FPK = "dnote-fp";
+const fpOn = () => !!(sec.hash && store.get(FPK, ""));
+const u8 = s => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));
+const b64u = a => b64(a).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+async function fpSupported() { try { return !!(window.PublicKeyCredential && PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable && await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()); } catch (e) { return false; } }
+async function fpRegister() {
+  const ch = crypto.getRandomValues(new Uint8Array(32)), uidb = new TextEncoder().encode(uid || "dnote");
+  const cred = await navigator.credentials.create({ publicKey: { challenge: ch, rp: { name: "D-Note", id: location.hostname }, user: { id: uidb.slice(0, 32), name: (user && user.email) || "D-Note", displayName: (user && user.displayName) || "D-Note" },
+    pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }], authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required", residentKey: "discouraged" }, timeout: 60000, attestation: "none" } });
+  store.set(FPK, b64u(new Uint8Array(cred.rawId)));
+}
+async function fpAuth() {
+  const id = store.get(FPK, ""); if (!id) return false;
+  try { const a = await navigator.credentials.get({ publicKey: { challenge: crypto.getRandomValues(new Uint8Array(32)), rpId: location.hostname, allowCredentials: [{ type: "public-key", id: u8(id) }], userVerification: "required", timeout: 60000 } }); if (a) { setUnlocked(); return true; } } catch (e) { }
+  return false;
+}
+async function toggleFp() {
+  if (!sec.hash) { toast("Önce bir şifre belirleyin."); return pwSheet(() => toggleFp()); }
+  if (fpOn()) return askPassword(() => { store.set(FPK, ""); toast("Parmak izi ile açma bu cihazda kapatıldı."); schedule(); }, "Parmak izini kapatmak için şifre");
+  if (!(await fpSupported())) return toast("Bu cihaz/tarayıcı parmak izi (cihaz kilidi) doğrulamasını desteklemiyor.", 4500);
+  askPassword(async () => { try { await fpRegister(); toast("Parmak izi ile açma bu cihazda etkinleştirildi."); schedule(); } catch (e) { toast("Parmak izi kaydedilemedi veya iptal edildi."); } }, "Parmak izini açmak için şifre");
+}
+$("lockFp").onclick = async () => { if (await fpAuth()) { $("lockscr").hidden = true; $("lockIn").value = ""; } else $("lockErr").textContent = "Parmak izi doğrulanamadı. Şifre girebilirsiniz."; };
+async function clearPw() { store.set(FPK, ""); sec = { salt: null, hash: null, appLock: false }; secCache(); await setDoc(secRef(), sec, { merge: true }); schedule(); }
 function setAppLock(v) { sec.appLock = v; secCache(); setDoc(secRef(), { appLock: v }, { merge: true }); schedule(); }
-function showLockScreen(msg) { $("lockscr").hidden = false; $("lockMsg").textContent = msg || "Şifrenizi girin"; $("lockIn").value = ""; $("lockErr").textContent = ""; setTimeout(() => $("lockIn").focus(), 80); }
+function showLockScreen(msg) { $("lockscr").hidden = false; $("lockFp").hidden = !fpOn(); if (fpOn()) setTimeout(() => $("lockFp").click(), 350); $("lockMsg").textContent = msg || "Şifrenizi girin"; $("lockIn").value = ""; $("lockErr").textContent = ""; setTimeout(() => $("lockIn").focus(), 80); }
 async function lockSubmit() {
   const r = await tryPw($("lockIn").value);
   if (r.ok) { $("lockscr").hidden = true; $("lockIn").value = ""; } else { $("lockErr").textContent = r.msg; $("lockIn").value = ""; }
@@ -981,9 +1058,9 @@ document.addEventListener("visibilitychange", () => {
   hiddenAt = 0;
 });
 function askPassword(cb, title = "Şifreyi girin") {
-  openSheet(`${shHead(title)}<input type="password" id="apIn" placeholder="Şifre" autocomplete="current-password"><div class="sh-p" id="apErr" style="color:var(--red);min-height:16px"></div><div class="brow"><button class="btn" id="apOk">Aç</button></div>`, { mount: () => setTimeout(() => $("apIn") && $("apIn").focus(), 80) });
+  openSheet(`${shHead(title)}<input type="password" id="apIn" placeholder="Şifre" autocomplete="current-password"><div class="sh-p" id="apErr" style="color:var(--red);min-height:16px"></div><div class="brow">${fpOn() ? `<button class="btn sec" id="apFp">Parmak izi</button>` : ""}<button class="btn" id="apOk">Aç</button></div>`, { mount: () => setTimeout(() => $("apIn") && $("apIn").focus(), 80) });
   const go1 = async () => { const r = await tryPw($("apIn").value); if (r.ok) { closeAll(); cb(); } else { $("apErr").textContent = r.msg; $("apIn").value = ""; } };
-  $("sheet").onclick = e => { if (e.target.closest("[data-act=closeSheet]")) return closeAll(); if (e.target.closest("#apOk")) go1(); };
+  $("sheet").onclick = e => { if (e.target.closest("[data-act=closeSheet]")) return closeAll(); if (e.target.closest("#apOk")) go1(); if (e.target.closest("#apFp")) fpAuth().then(ok => { if (ok) { closeAll(); cb(); } else $("apErr").textContent = "Parmak izi doğrulanamadı."; }); };
   $("apIn").addEventListener("keydown", e => { if (e.key === "Enter") go1(); });
 }
 function pwSheet(after) {
@@ -1147,6 +1224,12 @@ function renderTrash() {
 function canInstall() { return !isStandalone() && (!!window.__bip || isIOS()); }
 const isStandalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
 const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+const fontBtn = (k, dflt) => `<button class="sel fpick" data-act="fontPick" data-k="${k}" style="${S[k] ? "font-family:" + fontCss(S[k]) : ""}"><span>${esc(S[k] || dflt || "Varsayılan")}</span><span>▾</span></button>`;
+function fontPickSheet(k) {
+  loadAllFonts(); const dflt = { tfont: "Not yazısıyla aynı" }[k] || "Varsayılan";
+  openSheet(`${shHead("Yazı tipi seçin")}${k === "font" ? "" : `<button class="arow" data-fp=""><span class="st">${dflt}</span>${!S[k] ? ic("check") : ""}</button>`}${FONTS.map(f => `<button class="arow" data-fp="${esc(f.n)}"><span class="st" style="font-family:'${f.n}',${f.g};font-size:17px">${esc(f.n)}</span>${S[k] === f.n ? ic("check") : ""}</button>`).join("")}`, { full: true });
+  $("sheet").onclick = e => { if (e.target.closest("[data-act=closeSheet]")) return closeAll(); const b = e.target.closest("[data-fp]"); if (!b) return; const v = b.dataset.fp; S[k] = v; store.set(skey(k), v); closeAll(); applySettings(); schedule(); };
+}
 function renderSettings() {
   $("top-settings").innerHTML = subTop("Ayarlar");
   const seg = (key, opts) => { const cur = key === "dense" ? (S.dense ? "1" : "0") : S[key]; return `<div class="seg">${opts.map(([v, l]) => `<button class="${cur === v ? "on" : ""}" data-act="set" data-k="${key}" data-v="${v}">${l}</button>`).join("")}</div>`; };
@@ -1156,11 +1239,11 @@ function renderSettings() {
      <div class="setg">Tema</div>${seg("theme", [["light", "Açık"], ["dark", "Koyu"], ["sepia", "Sepya"], ["system", "Sistem"]])}
      <div class="setg">Not yazısı · ${isDesk() ? "Bilgisayar" : "Telefon"}</div>
      <div class="setprev"><div class="pt">Not başlığı örneği</div><div class="pb">Hızlı kahverengi tilki tembel köpeğin üstünden atladı. Bu metin not içindeki yazının görünümünü gösterir.</div></div>
-     <div class="setl">Başlık yazı tipi</div><select class="sel" data-sel="tfont"><option value="">Not yazısıyla aynı</option>${FONTS.map(f => `<option value="${esc(f.n)}" ${S.tfont === f.n ? "selected" : ""}>${esc(f.n)}</option>`).join("")}</select>
+     <div class="setl">Başlık yazı tipi</div>${fontBtn("tfont", "Not yazısıyla aynı")}
      <div class="stp"><span>Başlık boyutu</span><span class="sv"><button data-act="stepNum" data-k="tsize" data-d="-1">−</button><b data-lbl="tsize">${S.tsize} px</b><button data-act="stepNum" data-k="tsize" data-d="1">+</button></span></div>
      <input type="range" class="rng" data-range="tsize" min="${RANGES.tsize[0]}" max="${RANGES.tsize[1]}" step="1" value="${S.tsize}">
      <div class="setl">Başlık kalınlığı</div>${seg("tweight", [["400", "Normal"], ["500", "Orta"], ["600", "Yarı kalın"], ["700", "Kalın"], ["800", "Çok kalın"]])}
-     <div class="setl">Not içeriği yazı tipi</div><select class="sel" data-sel="font">${FONTS.map(f => `<option value="${esc(f.n)}" ${S.font === f.n ? "selected" : ""}>${esc(f.n)}</option>`).join("")}</select>
+     <div class="setl">Not içeriği yazı tipi</div>${fontBtn("font", "")}
      <div class="stp"><span>İçerik boyutu</span><span class="sv"><button data-act="stepNum" data-k="esize" data-d="-1">−</button><b data-lbl="esize">${S.esize} px</b><button data-act="stepNum" data-k="esize" data-d="1">+</button></span></div>
      <input type="range" class="rng" data-range="esize" min="${RANGES.esize[0]}" max="${RANGES.esize[1]}" step="1" value="${S.esize}">
      <div class="setl">İçerik kalınlığı</div>${seg("eweight", [["300", "İnce"], ["400", "Normal"], ["500", "Orta"], ["600", "Kalın"]])}
@@ -1173,23 +1256,25 @@ function renderSettings() {
      ${Object.entries(FAB_ACTS).map(([k, [l]]) => `<div class="frow" data-act="setFabLong" data-v="${k}"><div class="fn">${l}</div>${S.fabLong === k ? ic("check") : ""}</div>`).join("")}
      <div class="setg">Ana sayfa ve not listeleri · ${isDesk() ? "Bilgisayar" : "Telefon"}</div>
      <div class="srow" style="cursor:default">${ic("info")}<div class="st"><small style="margin:0">Not başlığı ve içeriği ayarları ana sayfada, not defteri içinde ve Tüm Notlar listesinde geçerlidir. Bu bölümdeki ve yukarıdaki yazı ayarları yalnızca bu ekran türü (${isDesk() ? "bilgisayar / geniş ekran" : "telefon"}) için kaydedilir; diğeri etkilenmez.</small></div></div>
-     <div class="setl">Not defteri adı · yazı tipi</div><select class="sel" data-sel="hfont"><option value="">Varsayılan</option>${FONTS.map(f => `<option value="${esc(f.n)}" ${S.hfont === f.n ? "selected" : ""}>${esc(f.n)}</option>`).join("")}</select>
+     <div class="setl">Not defteri adı · yazı tipi</div>${fontBtn("hfont", "Varsayılan")}
      <div class="stp"><span>Not defteri adı · boyut</span><span class="sv"><button data-act="stepNum" data-k="hnb" data-d="-1">−</button><b data-lbl="hnb">${S.hnb} px</b><button data-act="stepNum" data-k="hnb" data-d="1">+</button></span></div>
      <input type="range" class="rng" data-range="hnb" min="${RANGES.hnb[0]}" max="${RANGES.hnb[1]}" step="1" value="${S.hnb}">
-     <div class="setl">Not başlığı · yazı tipi</div><select class="sel" data-sel="htfont"><option value="">Varsayılan</option>${FONTS.map(f => `<option value="${esc(f.n)}" ${S.htfont === f.n ? "selected" : ""}>${esc(f.n)}</option>`).join("")}</select>
+     <div class="setl">Not başlığı · yazı tipi</div>${fontBtn("htfont", "Varsayılan")}
      <div class="stp"><span>Not başlığı · boyut</span><span class="sv"><button data-act="stepNum" data-k="hsize" data-d="-1">−</button><b data-lbl="hsize">${S.hsize} px</b><button data-act="stepNum" data-k="hsize" data-d="1">+</button></span></div>
      <input type="range" class="rng" data-range="hsize" min="${RANGES.hsize[0]}" max="${RANGES.hsize[1]}" step="1" value="${S.hsize}">
-     <div class="setl">Not içeriği (altındaki yazı) · yazı tipi</div><select class="sel" data-sel="hsfont"><option value="">Varsayılan</option>${FONTS.map(f => `<option value="${esc(f.n)}" ${S.hsfont === f.n ? "selected" : ""}>${esc(f.n)}</option>`).join("")}</select>
+     <div class="setl">Not içeriği (altındaki yazı) · yazı tipi</div>${fontBtn("hsfont", "Varsayılan")}
      <div class="stp"><span>Not içeriği (altındaki yazı) · boyut</span><span class="sv"><button data-act="stepNum" data-k="hsnip" data-d="-1">−</button><b data-lbl="hsnip">${S.hsnip} px</b><button data-act="stepNum" data-k="hsnip" data-d="1">+</button></span></div>
      <input type="range" class="rng" data-range="hsnip" min="${RANGES.hsnip[0]}" max="${RANGES.hsnip[1]}" step="1" value="${S.hsnip}">
      <div class="stp"><span>Not defteri küçük resim boyutu</span><span class="sv"><button data-act="stepNum" data-k="hthumb" data-d="-2">−</button><b data-lbl="hthumb">${S.hthumb} px</b><button data-act="stepNum" data-k="hthumb" data-d="2">+</button></span></div>
      <input type="range" class="rng" data-range="hthumb" min="${RANGES.hthumb[0]}" max="${RANGES.hthumb[1]}" step="1" value="${S.hthumb}">
      <div class="srow" data-act="homeReset">${ic("restore")}<div class="st">Ana sayfa ayarlarını sıfırla</div></div>
+     <div class="srow" data-act="dictSheet">${ic("mic")}<div class="st">Dikte sözlüğü<small>Sesle yazarken yabancı / teknik kelimeleri düzeltir</small></div></div>
      <div class="srow" data-act="navEdit">${ic("move")}<div class="st">Alt çubuğu düzenle<small>Simgelerin yerini değiştirin veya başka sayfalarla değiştirin</small></div></div>
      <div class="setg">Not listesi</div>${seg("dense", [["0", "Ayrıntılı"], ["1", "Kompakt"]])}
      <div class="setg">Güvenlik</div>
      <div class="srow" data-act="pwSheet">${ic("lock")}<div class="st">Şifre<small>${sec.hash ? "Belirlendi · değiştirmek veya kaldırmak için dokunun" : "Belirlenmedi · uygulama, defter ve notları kilitlemek için"}</small></div></div>
      <div class="srow" data-act="toggleAppLock">${ic("lock")}<div class="st">Uygulama girişinde şifre iste<small>Açılışta ve 1 dakikadan uzun arka planda kalınca</small></div><span class="swt ${sec.appLock && sec.hash ? "on" : ""}"></span></div>
+     <div class="srow" data-act="toggleFp">${ic("lock")}<div class="st">Parmak izi ile aç (bu cihaz)<small>Şifre yerine parmak izi / yüz / ekran kilidi ile açın · her cihazda ayrı etkinleştirilir</small></div><span class="swt ${fpOn() ? "on" : ""}"></span></div>
      <div class="srow" style="cursor:default">${ic("info")}<div class="st"><small style="margin:0">Bir not defterini veya notu kilitlemek için ⋯ menüsünden "Kilitle"yi seçin. Kilitli içerik listede gizlenir, açmak için şifre sorulur.</small></div></div>
      <div class="setg">Uygulama</div>
      <div class="srow" data-act="whatsNew">${ic("megaphone")}<div class="st">Yeni neler</div></div>
@@ -1264,7 +1349,7 @@ function syncEditor() {
   if (!n) { if (!curId) loadedId = null; return; }
   if (loadedId !== n.id) {
     loadedId = n.id; $("eTitle").value = n.title || ""; autoGrow();
-    quill.setContents(quill.clipboard.convert(n.content || ""), "silent"); quill.history.clear(); lastRange = null; closeFind(); $("eScroll").scrollTop = 0;
+    loadFontsIn(n.content); quill.setContents(quill.clipboard.convert(n.content || ""), "silent"); quill.history.clear(); lastRange = null; closeFind(); $("eScroll").scrollTop = 0;
     if (afterLoad) { const f = afterLoad; afterLoad = null; setTimeout(f, 60); }
   }
   quill.enable(!n.trashed); $("eTitle").disabled = !!n.trashed; $("fbar").style.display = n.trashed ? "none" : "";
@@ -1275,6 +1360,7 @@ function syncEditor() {
   if (n.reminder && !n.trashed) b += `<div class="banner">${ic("bell")}<b>Hatırlatıcı: ${fmtDT(n.reminder)}</b><button data-act="eRemind">Değiştir</button></div>`;
   if (n.shareId && !n.trashed) b += `<div class="banner">${ic("users")}<b>Bağlantıyla paylaşılıyor</b><button data-act="eShare">Yönet</button></div>`;
   $("eBanner").innerHTML = b;
+  renderBacklinks();
   updateStatus();
 }
 function updateStatus(txt) {
@@ -1294,7 +1380,7 @@ function saveNow() {
   const content = cleanHTML();
   if (content.length > 950000) { if (!warned) { warned = true; toast("Bu not 1 MB sınırına ulaştı (Firestore sınırı). Kaydedilmedi; bazı görselleri silin."); } updateStatus("Not çok büyük – kaydedilmedi"); return; }
   warned = false;
-  const data = { title: $("eTitle").value, content, plain: quill.getText().trim(), updatedAt: Date.now() };
+  const data = { title: $("eTitle").value, content, plain: (quill.getText().trim() + " " + [...quill.root.querySelectorAll(".dn-table td")].map(c => c.textContent).join(" ")).trim(), updatedAt: Date.now() };
   Object.assign(n, data);
   setDoc(noteRef(curId), data, { merge: true });
   if (n.shareId) { const sid = n.shareId; inlineHTML(900000).then(c => setDoc(doc(db, "shared", sid), { ownerUid: uid, noteId: n.id, title: data.title, content: c, updatedAt: data.updatedAt }, { merge: true })).catch(() => {}); }
@@ -1358,12 +1444,13 @@ function tbAction(k, anchor) {
     case "link": return makeLink();
     case "insert": return showMenu([
       { i: "image", t: "Galeriden görsel", f: () => $("fileImg").click() }, { i: "attach", t: "Dosya ekle (PDF, belge…)", f: () => $("fileAtt").click() }, { i: "camera", t: "Kamera", f: () => $("fileCam").click() }, { i: "mic", t: "Sesle yaz", f: () => startDictation() },
+      { i: "mic", t: "Dikte sözlüğüyle düzelt", f: () => dictFixNote() }, { i: "audio", t: "Ses dosyası ekle", f: () => $("fileAud").click() }, { i: "mic", t: "Ses kaydet ve ekle", f: () => recordAudioSheet() }, { i: "table", t: "Tablo ekle", f: () => tableSheet() },
       { i: "checkc", t: "Yapılacaklar kutusu", f: () => fmtSet("list", "unchecked") }, { i: "hr", t: "Ayırıcı çizgi", f: () => insertDivider() }, { i: "clock", t: "Tarih ve saat", f: () => insertText(new Date().toLocaleString("tr-TR", { dateStyle: "long", timeStyle: "short" })) }, { i: "link", t: "Bağlantı", f: () => makeLink() }
     ], { anchor, above: true });
     case "camera": return $("fileCam").click();
     case "dictate": return startDictation();
     case "style": return showMenu([["Normal metin", () => { fmtSet("header", false); fmtSet("blockquote", false); fmtSet("code-block", false); }], ["Başlık 1", () => fmtSet("header", 1)], ["Başlık 2", () => fmtSet("header", 2)], ["Başlık 3", () => fmtSet("header", 3)], ["Alıntı", () => fmtSet("blockquote", true)], ["Kod bloğu", () => fmtSet("code-block", true)]].map(([t, f]) => ({ i: "heading", t, f })), { anchor, above: true });
-    case "font": return showMenu([{ i: "fontAa", t: "Varsayılan yazı tipi", f: () => fmtSet("font", false) }, ...FONTS.map(f => ({ i: cur.font === f.n ? "check" : "fontAa", t: `<span style="font-family:'${f.n}',${f.g}">${f.n}</span>`, f: () => fmtSet("font", f.n) }))], { anchor, above: true });
+    case "font": loadAllFonts(); return showMenu([{ i: "fontAa", t: "Varsayılan yazı tipi", f: () => fmtSet("font", false) }, ...FONTS.map(f => ({ i: cur.font === f.n ? "check" : "fontAa", t: `<span style="font-family:'${f.n}',${f.g}">${f.n}</span>`, f: () => fmtSet("font", f.n) }))], { anchor, above: true });
     case "size": { openSheet(`${shHead("Yazı boyutu")}<div class="chips" id="szChips"><span class="chip" data-sz="">Varsayılan</span>${SIZE_LIST.map(z => `<span class="chip ${cur.size === z ? "on" : ""}" data-sz="${z}">${z.replace("px", "")}</span>`).join("")}</div>`);
       $("sheet").onclick = e => { if (e.target.closest("[data-act=closeSheet]")) return closeAll(); const c = e.target.closest("[data-sz]"); if (!c) return; closeAll(); setTimeout(() => fmtSet("size", c.dataset.sz || false), 30); }; return; }
     case "align": return showMenu([["alignL", "Sola yasla", false], ["alignC", "Ortala", "center"], ["alignR", "Sağa yasla", "right"], ["alignJ", "İki yana yasla", "justify"]].map(([i, t, v]) => ({ i, t, f: () => fmtSet("align", v) })), { anchor, above: true });
@@ -1485,6 +1572,13 @@ async function getMediaBlob(mid, mime) {
   return blob;
 }
 function hydrateMedia(root) {
+  root.querySelectorAll('.dn-media[data-aud="1"]:not([data-h])').forEach(el => {
+    el.dataset.h = "1"; el.textContent = ""; const w = document.createElement("div"); w.className = "audw"; w.contentEditable = "false";
+    const nm = document.createElement("span"); nm.className = "audn"; nm.textContent = "🎵 " + (el.dataset.name || "ses") + (+el.dataset.size ? "  (" + fmtBytes(+el.dataset.size) + ")" : "");
+    const au = document.createElement("audio"); au.controls = true; au.preload = "metadata"; w.append(nm, au); el.appendChild(w);
+    const load = tries => getMediaBlob(el.dataset.mid, el.dataset.mime).then(b => { au.src = URL.createObjectURL(b); }).catch(() => { if (tries > 0) setTimeout(() => load(tries - 1), 6000); else nm.textContent += " — henüz yüklenemedi"; });
+    load(3);
+  });
   root.querySelectorAll('.dn-media[data-img="1"]:not([data-h])').forEach(el => {
     el.dataset.h = "1"; const img = document.createElement("img"); img.alt = el.dataset.name || ""; if (el.dataset.thumb) img.src = el.dataset.thumb; el.textContent = ""; el.appendChild(img);
     const load = (tries) => getMediaBlob(el.dataset.mid, el.dataset.mime).then(b => { img.src = URL.createObjectURL(b); }).catch(() => { if (tries > 0) setTimeout(() => load(tries - 1), 6000); else { img.removeAttribute("src"); img.alt = "⚠ " + (el.dataset.name || "görsel") + " (henüz yüklenemedi)"; } });
@@ -1530,6 +1624,7 @@ function addImage(data) { const put = () => { const r = selRange(); quill.insert
 $("fileImg").onchange = e => { addFiles(e.target.files); e.target.value = ""; };
 $("fileCam").onchange = e => { addFiles(e.target.files); e.target.value = ""; };
 $("fileAtt").onchange = e => { addFiles(e.target.files); e.target.value = ""; };
+$("fileAud").onchange = e => { addFiles(e.target.files); e.target.value = ""; };
 
 /* ---------- Not içindeki görsel / dosyaya basılı tutunca indir ---------- */
 async function downloadEmbed(el) {
@@ -1561,8 +1656,483 @@ async function downloadEmbed(el) {
     if (fired) { const stop = e => { e.stopPropagation(); e.preventDefault(); }; document.addEventListener("click", stop, { capture: true, once: true }); setTimeout(() => document.removeEventListener("click", stop, true), 600); }   // basılı tutma sonrası gelen tıklama menüyü kapatmasın
   }, true));
   document.addEventListener("contextmenu", e => { const el = e.target.closest && e.target.closest(SEL); if (!el) return; e.preventDefault(); if (!fired) { fired = true; ask(el); } }, true);
-  document.addEventListener("click", e => { const el = e.target.closest && e.target.closest(".ql-editor .dn-att, .ql-editor .dn-media[data-img=\"0\"]"); if (el) { e.preventDefault(); if (!fired) ask(el); fired = false; } }, true);
+  document.addEventListener("click", e => { const el = e.target.closest && e.target.closest(".ql-editor .dn-att, .ql-editor .dn-media[data-img=\"0\"]:not([data-aud])"); if (el) { e.preventDefault(); if (!fired) ask(el); fired = false; } }, true);
 })();
+
+
+
+
+/* ---------- [[ ile notlar arası bağlantı + "Bu nota bağlantı verenler" ---------- */
+(() => {
+  const pop = document.createElement("div"); pop.id = "wlPop"; pop.hidden = true; document.body.appendChild(pop);
+  let st = null;   // {start, end, q, items, sel}
+  const hide = () => { pop.hidden = true; st = null; };
+  const cands = q => {
+    const ql = q.trim().toLocaleLowerCase("tr"), l = notes.filter(n => !n.trashed && n.id !== curId && (n.title || "Başlıksız").toLocaleLowerCase("tr").includes(ql))
+      .sort((a, b) => ((b.title || "").toLocaleLowerCase("tr").startsWith(ql) ? 1 : 0) - ((a.title || "").toLocaleLowerCase("tr").startsWith(ql) ? 1 : 0) || (b.updatedAt || 0) - (a.updatedAt || 0)).slice(0, 6);
+    const items = l.map(n => ({ id: n.id, t: n.title || "Başlıksız" }));
+    if (q.trim() && !notes.some(n => !n.trashed && (n.title || "").toLocaleLowerCase("tr") === ql)) items.push({ id: null, t: q.trim(), isNew: true });
+    return items;
+  };
+  const draw = () => { pop.innerHTML = st.items.map((it, i) => `<button data-i="${i}" class="${i === st.sel ? "on" : ""}">${ic(it.isNew ? "plus" : "notes")}<span>${it.isNew ? "Yeni not oluştur: " : ""}${esc(it.t)}</span></button>`).join(""); };
+  const place = idx => {
+    const b = quill.getBounds(idx), c = quill.container.getBoundingClientRect(); pop.hidden = false;
+    const w = pop.offsetWidth, h = pop.offsetHeight; let x = c.left + b.left, y = c.top + b.top + b.height + 6;
+    if (y + h > innerHeight - 8) y = Math.max(8, c.top + b.top - h - 6); x = Math.max(8, Math.min(x, innerWidth - w - 8)); pop.style.left = x + "px"; pop.style.top = y + "px";
+  };
+  const apply = it => {
+    if (!st) return; const { start, end } = st; let id = it.id, title = it.t;
+    if (it.isNew) { id = newId(); const now = Date.now(); const d = { title, content: "", plain: "", tags: [], pinned: false, trashed: false, notebookId: defaultNb(), createdAt: now, updatedAt: now, reminder: null, reminded: false, shortcut: false, homePinned: false, shareId: null }; notes.unshift({ id, ...d }); setDoc(noteRef(id), d); }
+    hide(); quill.deleteText(start, end - start, "user"); quill.insertText(start, title, { nlink: id }, "user"); quill.insertText(start + title.length, " ", { nlink: false }, "user"); quill.setSelection(start + title.length + 1, 0, "user");
+  };
+  const check = () => {
+    const r = quill.getSelection(); if (!r || r.length) return hide();
+    const from = Math.max(0, r.index - 80), txt = quill.getText(from, r.index - from);
+    const done = /\[\[([^\[\]\n]{1,60})\]\]$/.exec(txt);
+    if (done) { const q = done[1].trim().toLocaleLowerCase("tr"), n = notes.find(x => !x.trashed && x.id !== curId && (x.title || "").toLocaleLowerCase("tr") === q); if (n) { st = { start: r.index - done[0].length, end: r.index }; return apply({ id: n.id, t: n.title }); } }
+    const m = /\[\[([^\[\]\n]{0,60})$/.exec(txt); if (!m) return hide();
+    const items = cands(m[1]); if (!items.length) return hide();
+    st = { start: r.index - m[0].length, end: r.index, q: m[1], items, sel: 0 }; draw(); place(r.index);
+  };
+  quill.on("text-change", (d, o, src) => { if (src === "user") check(); });
+  quill.on("selection-change", r => { if (!r) setTimeout(() => { if (!pop.matches(":hover")) hide(); }, 150); });
+  pop.addEventListener("mousedown", e => e.preventDefault()); pop.addEventListener("touchstart", e => { e.preventDefault(); const b = e.target.closest("button"); if (b && st) apply(st.items[+b.dataset.i]); }, { passive: false });
+  pop.addEventListener("click", e => { const b = e.target.closest("button"); if (b && st) apply(st.items[+b.dataset.i]); });
+  quill.root.addEventListener("keydown", e => {
+    if (!st || pop.hidden) return;
+    if (e.key === "ArrowDown") { e.preventDefault(); e.stopPropagation(); st.sel = (st.sel + 1) % st.items.length; draw(); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); e.stopPropagation(); st.sel = (st.sel - 1 + st.items.length) % st.items.length; draw(); }
+    else if (e.key === "Enter" || e.key === "Tab") { e.preventDefault(); e.stopPropagation(); apply(st.items[st.sel]); }
+    else if (e.key === "Escape") { e.stopPropagation(); hide(); }
+  }, true);
+  document.addEventListener("click", e => { const l = e.target.closest && e.target.closest(".ql-editor .dn-nl"); if (!l) return; const id = l.getAttribute("data-nid"); if (id && getNote(id) && id !== curId) { e.preventDefault(); flushSave(); openNote(id); } else if (id && !getNote(id)) toast("Bu not bulunamadı (silinmiş olabilir)."); }, true);
+})();
+function renderBacklinks() {
+  const el = $("backlinks"); if (!el) return; const n = getNote(curId); if (!n) { el.hidden = true; return; }
+  const l = notes.filter(x => x.id !== curId && !x.trashed && (x.content || "").includes('data-nid="' + curId + '"')).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  if (!l.length) { el.hidden = true; el.innerHTML = ""; return; }
+  el.hidden = false; el.innerHTML = `<h4>Bu nota bağlantı verenler (${l.length})</h4>` + l.map(x => `<button data-bl="${x.id}">${ic("link")}<span>${esc(x.title) || "Başlıksız"}</span></button>`).join("");
+}
+document.addEventListener("click", e => { const b = e.target.closest && e.target.closest("[data-bl]"); if (b) { flushSave(); openNote(b.dataset.bl); } });
+
+/* ---------- Görsel not (çizim tahtası) ---------- */
+const VIS = { id: null, items: [], undo: [], redo: [], view: { x: 0, y: 0, z: 1 }, tool: "pen", color: "#111827", w: 4, fill: false, grid: true, sel: null, ptr: new Map(), cur: null, drag: null, gest: null, edit: null, timer: null, warned: false, raf: 0 };
+const visOpen = () => { const e = $("vis"); return !!e && !e.hidden; };
+const VI = {
+  select: '<path d="M5 3l14 8-6 2-3 6z"/>', hand: '<path d="M8 12V6a1.5 1.5 0 0 1 3 0v5m0-1V4.5a1.5 1.5 0 0 1 3 0V11m0-4a1.5 1.5 0 0 1 3 0v8a6 6 0 0 1-6 6h-1a5 5 0 0 1-4-2l-3-4.5a1.5 1.5 0 0 1 2.3-1.8L8 15"/>',
+  pen: '<path d="M4 20l1-4L17 4l3 3L8 19z"/>', eraser: '<path d="M4 17l9-11 6 5-7 9H8zM8 20h12"/>', line: '<path d="M5 19L19 5"/>', arrow: '<path d="M5 19L19 5M10 5h9v9"/>',
+  rect: '<rect x="4" y="6" width="16" height="12"/>', round: '<rect x="4" y="6" width="16" height="12" rx="4"/>', ell: '<ellipse cx="12" cy="12" rx="8" ry="6"/>', dia: '<path d="M12 4l8 8-8 8-8-8z"/>',
+  text: '<path d="M5 6V4h14v2M12 4v16M9 20h6"/>', image: '<rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="9" cy="10" r="1.6"/><path d="M4 18l5-5 4 4 3-3 4 4"/>',
+  undo: '<path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>', redo: '<path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/>',
+  back: '<path d="M15 5l-7 7 7 7"/>', dots: '<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>', trash: '<path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/>', copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>', fill: '<path d="M5 12l7-7 7 7-7 7zM19 15c1 1.5 1.5 2.5 1.5 3.5a1.5 1.5 0 0 1-3 0c0-1 .5-2 1.5-3.5z"/>'
+};
+const vsvg = n => `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${VI[n]}</svg>`;
+const VTOOLS = [["select", "Seç / taşı"], ["hand", "Kaydır"], ["pen", "Kalem"], ["eraser", "Silgi"], ["line", "Çizgi"], ["arrow", "Ok"], ["rect", "Dikdörtgen"], ["round", "Yuvarlak köşe"], ["ell", "Elips"], ["dia", "Eşkenar dörtgen"], ["text", "Yazı"], ["image", "Görsel ekle"]];
+const VCOL = ["#111827", "#6b7280", "#ef4444", "#f59e0b", "#22c55e", "#0ea5e9", "#3b82f6", "#8b5cf6", "#ec4899", "#ffffff"];
+const VW = [2, 4, 8];
+const VSZ = { 2: 18, 4: 26, 8: 42 };
+
+(() => {
+  const st = document.createElement("style");
+  st.textContent = `#vis{position:fixed;left:0;top:0;width:100%;height:var(--vh,100%);z-index:45;background:var(--bg);display:flex;flex-direction:column}#vis[hidden]{display:none}
+#vis .vtop{display:flex;align-items:center;gap:2px;padding:6px 8px;border-bottom:1px solid var(--line)}#vis .vtop input{flex:1;min-width:0;font:inherit;font-weight:600;font-size:15px;background:none;border:0;outline:0;color:var(--text);padding:6px}
+#vis .vb{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;color:var(--text);flex:none}#vis .vb:active,#vis .vb.on{background:var(--sel)}#vis .vb.on{color:var(--acc)}#vis .vb:disabled{opacity:.3}
+#vis .vcan{flex:1;position:relative;overflow:hidden;background:#fff;touch-action:none}#vCv{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block}
+#vis .vbar{display:flex;gap:2px;align-items:center;padding:4px 8px;overflow-x:auto;scrollbar-width:none;border-top:1px solid var(--line);background:var(--card)}#vis .vbar::-webkit-scrollbar{display:none}
+#vis .vsw{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);flex:none;margin:0 3px}#vis .vsw.on{outline:2px solid var(--acc);outline-offset:1px}
+#vis .vwd{width:30px;height:30px;flex:none;display:flex;align-items:center;justify-content:center;border-radius:8px}#vis .vwd i{display:block;background:var(--text);border-radius:50%}#vis .vwd.on{background:var(--sel)}
+#vis .vsep{width:1px;height:22px;background:var(--line);margin:0 4px;flex:none}
+#vTxt{position:absolute;left:50%;top:60px;transform:translateX(-50%);width:min(340px,calc(100% - 24px));background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:10px;z-index:3}#vTxt[hidden]{display:none}
+#vTxt textarea{width:100%;min-height:80px;resize:vertical;font:inherit;font-size:15px;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:8px;box-sizing:border-box}#vTxt .r{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}#vTxt .r button{padding:7px 14px;border-radius:9px;font-size:13px;border:1px solid var(--line)}#vTxt .r .pri{background:var(--acc);color:#fff;border-color:var(--acc)}`;
+  document.head.appendChild(st);
+  const el = document.createElement("div"); el.id = "vis"; el.hidden = true;
+  el.innerHTML = `<div class="vtop"><button class="vb" data-v="close" title="Kapat">${vsvg("back")}</button><input id="vsTitle" placeholder="Görsel not başlığı" maxlength="200"><button class="vb" data-v="undo" title="Geri al">${vsvg("undo")}</button><button class="vb" data-v="redo" title="Yinele">${vsvg("redo")}</button><button class="vb" data-v="more" title="Diğer">${vsvg("dots")}</button></div>
+<div class="vcan" id="vCan"><canvas id="vCv"></canvas><div id="vTxt" hidden><textarea id="vTxtIn" placeholder="Yazı…"></textarea><div class="r"><button data-v="txcancel">İptal</button><button class="pri" data-v="txok">Tamam</button></div></div></div>
+<div class="vbar" id="vOpt"></div><div class="vbar" id="vTools"></div><input type="file" id="vFile" accept="image/*" hidden>`;
+  document.body.appendChild(el);
+})();
+
+const vz = () => VIS.view.z;
+const w2s = (x, y) => [x * VIS.view.z + VIS.view.x, y * VIS.view.z + VIS.view.y];
+const s2w = (x, y) => [(x - VIS.view.x) / VIS.view.z, (y - VIS.view.y) / VIS.view.z];
+const vid = () => Math.random().toString(36).slice(2, 9);
+const vclone = a => a.map(i => ({ ...i }));
+function vTextBox(it, ctx) {
+  const lines = String(it.s || "").split("\n"), fs = it.size || 26; ctx.save(); ctx.font = `${fs}px Inter, system-ui, sans-serif`;
+  const w = Math.max(10, ...lines.map(l => ctx.measureText(l).width)); ctx.restore(); it.bw = w; it.bh = lines.length * fs * 1.25; return [it.bw, it.bh];
+}
+function vBounds(it) {
+  if (it.t === "path") { let a = 1e9, b = 1e9, c = -1e9, d = -1e9; for (const p of it.pts) { a = Math.min(a, p[0]); b = Math.min(b, p[1]); c = Math.max(c, p[0]); d = Math.max(d, p[1]); } return [a + (it.ox || 0), b + (it.oy || 0), c + (it.ox || 0), d + (it.oy || 0)]; }
+  if (it.t === "line" || it.t === "arrow") return [Math.min(it.x1, it.x2), Math.min(it.y1, it.y2), Math.max(it.x1, it.x2), Math.max(it.y1, it.y2)];
+  if (it.t === "text") { if (it.bw == null) vTextBox(it, $("vCv").getContext("2d")); return [it.x, it.y, it.x + it.bw, it.y + it.bh]; }
+  return [Math.min(it.x, it.x + it.w), Math.min(it.y, it.y + it.h), Math.max(it.x, it.x + it.w), Math.max(it.y, it.y + it.h)];
+}
+const vImgCache = new Map();
+function vImg(it) { let i = vImgCache.get(it.src); if (!i) { i = new Image(); i.onload = () => visDraw(); i.src = it.src; vImgCache.set(it.src, i); } return i; }
+function vDrawItem(ctx, it) {
+  ctx.save(); ctx.strokeStyle = it.c; ctx.fillStyle = it.c; ctx.lineWidth = it.lw || 3; ctx.lineCap = "round"; ctx.lineJoin = "round";
+  const t = it.t;
+  if (t === "path") {
+    ctx.translate(it.ox || 0, it.oy || 0); const p = it.pts; ctx.beginPath(); ctx.moveTo(p[0][0], p[0][1]);
+    if (p.length === 1) ctx.lineTo(p[0][0] + .01, p[0][1]); for (let i = 1; i < p.length - 1; i++) { const mx = (p[i][0] + p[i + 1][0]) / 2, my = (p[i][1] + p[i + 1][1]) / 2; ctx.quadraticCurveTo(p[i][0], p[i][1], mx, my); } if (p.length > 1) ctx.lineTo(p[p.length - 1][0], p[p.length - 1][1]); ctx.stroke();
+  } else if (t === "line" || t === "arrow") {
+    ctx.beginPath(); ctx.moveTo(it.x1, it.y1); ctx.lineTo(it.x2, it.y2); ctx.stroke();
+    if (t === "arrow") { const a = Math.atan2(it.y2 - it.y1, it.x2 - it.x1), L = 10 + (it.lw || 3) * 2.2; ctx.beginPath(); ctx.moveTo(it.x2, it.y2); ctx.lineTo(it.x2 - L * Math.cos(a - .45), it.y2 - L * Math.sin(a - .45)); ctx.moveTo(it.x2, it.y2); ctx.lineTo(it.x2 - L * Math.cos(a + .45), it.y2 - L * Math.sin(a + .45)); ctx.stroke(); }
+  } else if (t === "rect" || t === "round" || t === "ell" || t === "dia") {
+    const [a, b, c, d] = vBounds(it), w = c - a, h = d - b; ctx.beginPath();
+    if (t === "rect") ctx.rect(a, b, w, h); else if (t === "round") { const r = Math.min(18, w / 2, h / 2); ctx.moveTo(a + r, b); ctx.arcTo(c, b, c, d, r); ctx.arcTo(c, d, a, d, r); ctx.arcTo(a, d, a, b, r); ctx.arcTo(a, b, c, b, r); ctx.closePath(); }
+    else if (t === "ell") ctx.ellipse(a + w / 2, b + h / 2, w / 2, h / 2, 0, 0, Math.PI * 2); else { ctx.moveTo(a + w / 2, b); ctx.lineTo(c, b + h / 2); ctx.lineTo(a + w / 2, d); ctx.lineTo(a, b + h / 2); ctx.closePath(); }
+    if (it.fill) { ctx.save(); ctx.globalAlpha = .2; ctx.fill(); ctx.restore(); } ctx.stroke();
+  } else if (t === "text") {
+    const fs = it.size || 26; ctx.font = `${fs}px Inter, system-ui, sans-serif`; ctx.textBaseline = "top"; String(it.s || "").split("\n").forEach((l, i) => ctx.fillText(l, it.x, it.y + i * fs * 1.25)); vTextBox(it, ctx);
+  } else if (t === "img") {
+    const i = vImg(it), [a, b, c, d] = vBounds(it); if (i.complete && i.naturalWidth) ctx.drawImage(i, a, b, c - a, d - b); else { ctx.fillStyle = "#e5e7eb"; ctx.fillRect(a, b, c - a, d - b); }
+  }
+  ctx.restore();
+}
+function visDraw() {
+  if (VIS.raf) return; VIS.raf = requestAnimationFrame(() => {
+    VIS.raf = 0; const cv = $("vCv"), ctx = cv.getContext("2d"), dpr = devicePixelRatio || 1, W = cv.clientWidth, H = cv.clientHeight;
+    if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, W, H); const v = VIS.view;
+    if (VIS.grid) { const g = 32 * v.z; if (g > 8) { ctx.fillStyle = "#d1d5db"; const ox = ((v.x % g) + g) % g, oy = ((v.y % g) + g) % g; for (let x = ox; x < W; x += g) for (let y = oy; y < H; y += g) ctx.fillRect(x - 1, y - 1, 2, 2); } }
+    ctx.setTransform(dpr * v.z, 0, 0, dpr * v.z, dpr * v.x, dpr * v.y);
+    for (const it of VIS.items) vDrawItem(ctx, it); if (VIS.cur) vDrawItem(ctx, VIS.cur);
+    const s = VIS.items.find(i => i.id === VIS.sel);
+    if (s) {
+      const [a, b, c, d] = vBounds(s), pad = 4 / v.z; ctx.save(); ctx.strokeStyle = "#3b82f6"; ctx.lineWidth = 1.5 / v.z; ctx.setLineDash([5 / v.z, 4 / v.z]);
+      if (s.t === "line" || s.t === "arrow") { ctx.setLineDash([]); [[s.x1, s.y1], [s.x2, s.y2]].forEach(p => { ctx.beginPath(); ctx.arc(p[0], p[1], 8 / v.z, 0, 7); ctx.fillStyle = "#fff"; ctx.fill(); ctx.stroke(); }); }
+      else { ctx.strokeRect(a - pad, b - pad, c - a + pad * 2, d - b + pad * 2); if (s.t !== "path") { ctx.setLineDash([]); ctx.beginPath(); ctx.arc(c + pad, d + pad, 8 / v.z, 0, 7); ctx.fillStyle = "#fff"; ctx.fill(); ctx.stroke(); } }
+      ctx.restore();
+    }
+  });
+}
+function vDistSeg(px, py, x1, y1, x2, y2) { const dx = x2 - x1, dy = y2 - y1, l = dx * dx + dy * dy; let t = l ? ((px - x1) * dx + (py - y1) * dy) / l : 0; t = Math.max(0, Math.min(1, t)); return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy)); }
+function vHit(it, x, y) {
+  const tol = 10 / VIS.view.z + (it.lw || 0) / 2;
+  if (it.t === "path") { const p = it.pts, ox = it.ox || 0, oy = it.oy || 0; if (p.length === 1) return Math.hypot(x - p[0][0] - ox, y - p[0][1] - oy) < tol; for (let i = 1; i < p.length; i++) if (vDistSeg(x - ox, y - oy, p[i - 1][0], p[i - 1][1], p[i][0], p[i][1]) < tol) return true; return false; }
+  if (it.t === "line" || it.t === "arrow") return vDistSeg(x, y, it.x1, it.y1, it.x2, it.y2) < tol;
+  const [a, b, c, d] = vBounds(it); if (it.t === "text" || it.t === "img" || it.fill) return x >= a - tol && x <= c + tol && y >= b - tol && y <= d + tol;
+  const inner = x > a + tol && x < c - tol && y > b + tol && y < d - tol; return x >= a - tol && x <= c + tol && y >= b - tol && y <= d + tol && !inner;
+}
+const vTop = (x, y) => { for (let i = VIS.items.length - 1; i >= 0; i--) if (vHit(VIS.items[i], x, y)) return VIS.items[i]; return null; };
+function vSnap() { VIS.undo.push(vclone(VIS.items)); if (VIS.undo.length > 60) VIS.undo.shift(); VIS.redo = []; vBtns(); }
+function vBtns() { const u = document.querySelector('#vis [data-v="undo"]'), r = document.querySelector('#vis [data-v="redo"]'); if (u) u.disabled = !VIS.undo.length; if (r) r.disabled = !VIS.redo.length; }
+function vChanged() { VIS.dirty = true; clearTimeout(VIS.timer); VIS.timer = setTimeout(visSave, 900); visDraw(); }
+function vOptBar() {
+  const s = VIS.items.find(i => i.id === VIS.sel), c = s ? s.c : VIS.color, w = s ? (s.lw || VIS.w) : VIS.w, shape = ["rect", "round", "ell", "dia"].includes(s ? s.t : VIS.tool);
+  $("vOpt").innerHTML = VCOL.map(k => `<button class="vsw ${k === c ? "on" : ""}" data-vc="${k}" style="background:${k}"></button>`).join("") + `<span class="vsep"></span>` +
+    VW.map(k => `<button class="vwd ${k === w ? "on" : ""}" data-vw="${k}"><i style="width:${k + 3}px;height:${k + 3}px"></i></button>`).join("") +
+    (shape ? `<button class="vb ${(s ? s.fill : VIS.fill) ? "on" : ""}" data-v="fill" title="Dolgu">${vsvg("fill")}</button>` : "") +
+    (s ? `<span class="vsep"></span><button class="vb" data-v="dup" title="Çoğalt">${vsvg("copy")}</button><button class="vb" data-v="del" title="Sil">${vsvg("trash")}</button>` : "");
+}
+function vToolBar() { $("vTools").innerHTML = VTOOLS.map(([k, t]) => `<button class="vb ${VIS.tool === k ? "on" : ""}" data-vt="${k}" title="${t}">${vsvg(k)}</button>`).join(""); }
+function vSetTool(k) { if (k === "image") return $("vFile").click(); VIS.tool = k; if (k !== "select") VIS.sel = null; vToolBar(); vOptBar(); visDraw(); }
+function vSel(id) { VIS.sel = id; vOptBar(); visDraw(); }
+
+function vTextEdit(it, pos) { VIS.edit = it || { pos }; $("vTxt").hidden = false; $("vTxtIn").value = it ? it.s : ""; setTimeout(() => $("vTxtIn").focus(), 30); }
+function vTextDone(ok) {
+  const e = VIS.edit; $("vTxt").hidden = true; VIS.edit = null; if (!e) return; const v = $("vTxtIn").value.replace(/\s+$/, "");
+  if (!ok) return;
+  if (e.id) { if (v === e.s) return; vSnap(); if (!v) { VIS.items = VIS.items.filter(i => i !== e); VIS.sel = null; } else { e.s = v; e.bw = null; } vOptBar(); vChanged(); }
+  else if (v) { vSnap(); const it = { id: vid(), t: "text", x: e.pos[0], y: e.pos[1], s: v, c: VIS.color, size: VSZ[VIS.w] || 26 }; VIS.items.push(it); vChanged(); }
+}
+async function vAddImage(file) {
+  try {
+    const bmp = await new Promise((res, rej) => { const u = URL.createObjectURL(file), i = new Image(); i.onload = () => { URL.revokeObjectURL(u); res(i); }; i.onerror = () => rej(); i.src = u; });
+    const k = Math.min(1, 720 / Math.max(bmp.naturalWidth, bmp.naturalHeight)), cw = Math.round(bmp.naturalWidth * k), ch = Math.round(bmp.naturalHeight * k);
+    const c = document.createElement("canvas"); c.width = cw; c.height = ch; const x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, cw, ch); x.drawImage(bmp, 0, 0, cw, ch);
+    const src = c.toDataURL("image/jpeg", .72), cvs = $("vCv"), [cx, cy] = s2w(cvs.clientWidth / 2, cvs.clientHeight / 2), ww = Math.min(cw, cvs.clientWidth * .6 / VIS.view.z), hh = ww * ch / cw;
+    const size = VIS.items.reduce((a, i) => a + (i.src ? i.src.length : 0), 0) + src.length;
+    if (size > 750000) return toast("Görseller çok yer kaplıyor (1 MB not sınırı). Bazı görselleri silin.");
+    vSnap(); const it = { id: vid(), t: "img", x: cx - ww / 2, y: cy - hh / 2, w: ww, h: hh, src, c: "#000" }; VIS.items.push(it); VIS.tool = "select"; vToolBar(); vSel(it.id); vChanged();
+  } catch (e) { toast("Görsel eklenemedi."); }
+}
+function vRenderTo(maxW, bg = "#fff", fmt = "image/jpeg", q = .6, pad = 24) {
+  if (!VIS.items.length) return null; let a = 1e9, b = 1e9, c = -1e9, d = -1e9; const m = $("vCv").getContext("2d");
+  VIS.items.forEach(i => { const r = vBounds(i), p = (i.lw || 0) / 2; a = Math.min(a, r[0] - p); b = Math.min(b, r[1] - p); c = Math.max(c, r[2] + p); d = Math.max(d, r[3] + p); });
+  a -= pad; b -= pad; c += pad; d += pad; const sc = Math.min(1, maxW / (c - a), (maxW * 2) / (d - b)), cv = document.createElement("canvas"); cv.width = Math.max(1, Math.round((c - a) * sc)); cv.height = Math.max(1, Math.round((d - b) * sc));
+  const x = cv.getContext("2d"); x.fillStyle = bg; x.fillRect(0, 0, cv.width, cv.height); x.scale(sc, sc); x.translate(-a, -b); VIS.items.forEach(i => vDrawItem(x, i)); return cv.toDataURL(fmt, q);
+}
+function visSave() {
+  clearTimeout(VIS.timer); VIS.timer = null; if (!VIS.id || !VIS.dirty) return; const n = getNote(VIS.id); if (!n) return;
+  const vdata = JSON.stringify({ v: 1, items: VIS.items, view: VIS.view });
+  if (vdata.length > 950000) { if (!VIS.warned) { VIS.warned = true; toast("Çizim 1 MB sınırına ulaştı, kaydedilmedi. Bazı görselleri silin."); } return; }
+  VIS.dirty = false; VIS.warned = false;
+  const data = { title: $("vsTitle").value, vdata, vthumb: vRenderTo(360) || "", plain: VIS.items.filter(i => i.t === "text").map(i => i.s).join(" ").slice(0, 2000), updatedAt: Date.now() };
+  Object.assign(n, data); setDoc(noteRef(VIS.id), data, { merge: true }).catch(() => toast("Çizim kaydedilemedi (bağlantıyı kontrol edin)."));
+}
+function openVisual(id) {
+  const n = getNote(id); if (!n) return; closeAll(); if (curId) { flushSave(); curId = null; loadedId = null; syncEditor(); }
+  let d = null; try { d = n.vdata ? JSON.parse(n.vdata) : null; } catch (e) { }
+  VIS.id = id; VIS.items = d && d.items ? d.items : []; VIS.view = d && d.view ? d.view : { x: 40, y: 40, z: 1 }; VIS.undo = []; VIS.redo = []; VIS.sel = null; VIS.cur = null; VIS.dirty = false; VIS.tool = "pen"; VIS.warned = false;
+  $("vsTitle").value = n.title || ""; $("vis").hidden = false; $("vTxt").hidden = true; document.body.dataset.visual = "1"; history.pushState({ ...(history.state || {}), vis: id }, "");
+  vToolBar(); vOptBar(); vBtns(); visDraw(); if (!VIS.items.length && !n.title) setTimeout(() => { try { $("vsTitle").focus(); } catch (e) { } }, 200);
+}
+function visClose(fromPop) {
+  if (!visOpen()) return; visSave(); const n = getNote(VIS.id); $("vis").hidden = true; delete document.body.dataset.visual; VIS.id = null; $("vTxt").hidden = true;
+  if (!fromPop && history.state && history.state.vis) history.back(); renderScreen && renderScreen();
+}
+function createVisual() {
+  const id = newId(), now = Date.now();
+  const d = { kind: "visual", title: "", content: "", plain: "", vdata: "", vthumb: "", tags: route.p === "notes" && route.a && route.a.tag ? [route.a.tag] : [], pinned: false, trashed: false, notebookId: defaultNb(), createdAt: now, updatedAt: now, reminder: null, reminded: false, shortcut: false, homePinned: false, shareId: null };
+  notes.unshift({ id, ...d }); setDoc(noteRef(id), d); openVisual(id); return id;
+}
+(() => {
+  const cv = $("vCv"), pos = e => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+  const pt = e => s2w(...pos(e));
+  const handleHit = (s, sx, sy) => {
+    if (!s) return null; const v = VIS.view, tol = 16;
+    if (s.t === "line" || s.t === "arrow") { const a = w2s(s.x1, s.y1), b = w2s(s.x2, s.y2); if (Math.hypot(sx - a[0], sy - a[1]) < tol) return "p1"; if (Math.hypot(sx - b[0], sy - b[1]) < tol) return "p2"; return null; }
+    if (s.t === "path") return null; const r = vBounds(s), h = w2s(r[2] + 4 / v.z, r[3] + 4 / v.z); return Math.hypot(sx - h[0], sy - h[1]) < tol ? "br" : null;
+  };
+  cv.addEventListener("pointerdown", e => {
+    if (e.pointerType === "mouse" && e.button === 2) return; cv.setPointerCapture(e.pointerId); VIS.ptr.set(e.pointerId, pos(e));
+    if (VIS.ptr.size === 2) { VIS.cur = null; VIS.drag = null; const [p, q] = [...VIS.ptr.values()]; const mid = [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2]; VIS.gest = { d0: Math.hypot(p[0] - q[0], p[1] - q[1]) || 1, z0: VIS.view.z, w: s2w(mid[0], mid[1]) }; return; }
+    if (VIS.ptr.size > 2) return; const [sx, sy] = pos(e), [x, y] = pt(e), t = (e.pointerType === "mouse" && e.button === 1) ? "hand" : VIS.tool;
+    if (t === "hand") VIS.drag = { k: "pan", sx, sy, vx: VIS.view.x, vy: VIS.view.y };
+    else if (t === "pen") VIS.cur = { id: vid(), t: "path", pts: [[x, y]], c: VIS.color, lw: VIS.w };
+    else if (t === "eraser") { VIS.drag = { k: "erase", snapped: false }; vErase(x, y); }
+    else if (t === "text") VIS.drag = { k: "text", sx, sy, x, y };
+    else if (t === "select") {
+      const s = VIS.items.find(i => i.id === VIS.sel), h = handleHit(s, sx, sy);
+      if (h) { vSnap(); VIS.drag = { k: h, it: s, x, y, snapped: true, bw: s.t === "text" ? s.bw : 0, size: s.size }; return; }
+      const hit = vTop(x, y);
+      if (hit) { const was = VIS.sel === hit.id; vSel(hit.id); VIS.drag = { k: "move", it: hit, x, y, snapped: false, moved: false, wasSel: was }; }
+      else { if (VIS.sel) vSel(null); VIS.drag = { k: "pan", sx, sy, vx: VIS.view.x, vy: VIS.view.y }; }
+    } else { VIS.cur = { id: vid(), t: t, c: VIS.color, lw: VIS.w, fill: VIS.fill }; if (t === "line" || t === "arrow") Object.assign(VIS.cur, { x1: x, y1: y, x2: x, y2: y }); else Object.assign(VIS.cur, { x, y, w: 0, h: 0, sx: x, sy: y }); }
+    e.preventDefault();
+  });
+  cv.addEventListener("pointermove", e => {
+    if (!VIS.ptr.has(e.pointerId)) return; VIS.ptr.set(e.pointerId, pos(e));
+    if (VIS.gest && VIS.ptr.size >= 2) {
+      const [p, q] = [...VIS.ptr.values()], d = Math.hypot(p[0] - q[0], p[1] - q[1]) || 1, mid = [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2], z = Math.max(.2, Math.min(5, VIS.gest.z0 * d / VIS.gest.d0));
+      VIS.view.z = z; VIS.view.x = mid[0] - VIS.gest.w[0] * z; VIS.view.y = mid[1] - VIS.gest.w[1] * z; return visDraw();
+    }
+    const [sx, sy] = pos(e), [x, y] = pt(e), c = VIS.cur, d = VIS.drag;
+    if (c) {
+      if (c.t === "path") { const l = c.pts[c.pts.length - 1]; if (Math.hypot(x - l[0], y - l[1]) * VIS.view.z > 1.5) c.pts.push([x, y]); }
+      else if (c.t === "line" || c.t === "arrow") { c.x2 = x; c.y2 = y; if (e.shiftKey) { if (Math.abs(x - c.x1) > Math.abs(y - c.y1)) c.y2 = c.y1; else c.x2 = c.x1; } }
+      else { c.x = c.sx; c.y = c.sy; c.w = x - c.sx; c.h = y - c.sy; if (e.shiftKey) { const m = Math.max(Math.abs(c.w), Math.abs(c.h)); c.w = Math.sign(c.w || 1) * m; c.h = Math.sign(c.h || 1) * m; } }
+      return visDraw();
+    }
+    if (!d) return;
+    if (d.k === "pan") { VIS.view.x = d.vx + sx - d.sx; VIS.view.y = d.vy + sy - d.sy; }
+    else if (d.k === "erase") vErase(x, y, d);
+    else if (d.k === "text") { /* tap bekle */ }
+    else if (d.k === "move") { const dx = x - d.x, dy = y - d.y; if (!d.moved && Math.hypot(dx, dy) * VIS.view.z < 4) return; if (!d.snapped) { VIS.items.splice(VIS.items.indexOf(d.it), 1); vSnap(); VIS.items.push(d.it); d.snapped = true; } d.moved = true; vMove(d.it, dx, dy); d.x = x; d.y = y; }
+    else if (d.k === "p1" || d.k === "p2") { const it = d.it, k = d.k === "p1" ? "1" : "2"; it["x" + k] = x; it["y" + k] = y; }
+    else if (d.k === "br") { const it = d.it, r = vBounds(it); if (it.t === "text") { const wn = Math.max(20, x - it.x); it.size = Math.max(8, Math.min(200, Math.round(d.size * wn / (d.bw || 1)))); it.bw = null; } else if (it.t === "img") { const wn = Math.max(20, x - it.x); it.h = it.h * (wn / it.w); it.w = wn; } else { it.w = x - it.x; it.h = y - it.y; } }
+    visDraw();
+  });
+  const up = e => {
+    if (!VIS.ptr.has(e.pointerId)) return; VIS.ptr.delete(e.pointerId);
+    if (VIS.gest) { if (VIS.ptr.size < 2) VIS.gest = null; if (VIS.ptr.size === 0) VIS.drag = null; return; }
+    const c = VIS.cur, d = VIS.drag; VIS.cur = null; VIS.drag = null;
+    if (c) {
+      const big = c.t === "path" || ((c.t === "line" || c.t === "arrow") ? Math.hypot(c.x2 - c.x1, c.y2 - c.y1) > 4 : Math.abs(c.w) > 4 && Math.abs(c.h) > 4);
+      if (big) { vSnap(); delete c.sx; delete c.sy; if (c.t === "path") { c.ox = 0; c.oy = 0; } VIS.items.push(c); vChanged(); } else visDraw();
+      return;
+    }
+    if (d) {
+      if (d.k === "text") { const [sx, sy] = pos(e); if (Math.hypot(sx - d.sx, sy - d.sy) < 8) vTextEdit(null, [d.x, d.y]); }
+      else if (d.k === "move") { if (!d.moved) { if (d.it.t === "text" && VIS.sel === d.it.id && d.wasSel) vTextEdit(d.it); } else vChanged(); }
+      else if (d.k === "erase") { if (d.snapped) vChanged(); }
+      else if (d.k === "p1" || d.k === "p2" || d.k === "br") { if (d.it.t === "text" || d.it.t === "img") { } vChanged(); }
+      else if (d.k === "pan") visDraw();
+    }
+  };
+  cv.addEventListener("pointerup", up); cv.addEventListener("pointercancel", e => { VIS.cur = null; up(e); });
+  cv.addEventListener("dblclick", e => { const [x, y] = pt(e), h = vTop(x, y); if (h && h.t === "text") vTextEdit(h); });
+  cv.addEventListener("wheel", e => { e.preventDefault(); const [sx, sy] = pos(e), w = s2w(sx, sy), z = Math.max(.2, Math.min(5, VIS.view.z * (e.deltaY < 0 ? 1.1 : 1 / 1.1))); VIS.view.z = z; VIS.view.x = sx - w[0] * z; VIS.view.y = sy - w[1] * z; visDraw(); }, { passive: false });
+  cv.addEventListener("contextmenu", e => e.preventDefault());
+  function vMove(it, dx, dy) {
+    if (it.t === "path") { it.ox = (it.ox || 0) + dx; it.oy = (it.oy || 0) + dy; } else if (it.t === "line" || it.t === "arrow") { it.x1 += dx; it.x2 += dx; it.y1 += dy; it.y2 += dy; } else { it.x += dx; it.y += dy; }
+  }
+  function vErase(x, y, d) {
+    const hit = vTop(x, y); if (!hit) return; if (d && !d.snapped) { vSnap(); d.snapped = true; } else if (!d) { vSnap(); }
+    VIS.items = VIS.items.filter(i => i !== hit); if (VIS.sel === hit.id) VIS.sel = null; visDraw();
+  }
+})();
+$("vis").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return; const d = b.dataset;
+  if (d.vt) return vSetTool(d.vt);
+  if (d.vc) { const s = VIS.items.find(i => i.id === VIS.sel); if (s) { vSnap(); s.c = d.vc; vChanged(); } VIS.color = d.vc; return vOptBar(); }
+  if (d.vw) { const s = VIS.items.find(i => i.id === VIS.sel); VIS.w = +d.vw; if (s) { vSnap(); if (s.t === "text") { s.size = VSZ[+d.vw]; s.bw = null; } else s.lw = +d.vw; vChanged(); } return vOptBar(); }
+  const a = d.v; if (!a) return;
+  if (a === "close") return visClose();
+  if (a === "undo" || a === "redo") { const from = a === "undo" ? VIS.undo : VIS.redo, to = a === "undo" ? VIS.redo : VIS.undo; if (!from.length) return; to.push(vclone(VIS.items)); VIS.items = from.pop(); if (!VIS.items.some(i => i.id === VIS.sel)) VIS.sel = null; vBtns(); vOptBar(); return vChanged(); }
+  if (a === "fill") { const s = VIS.items.find(i => i.id === VIS.sel); if (s) { vSnap(); s.fill = !s.fill; vChanged(); } else VIS.fill = !VIS.fill; return vOptBar(); }
+  if (a === "del") { vSnap(); VIS.items = VIS.items.filter(i => i.id !== VIS.sel); VIS.sel = null; vOptBar(); return vChanged(); }
+  if (a === "dup") { const s = VIS.items.find(i => i.id === VIS.sel); if (!s) return; vSnap(); const c = { ...s, id: vid() }; if (c.t === "path") { c.ox = (c.ox || 0) + 20; c.oy = (c.oy || 0) + 20; } else if (c.t === "line" || c.t === "arrow") { c.x1 += 20; c.x2 += 20; c.y1 += 20; c.y2 += 20; } else { c.x += 20; c.y += 20; } VIS.items.push(c); vSel(c.id); return vChanged(); }
+  if (a === "txok") return vTextDone(true); if (a === "txcancel") return vTextDone(false);
+  if (a === "more") return showMenu([
+    { i: "download", t: "PNG olarak indir", f: () => { const u = vRenderTo(1600, "#ffffff", "image/png", 1, 40); if (!u) return toast("Çizim boş."); const a = document.createElement("a"); a.href = u; a.download = ($("vsTitle").value || "gorsel-not") + ".png"; document.body.appendChild(a); a.click(); a.remove(); } },
+    { i: "grid", t: VIS.grid ? "Izgarayı gizle" : "Izgarayı göster", f: () => { VIS.grid = !VIS.grid; visDraw(); } },
+    { i: "home", t: "Çizimi ekrana sığdır", f: vFit },
+    { i: "trash", t: "Tümünü temizle", f: () => { if (!VIS.items.length) return; vSnap(); VIS.items = []; VIS.sel = null; vOptBar(); vChanged(); } }
+  ], { anchor: b, right: true });
+});
+function vFit() {
+  if (!VIS.items.length) { VIS.view = { x: 40, y: 40, z: 1 }; return visDraw(); } let a = 1e9, b = 1e9, c = -1e9, d = -1e9; VIS.items.forEach(i => { const r = vBounds(i); a = Math.min(a, r[0]); b = Math.min(b, r[1]); c = Math.max(c, r[2]); d = Math.max(d, r[3]); });
+  const cv = $("vCv"), W = cv.clientWidth, H = cv.clientHeight, z = Math.max(.2, Math.min(2, Math.min((W - 60) / Math.max(1, c - a), (H - 60) / Math.max(1, d - b)))); VIS.view = { z, x: (W - (c - a) * z) / 2 - a * z, y: (H - (d - b) * z) / 2 - b * z }; visDraw();
+}
+$("vsTitle").addEventListener("input", () => { VIS.dirty = true; clearTimeout(VIS.timer); VIS.timer = setTimeout(visSave, 900); });
+$("vFile").addEventListener("change", e => { const f = e.target.files[0]; e.target.value = ""; if (f) vAddImage(f); });
+addEventListener("resize", () => visOpen() && visDraw());
+document.addEventListener("keydown", e => {
+  if (!visOpen() || e.target.matches("input,textarea")) return; const k = e.key.toLowerCase();
+  if ((e.ctrlKey || e.metaKey) && k === "z") { e.preventDefault(); document.querySelector('#vis [data-v="' + (e.shiftKey ? "redo" : "undo") + '"]').click(); }
+  else if ((k === "delete" || k === "backspace") && VIS.sel) { e.preventDefault(); document.querySelector('#vis [data-v="del"]') && document.querySelector('#vis [data-v="del"]').click(); }
+});
+
+/* ---------- Tablo ---------- */
+function tableSheet() {
+  let r = 3, c = 3;
+  openSheet(`${shHead("Tablo ekle")}<div class="stp"><span>Satır</span><span class="sv"><button data-t="r-">−</button><b id="tR">${r}</b><button data-t="r+">+</button></span></div>
+    <div class="stp"><span>Sütun</span><span class="sv"><button data-t="c-">−</button><b id="tC">${c}</b><button data-t="c+">+</button></span></div>
+    <div class="brow"><button class="btn" id="tOk">Tabloyu ekle</button></div>`);
+  $("sheet").onclick = e => {
+    if (e.target.closest("[data-act=closeSheet]")) return closeAll();
+    const b = e.target.closest("[data-t]"); if (b) { const k = b.dataset.t; if (k === "r+") r = Math.min(30, r + 1); if (k === "r-") r = Math.max(1, r - 1); if (k === "c+") c = Math.min(10, c + 1); if (k === "c-") c = Math.max(1, c - 1); $("tR").textContent = r; $("tC").textContent = c; return; }
+    if (e.target.closest("#tOk")) { closeAll(); insertTable(r, c); }
+  };
+}
+function insertTable(r, c) {
+  const put = () => { const q = selRange(); quill.insertEmbed(q.index, "dtable", Array.from({ length: r }, () => Array(c).fill("")), "user"); quill.setSelection(q.index + 1, 0, "silent"); setTimeout(() => { const td = quill.root.querySelectorAll(".dn-table")[0] && [...quill.root.querySelectorAll(".dn-table td")].find(x => !x.textContent); if (td) td.focus(); }, 60); scheduleSave(); };
+  if (curId && loadedId === curId) put(); else createNote({}, () => setTimeout(put, 80));
+}
+(() => {
+  const bar = document.createElement("div"); bar.id = "tblBar"; bar.hidden = true; bar.innerHTML = `<button data-tb="ra">+ Satır</button><button data-tb="ca">+ Sütun</button><button data-tb="rd">− Satır</button><button data-tb="cd">− Sütun</button><button data-tb="del" class="red">Sil</button>`;
+  document.body.appendChild(bar); let cell = null;
+  const place = () => { if (!cell) return; const t = cell.closest(".dn-table").getBoundingClientRect(); bar.hidden = false; bar.style.top = Math.max(8, t.top - 38) + "px"; bar.style.left = Math.max(8, Math.min(innerWidth - bar.offsetWidth - 8, t.left)) + "px"; };
+  const touched = () => { try { scheduleSave(); } catch (e) { } };
+  quill.root.addEventListener("focusin", e => { const td = e.target.closest && e.target.closest(".dn-table td"); if (td) { cell = td; place(); } });
+  quill.root.addEventListener("focusout", () => setTimeout(() => { if (!document.activeElement || !document.activeElement.closest || !document.activeElement.closest(".dn-table")) { if (!bar.matches(":active")) { bar.hidden = true; cell = null; } } }, 200));
+  $("eScroll").addEventListener("scroll", place, { passive: true });
+  // Quill'in klavye / yapıştırma işleyicileri hücre içinde çalışmasın (Enter yeni paragraf açmasın)
+  ["keydown", "keypress", "keyup", "beforeinput", "compositionstart", "compositionend"].forEach(ev => quill.root.addEventListener(ev, e => { if (e.target.closest && e.target.closest(".dn-table td")) e.stopPropagation(); }, false));
+  quill.root.addEventListener("input", e => { if (e.target.closest && e.target.closest(".dn-table td")) { touched(); } });
+  quill.root.addEventListener("paste", e => { const td = e.target.closest && e.target.closest(".dn-table td"); if (!td) return; e.stopPropagation(); e.preventDefault(); document.execCommand("insertText", false, (e.clipboardData || window.clipboardData).getData("text/plain")); }, true);
+  quill.root.addEventListener("keydown", e => { const td = e.target.closest && e.target.closest(".dn-table td"); if (!td || e.key !== "Tab") return; e.preventDefault(); const all = [...td.closest("table").querySelectorAll("td")], i = all.indexOf(td), nx = all[i + (e.shiftKey ? -1 : 1)]; if (nx) nx.focus(); else if (!e.shiftKey) { addRow(td); setTimeout(() => { const a2 = [...td.closest("table").querySelectorAll("td")]; a2[i + 1] && a2[i + 1].focus(); }, 0); } }, true);
+  const addRow = td => { const tr = td.parentNode, n = tr.cells.length, nt = tr.parentNode.insertRow(tr.rowIndex >= 0 ? tr.sectionRowIndex + 1 : -1); for (let i = 0; i < n; i++) { const c = nt.insertCell(); c.contentEditable = "true"; } touched(); };
+  bar.addEventListener("mousedown", e => e.preventDefault()); bar.addEventListener("touchstart", e => e.preventDefault(), { passive: false });
+  bar.addEventListener("click", e => {
+    const b = e.target.closest("[data-tb]"); if (!b || !cell) return; const tb = cell.closest("table"), tr = cell.parentNode, ci = cell.cellIndex, k = b.dataset.tb;
+    if (k === "ra") addRow(cell);
+    else if (k === "ca") { [...tb.rows].forEach(r => { const c = r.insertCell(ci + 1); c.contentEditable = "true"; }); }
+    else if (k === "rd") { if (tb.rows.length > 1) { const nx = tb.rows[Math.max(0, tr.rowIndex - 1)]; tr.remove(); cell = nx.cells[Math.min(ci, nx.cells.length - 1)]; } else toast("Son satır silinemez."); }
+    else if (k === "cd") { if (tr.cells.length > 1) { [...tb.rows].forEach(r => r.deleteCell(ci)); cell = tr.cells[Math.max(0, ci - 1)]; } else toast("Son sütun silinemez."); }
+    else if (k === "del") { if (confirm("Tablo silinsin mi?")) { const blot = Quill.find(cell.closest(".dn-table")); if (blot) { quill.deleteText(quill.getIndex(blot), 1, "user"); } bar.hidden = true; cell = null; return; } }
+    touched(); if (cell) { cell.focus(); place(); }
+  });
+})();
+
+/* ---------- Ses kaydı (nota ses dosyası olarak eklenir) ---------- */
+function recordAudioSheet() {
+  if (!navigator.mediaDevices || !window.MediaRecorder) return toast("Bu tarayıcı ses kaydını desteklemiyor.");
+  let mr = null, chunks = [], stream = null, t0 = 0, timer = null, blob = null, url = null;
+  openSheet(`${shHead("Ses kaydı")}<div class="sh-p">Kaydı başlatın, bitince notun içine eklenir.</div>
+    <div id="rcTime" style="text-align:center;font-size:34px;font-weight:600;margin:10px 0">00:00</div>
+    <audio id="rcPrev" controls hidden style="width:100%"></audio>
+    <div class="brow"><button class="btn" id="rcGo">Kaydı başlat</button><button class="btn sec" id="rcAdd" hidden>Notun içine ekle</button></div>`);
+  const fmtT = s => String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
+  const cleanup = () => { clearInterval(timer); try { stream && stream.getTracks().forEach(x => x.stop()); } catch (e) { } if (url) URL.revokeObjectURL(url); };
+  const stopRec = () => { try { mr && mr.state !== "inactive" && mr.stop(); } catch (e) { } };
+  $("sheet").onclick = async e => {
+    if (e.target.closest("[data-act=closeSheet]")) { stopRec(); cleanup(); return closeAll(); }
+    if (e.target.closest("#rcGo")) {
+      if (mr && mr.state === "recording") { stopRec(); return; }
+      try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); } catch (er) { return toast("Mikrofon izni verilmedi."); }
+      const types = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg"], mt = types.find(x => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(x)) || "";
+      mr = new MediaRecorder(stream, mt ? { mimeType: mt } : undefined); chunks = []; blob = null;
+      mr.ondataavailable = ev => { if (ev.data && ev.data.size) chunks.push(ev.data); };
+      mr.onstop = () => { clearInterval(timer); try { stream.getTracks().forEach(x => x.stop()); } catch (er) { } blob = new Blob(chunks, { type: mr.mimeType || mt || "audio/webm" }); url = URL.createObjectURL(blob); const p = $("rcPrev"); if (p) { p.src = url; p.hidden = false; $("rcAdd").hidden = false; $("rcGo").textContent = "Yeniden kaydet"; } };
+      mr.start(1000); t0 = Date.now(); $("rcGo").textContent = "Durdur"; $("rcAdd").hidden = true; $("rcPrev").hidden = true;
+      timer = setInterval(() => { const el = $("rcTime"); if (el) el.textContent = fmtT(Math.floor((Date.now() - t0) / 1000)); }, 300);
+    }
+    if (e.target.closest("#rcAdd") && blob) {
+      const ext = /mp4/.test(blob.type) ? "m4a" : /ogg/.test(blob.type) ? "ogg" : "webm", d = new Date();
+      const f = new File([blob], "Ses kaydı " + d.toLocaleDateString("tr-TR") + " " + d.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }).replace(":", ".") + "." + ext, { type: blob.type });
+      cleanup(); closeAll(); addFiles([f]);
+    }
+  };
+}
+
+/* ---------- Dikte sözlüğü: yabancı / teknik kelimeler ---------- */
+// Tarayıcının sesle yazma motoru kendi sözlüğünü değiştirmeye izin vermez. Bu yüzden (1) birden çok aday cümle istenir ve sözlükteki kelimelere en çok uyan seçilir,
+// (2) yanlış duyulan kelimeler sözlükten düzeltilir (sesteş/yakın yazım eşleştirme), (3) istenirse dikte dili İngilizce yapılabilir.
+const DICT_SEED = [
+  { r: "lavatory", w: ["lovatory", "lavatri", "levatori", "lavatori", "lavatuvar"] }, { r: "galley", w: ["galey", "gali", "galli", "geli", "gale"] },
+  { r: "ceiling", w: ["seeling", "siling", "sealing", "seling", "ceyling"] }, { r: "access panel", w: ["ekses panel", "aksis panel", "aksesi panel", "akses panel", "axes panel"] },
+  { r: "dado panel", w: ["dedo panel", "dado paneli"] }, { r: "light cover", w: ["layt kover", "lait cover", "lay kover"] },
+  { r: "overhead bin", w: ["overhed bin", "ovehed bin", "overhead bin"] }, { r: "sidewall", w: ["saydvol", "saydwall", "sayd vol"] },
+  { r: "bulkhead", w: ["bulkhet", "balkhed"] }, { r: "fuselage", w: ["fuselaj", "fiuzlaj"] }, { r: "aileron", w: ["eyleron", "ayleron"] }
+];
+let DICT = (() => { try { const d = JSON.parse(store.get("dnote-dict", "null")); if (d && Array.isArray(d.items)) return d; } catch (e) { } return { lang: "tr-TR", fuzzy: true, items: DICT_SEED.map(x => ({ r: x.r, w: [...x.w] })) }; })();
+const dictSave = () => { store.set("dnote-dict", JSON.stringify(DICT)); if (uid) setDoc(doc(db, "users", uid, "meta", "dict"), DICT).catch(() => { }); };
+const dkey = x => {
+  x = x.toLowerCase().replace(/ı/g, "i").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z]/g, "");
+  x = x.replace(/ph/g, "f").replace(/ck/g, "k").replace(/c(?=[eiy])/g, "s").replace(/c/g, "k").replace(/q/g, "k").replace(/w/g, "v").replace(/x/g, "ks").replace(/y/g, "i").replace(/[aeiou]+/g, "a").replace(/(.)\1+/g, "$1");
+  return x;
+};
+function lev(a, b) { const m = a.length, n = b.length; let p = Array.from({ length: n + 1 }, (_, j) => j); for (let i = 1; i <= m; i++) { const c = [i]; for (let j = 1; j <= n; j++) c[j] = Math.min(p[j] + 1, c[j - 1] + 1, p[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); p = c; } return p[n]; }
+const reEsc = x => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const matchCase = (o, r) => (o[0] && o[0] !== o[0].toLowerCase() && o[0] === o[0].toUpperCase()) ? r[0].toUpperCase() + r.slice(1) : r;
+// metindeki düzeltmeleri bulur: [{s, e, rep}] ve doğru terim sayısı (aday seçimi için)
+function dictFind(text) {
+  const out = [], taken = []; let exact = 0;
+  const free = (s, e) => !taken.some(([a, b]) => s < b && e > a), add = (s, e, rep) => { out.push({ s, e, rep }); taken.push([s, e]); };
+  for (const it of DICT.items) for (const w of (it.w || [])) {
+    if (!w.trim()) continue;
+    const re = new RegExp("(^|[^\\p{L}])(" + reEsc(w.trim()) + ")(?=$|[^\\p{L}])", "giu"); let m;
+    while ((m = re.exec(text))) { const s = m.index + m[1].length, e = s + m[2].length; if (free(s, e) && m[2] !== it.r) add(s, e, matchCase(m[2], it.r)); }
+  }
+  const terms = DICT.items.map(it => ({ r: it.r, k: dkey(it.r), n: it.r.trim().split(/\s+/).length })).filter(t => t.k.length >= 4);
+  for (const t of terms) { const re = new RegExp("(^|[^\\p{L}])(" + reEsc(t.r) + ")(?=$|[^\\p{L}])", "giu"); let m; while ((m = re.exec(text))) { exact++; taken.push([m.index + m[1].length, m.index + m[1].length + m[2].length]); } }
+  if (DICT.fuzzy) {
+    const toks = [...text.matchAll(/\p{L}+/gu)].map(m => ({ s: m.index, e: m.index + m[0].length, t: m[0] }));
+    for (let i = 0; i < toks.length; i++) {
+      let done = false;
+      for (let n = Math.min(3, toks.length - i); n >= 1 && !done; n--) {
+        const seg = toks.slice(i, i + n); if (n > 1 && seg.some((x, j) => j && !/^\s+$/.test(text.slice(seg[j - 1].e, x.s)))) continue;
+        const s = seg[0].s, e = seg[n - 1].e, raw = text.slice(s, e), ck = dkey(raw); if (raw.replace(/\s/g, "").length < 5 || ck.length < 4 || !free(s, e)) continue;
+        for (const t of terms) {
+          if (t.n !== n || raw.toLowerCase() === t.r.toLowerCase()) continue;
+          if (ck === t.k || (ck.length >= 7 && Math.abs(ck.length - t.k.length) <= 1 && lev(ck, t.k) <= 1)) { add(s, e, matchCase(raw, t.r)); done = true; break; }
+        }
+      }
+    }
+  }
+  return { fixes: out.sort((a, b) => a.s - b.s), exact };
+}
+function dictApply(text) { const { fixes, exact } = dictFind(text); let o = "", p = 0; for (const f of fixes) { o += text.slice(p, f.s) + f.rep; p = f.e; } return { text: o + text.slice(p), hits: fixes.length + exact }; }
+function dictFixNote() {
+  const r = quill.getSelection(), from = r && r.length ? r.index : 0, len = r && r.length ? r.length : quill.getLength() - 1, txt = quill.getText(from, len), { fixes } = dictFind(txt);
+  if (!fixes.length) return toast("Düzeltilecek kelime bulunmadı.");
+  fixes.slice().reverse().forEach(f => { const fm = quill.getFormat(from + f.s, 1); quill.deleteText(from + f.s, f.e - f.s, "user"); quill.insertText(from + f.s, f.rep, fm, "user"); });
+  toast(fixes.length + " kelime düzeltildi.");
+}
+function dictSheet() {
+  const draw = () => {
+    openSheet(`${shHead("Dikte sözlüğü")}<div class="sh-p">Sesle yazarken yanlış duyulan yabancı veya teknik kelimeleri düzeltir. "Doğru yazım" kelimesine yakın okunan sözcükler otomatik düzeltilir; ayrıca sık yapılan hataları elle ekleyebilirsiniz.</div>
+      <div class="setl">Dikte dili</div>${["tr-TR", "en-US", "en-GB"].map(l => `<button class="arow" data-lang="${l}"><span class="st">${{ "tr-TR": "Türkçe", "en-US": "İngilizce (ABD)", "en-GB": "İngilizce (İngiltere)" }[l]}</span>${DICT.lang === l ? ic("check") : ""}</button>`).join("")}
+      <button class="arow" data-fz="1"><span class="st">Akıllı düzeltme (benzer okunuşlu kelimeler)</span><span class="swt ${DICT.fuzzy ? "on" : ""}"></span></button>
+      <div class="setl">Kelimeler</div>
+      ${DICT.items.map((it, i) => `<div class="arow" style="cursor:default"><span class="st"><b>${esc(it.r)}</b><small style="display:block;color:var(--muted)">${esc((it.w || []).join(", ")) || "yalnızca benzer okunuş"}</small></span><button class="tbtn sm" data-del="${i}">${ic("trash")}</button></div>`).join("") || `<div class="sh-p">Henüz kelime yok.</div>`}
+      <input type="text" id="dcR" placeholder="Doğru yazım (örn: lavatory)" autocomplete="off"><input type="text" id="dcW" placeholder="Yanlış duyulanlar, virgülle (örn: lovatory, lavatri) — isteğe bağlı" autocomplete="off">
+      <div class="brow"><button class="btn" id="dcAdd">Ekle</button></div>`, { full: true });
+    $("sheet").onclick = e => {
+      if (e.target.closest("[data-act=closeSheet]")) return closeAll();
+      const l = e.target.closest("[data-lang]"); if (l) { DICT.lang = l.dataset.lang; dictSave(); return draw(); }
+      if (e.target.closest("[data-fz]")) { DICT.fuzzy = !DICT.fuzzy; dictSave(); return draw(); }
+      const d = e.target.closest("[data-del]"); if (d) { DICT.items.splice(+d.dataset.del, 1); dictSave(); return draw(); }
+      if (e.target.closest("#dcAdd")) { const r = $("dcR").value.trim(); if (!r) return toast("Doğru yazımı girin."); const w = $("dcW").value.split(",").map(x => x.trim()).filter(Boolean);
+        const ex = DICT.items.find(x => x.r.toLowerCase() === r.toLowerCase()); if (ex) ex.w = [...new Set([...(ex.w || []), ...w])]; else DICT.items.push({ r, w }); dictSave(); draw(); }
+    };
+  };
+  draw();
+}
 
 /* ---------- Sesle yazma (Kaydedici) ---------- */
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition; let rec = null, recOn = false;
@@ -1571,8 +2141,8 @@ function startDictation() {
   const go = () => {
     recOn = true; let idx = selRange().index;
     const ov = document.createElement("div"); ov.id = "recOv"; ov.innerHTML = `<div class="box"><div class="recdot">${ic("mic")}</div><b style="font-size:17.5px">Dinleniyor…</b><div id="recTxt">Konuşun, metin nota yazılır.</div><button class="btn" id="recStop">Bitir</button></div>`; document.body.appendChild(ov);
-    rec = new SR(); rec.lang = "tr-TR"; rec.continuous = true; rec.interimResults = true;
-    rec.onresult = e => { let interim = ""; for (let i = e.resultIndex; i < e.results.length; i++) { const t = e.results[i][0].transcript; if (e.results[i].isFinal) { const s = t.trim() + " "; quill.insertText(idx, s, "user"); idx += s.length; } else interim += t; } $("recTxt").textContent = interim || "…"; };
+    rec = new SR(); rec.lang = DICT.lang || "tr-TR"; rec.continuous = true; rec.interimResults = true; rec.maxAlternatives = 5;
+    rec.onresult = e => { let interim = ""; for (let i = e.resultIndex; i < e.results.length; i++) { let t = e.results[i][0].transcript; if (e.results[i].isFinal) { let best = null; for (let a = 0; a < e.results[i].length; a++) { const r = dictApply(e.results[i][a].transcript); if (!best || r.hits > best.hits) best = r; } t = best ? best.text : t; const s = t.trim() + " "; quill.insertText(idx, s, "user"); idx += s.length; } else interim += t; } $("recTxt").textContent = interim || "…"; };
     rec.onerror = e => { if (e.error === "not-allowed") { toast("Mikrofon izni verilmedi."); stop(); } };
     rec.onend = () => { if (recOn) { try { rec.start(); } catch (e) {} } };
     const stop = () => { recOn = false; try { rec.stop(); } catch (e) {} ov.remove(); };
@@ -1849,7 +2419,7 @@ function moreMenu() {
   showMenu(NAVOPT.filter(o => !navSet.includes(o[0])).map(([p, i, t]) => ({ i, t: p === "notes" ? "Tüm Notlar" : t, f: () => go(p) })), { dock: true });
 }
 function whatsNew() {
-  openSheet(`${shHead("Yeni Neler")}<div class="sh-p"><b>Ana Sayfa</b> – hızlı not, görev, etkinlik, kamera, kaydedici ve karalama defteri.<br><b>Zengin metin</b> – yazı tipi, boyut, renk, vurgu, hizalama, kod, alıntı, onay kutuları.<br><b>Görevler, Takvim, Hatırlatıcılar</b><br><b>Şablonlar, Kısayollar, Sabitleme</b><br><b>Paylaşım bağlantısı</b>, yazdırma, dışa aktarma<br><b>Evernote (.enex) içe aktarma</b><br><b>Çevrimdışı çalışma</b> ve otomatik bulut eşitleme</div>`);
+  openSheet(`${shHead("Yeni Neler")}<div class="sh-p"><b>Yeni (v21)</b> – ses ekleme/kayıt, dikte sözlüğü, tablo, [[not bağlantıları]] ve geri bağlantılar, Görsel not (çizim tahtası), parmak izi ile açma, ana ekran kısayolları ve "Paylaş → D-Note".<br><b>Ana Sayfa</b> – hızlı not, görev, etkinlik, kamera, kaydedici ve karalama defteri.<br><b>Zengin metin</b> – yazı tipi, boyut, renk, vurgu, hizalama, kod, alıntı, onay kutuları.<br><b>Görevler, Takvim, Hatırlatıcılar</b><br><b>Şablonlar, Kısayollar, Sabitleme</b><br><b>Paylaşım bağlantısı</b>, yazdırma, dışa aktarma<br><b>Evernote (.enex) içe aktarma</b><br><b>Çevrimdışı çalışma</b> ve otomatik bulut eşitleme</div>`);
   $("sheet").onclick = e => { if (e.target.closest("[data-act=closeSheet]")) closeAll(); };
 }
 function helpSheet() {
@@ -1998,11 +2568,11 @@ const tabs = () => navSet.filter(k => k !== "tasks" && k !== "calendar");
 
 /* ---------- Sağ alttaki + düğmesi (dokun: menü, uzun bas: seçili eylem) ---------- */
 const FAB_ACTS = {
-  note: ["Yeni not", () => createNote()], task: ["Yeni görev", () => newTaskSheet()], notebook: ["Yeni not defteri", () => nbEditSheet(null)],
+  note: ["Yeni not", () => createNote()], visual: ["Yeni görsel not", () => createVisual()], task: ["Yeni görev", () => newTaskSheet()], notebook: ["Yeni not defteri", () => nbEditSheet(null)],
   event: ["Yeni etkinlik", () => newEventSheet()], camera: ["Kamera", () => $("fileCam").click()], voice: ["Sesle not", () => startDictation()], none: ["Hiçbir şey (kapalı)", null]
 };
 function fabMenu() {
-  showMenu([["noteplus", "note"], ["checkc", "task"], ["bookplus", "notebook"], ["calplus", "event"], ["camera", "camera"], ["mic", "voice"]].map(([i, k]) => ({ i, t: FAB_ACTS[k][0], f: FAB_ACTS[k][1] })), { anchor: $("fab"), above: true, right: true });
+  showMenu([["noteplus", "note"], ["pen", "visual"], ["checkc", "task"], ["bookplus", "notebook"], ["calplus", "event"], ["camera", "camera"], ["mic", "voice"]].map(([i, k]) => ({ i, t: FAB_ACTS[k][0], f: FAB_ACTS[k][1] })), { anchor: $("fab"), above: true, right: true });
 }
 (() => {
   const f = $("fab"); let t = null, fired = false;
@@ -2023,7 +2593,7 @@ const ACT = {
   sortMenu: el => showMenu([["updated", "Güncelleme tarihi"], ["created", "Oluşturma tarihi"], ["title", "Başlık (A–Z)"]].map(([v, t]) => ({ i: S.sort === v ? "check" : "filter", t, f: () => { S.sort = v; store.set("dnote-sort", v); schedule(); } })), { anchor: el, right: true }),
   notesMenu: el => showMenu([{ i: "notes", t: S.dense ? "Ayrıntılı görünüm" : "Kompakt görünüm", f: () => { S.dense = !S.dense; store.set("dnote-dense", S.dense ? "1" : "0"); schedule(); } }, { i: "noteplus", t: "Yeni not", f: () => createNote() }], { anchor: el, right: true }),
   nbOpen: el => go("notes", { nb: el.dataset.v || null }),
-  navEdit: () => navSheet(),
+  navEdit: () => navSheet(), fontPick: el => fontPickSheet(el.dataset.k), dictSheet: () => dictSheet(),
   homeReset: () => { ["hfont", "htfont", "hsfont", "hsize", "hnb", "hsnip", "hthumb"].forEach(k => { try { localStorage.removeItem(skey(k)); } catch (e) { } }); loadTypo(); applySettings(); schedule(); },
   noteMenu: el => noteMoreMenu(el.dataset.v, el),
   nbMenu: el => { const id = el.dataset.v, b = notebooks.find(x => x.id === id);
@@ -2056,6 +2626,7 @@ const ACT = {
   restoreNote: () => { patchNote(curId, { trashed: false, updatedAt: Date.now() }); toast("Not geri yüklendi."); },
   emptyTrash: () => { const t = notes.filter(n => n.trashed); if (t.length && confirm(`Çöp kutusundaki ${t.length} not kalıcı olarak silinsin mi?`)) { t.forEach(n => purgeMedia(n.content)); batchDelete(t.map(n => noteRef(n.id))); } },
   pwSheet: () => pwSheet(),
+  toggleFp: () => toggleFp(),
   toggleAppLock: () => { if (!sec.hash) { toast("Önce bir şifre belirleyin."); return pwSheet(() => setAppLock(true)); } if (sec.appLock) return askPassword(() => setAppLock(false), "Uygulama kilidini kapat"); setAppLock(true); toast("Uygulama girişinde şifre istenecek."); },
   stepNum: el => setNum(el.dataset.k, (+S[el.dataset.k] || 0) + (+el.dataset.d)),
   typoReset: () => { ["font", "tfont", "esize", "tsize", "eweight", "tweight", "elh", "pagew", "padx"].forEach(k => { try { localStorage.removeItem(skey(k)); } catch (e) { } }); loadTypo(); applySettings(); schedule(); toast("Yazı ayarları varsayılana döndü."); },
