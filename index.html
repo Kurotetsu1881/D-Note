@@ -827,13 +827,15 @@ else onAuthStateChanged(auth, u => {
   uid = u.uid;
   if (sec.hash && sec.appLock && !isUnlocked()) showLockScreen();
   $("login").classList.remove("show"); $("app").classList.add("show"); hideSplash();
-  shellReady = false; dataReady = false; setTimeout(() => { shellReady = true; schedule(); }, 5000);
+  shellReady = false; dataReady = false; setTimeout(() => { shellReady = true; schedule(); }, 10000);
   qsa("[data-av]").forEach(e => e.innerHTML = avatarInner()); $("sName").textContent = u.displayName || u.email || "";
   unsubs.push(onSnapshot(query(ucol("notebooks"), orderBy("createdAt")), s => { notebooks = s.docs.map(d => ({ id: d.id, ...d.data() })); schedule(); }, e => console.warn(e)));
   unsubs.push(onSnapshot(query(ucol("notes"), orderBy("updatedAt", "desc")), { includeMetadataChanges: true }, s => {
     pending = s.metadata.hasPendingWrites;
     notes = s.docs.map(d => ({ id: d.id, ...d.data() }));
-    if (!dataReady && (s.docs.length || !s.metadata.fromCache)) dataReady = true;   // boş "önbellekten" ilk yanıt gerçek veri sayılmaz
+    { const last = +store.get("dnote-cnt", 0);   // daha önce notu olan hesapta boş ilk yanıt (önbellek/ağ gecikmesi) gerçek sayılmaz
+      if (!dataReady && (s.docs.length || (!s.metadata.fromCache && !last))) dataReady = true;
+      if (s.docs.length || !s.metadata.fromCache) store.set("dnote-cnt", String(s.docs.length)); }
     if (curId && !getNote(curId) && !s.metadata.fromCache) { curId = null; loadedId = null; }
     if (!ready.notes) { ready.notes = true; launch(); setTimeout(resumeUploads, 2500); }
     schedule(); updateStatus();
@@ -1330,7 +1332,7 @@ function renderSettings() {
      <div class="srow" data-act="graph">${ic("link")}<div class="st">Bağlantı grafiği<small>Notlar arası [[bağlantıları]] harita olarak görün</small></div></div>
      <div class="srow" data-act="exportAll">${ic("download")}<div class="st">Yedekle / geri yükle<small>${+store.get("dnote-lastexport", 0) ? "Son yedek: " + fmtDate(+store.get("dnote-lastexport", 0)) : "Tüm notlar ve ek dosyalar tek dosyada"}</small></div></div>
      <div class="srow" data-act="importAny">${ic("upload")}<div class="st">İçe aktar<small>D-Note yedeği (.json) veya Evernote (.enex)</small></div></div>
-     <div class="setg">Hakkında</div><div class="srow" style="cursor:default"><div class="st">D-Note<small>Bulut senkron · çevrimdışı çalışır · Firebase</small></div></div>
+     <div class="setg">Hakkında</div><div class="srow" style="cursor:default"><div class="st">D-Note<small>Sürüm 31 · Bulut senkron · çevrimdışı çalışır · Firebase</small></div></div>
      <div class="srow" data-act="logout" style="color:var(--red)">${ic("logout")}<div class="st">Oturumu kapat</div></div>`;
 }
 
