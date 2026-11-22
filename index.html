@@ -522,6 +522,35 @@ body[data-editor=open] #editorView{display:flex}
 <input type="file" id="fileImport" accept=".json,.enex,.xml" hidden>
 
 <script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js" crossorigin="anonymous"></script>
+<script>
+/* Açılış bekçisi + tanı kaydı: uygulama açılamazsa sessiz beyaz ekran yerine kurtarma ekranı gösterir */
+(function () {
+  var K = "dnote-dbg";
+  function get() { try { return JSON.parse(localStorage.getItem(K) || "[]"); } catch (e) { return []; } }
+  function add(m) { try { var a = get(); a.push({ t: Date.now(), m: String(m).slice(0, 300) }); localStorage.setItem(K, JSON.stringify(a.slice(-40))); } catch (e) { } }
+  window.__dbg = { get: get, add: add };
+  try {
+    var prev = localStorage.getItem("dnote-alive"), h = JSON.parse(localStorage.getItem("dnote-hid") || "null");
+    if (prev === "1" && h) add("Önceki oturum arka plandayken sonlandırıldı (" + Math.round((Date.now() - h.t) / 60000) + " dk önce gizlenmişti" + (h.heap ? ", bellek " + h.heap + " MB" : "") + ")");
+    localStorage.setItem("dnote-alive", "1");
+  } catch (e) { }
+  function heap() { try { return performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1048576) : 0; } catch (e) { return 0; } }
+  document.addEventListener("visibilitychange", function () { try { if (document.hidden) localStorage.setItem("dnote-hid", JSON.stringify({ t: Date.now(), heap: heap() })); else localStorage.setItem("dnote-alive", "1"); } catch (e) { } });
+  addEventListener("pagehide", function () { try { localStorage.setItem("dnote-alive", "0"); } catch (e) { } });
+  addEventListener("error", function (e) { add("hata: " + (e.message || "") + " @" + String(e.filename || "").split("/").pop() + ":" + (e.lineno || "")); });
+  addEventListener("unhandledrejection", function (e) { var r = e.reason; add("söz hatası: " + ((r && (r.message || r.code)) || r)); });
+  function rescue() {
+    if (window.__booted || document.getElementById("rescue")) return; add("Açılış 15 sn içinde tamamlanamadı");
+    var d = document.createElement("div"); d.id = "rescue"; d.style.cssText = "position:fixed;inset:0;z-index:9999;background:#fff;color:#111;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;text-align:center;font:15px system-ui,sans-serif";
+    d.innerHTML = "<b style='font-size:18px'>D-Note açılamadı</b><div>Bağlantı veya önbellek sorunu olabilir.</div><button id='rsA' style='padding:10px 18px;border-radius:10px;border:0;background:#00a82d;color:#fff;font-size:15px'>Yeniden yükle</button><button id='rsB' style='padding:10px 18px;border-radius:10px;border:1px solid #bbb;background:#fff;font-size:14px'>Önbelleği temizle ve yükle</button><small style='color:#666'>Notlarınız silinmez; bulutta durur.</small>";
+    document.body.appendChild(d);
+    document.getElementById("rsA").onclick = function () { location.reload(); };
+    document.getElementById("rsB").onclick = function () { var done = function () { location.reload(); }; try { Promise.all([navigator.serviceWorker ? navigator.serviceWorker.getRegistrations().then(function (r) { return Promise.all(r.map(function (x) { return x.unregister(); })); }) : 0, caches.keys().then(function (k) { return Promise.all(k.filter(function (n) { return n !== "dnote-media"; }).map(function (n) { return caches.delete(n); })); })]).then(done, done); } catch (e) { done(); } };
+  }
+  setTimeout(rescue, 15000);
+  document.addEventListener("visibilitychange", function () { if (!document.hidden && !window.__booted) setTimeout(rescue, 8000); });
+})();
+</script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, reauthenticateWithPopup, onAuthStateChanged, signOut }
@@ -787,8 +816,10 @@ $("btnLogin").onclick = async () => {
 };
 function logout() { if (confirm("Oturum kapatılsın mı?")) signOut(auth); }
 
+window.__booted = true;
 if (SHARE_ID) openViewer(SHARE_ID);
 else onAuthStateChanged(auth, u => {
+  window.__booted = true;
   unsubs.forEach(f => f()); unsubs = [];
   user = u;
   if (!u) { uid = null; secInit = false; $("lockscr").hidden = true; notes = []; notebooks = []; tasks = []; curId = null; loadedId = null; ready.notes = false; $("app").classList.remove("show"); $("login").classList.add("show"); return; }
@@ -1046,7 +1077,7 @@ $("lockFp").onclick = async () => { if (await fpAuth()) { $("lockscr").hidden = 
 async function clearPw() { store.set(FPK, ""); sec = { salt: null, hash: null, appLock: false }; secCache(); await setDoc(secRef(), sec, { merge: true }); schedule(); }
 function setAppLock(v) { sec.appLock = v; secCache(); setDoc(secRef(), { appLock: v }, { merge: true }); schedule(); }
 function lockLayout() { const fo = fpOnly(); $("lockIn").hidden = fo; $("lockOk").hidden = fo; $("lockForgot").hidden = fo; $("lockFp").hidden = !fpOn(); if (fo) $("lockMsg").textContent = "Parmak izinizi doğrulayın"; else if (fpOn()) $("lockMsg").textContent = "Parmak izi doğrulanamadı. Şifrenizi girin"; }
-function showLockScreen(msg) { $("lockscr").hidden = false; fpFails = 0; lockLayout(); if (fpOn()) setTimeout(() => $("lockFp").click(), 350); if (!fpOn()) $("lockMsg").textContent = msg || "Şifrenizi girin"; $("lockIn").value = ""; $("lockErr").textContent = ""; setTimeout(() => $("lockIn").focus(), 80); }
+function showLockScreen(msg) { $("lockscr").hidden = false; fpFails = 0; lockLayout(); if (fpOn()) setTimeout(() => { if (document.visibilityState === "visible") $("lockFp").click(); }, 700); if (!fpOn()) $("lockMsg").textContent = msg || "Şifrenizi girin"; $("lockIn").value = ""; $("lockErr").textContent = ""; setTimeout(() => $("lockIn").focus(), 80); }
 async function lockSubmit() {
   const r = await tryPw($("lockIn").value);
   if (r.ok) { $("lockscr").hidden = true; $("lockIn").value = ""; } else { $("lockErr").textContent = r.msg; $("lockIn").value = ""; }
@@ -1285,6 +1316,7 @@ function renderSettings() {
      <div class="srow" data-act="toggleFp">${ic("lock")}<div class="st">Parmak izi ile aç (bu cihaz)<small>Açıkken yalnızca parmak izi sorulur, 3 hatada şifre istenir · her cihazda ayrı etkinleştirilir; kapatınca şifreyle açılır</small></div><span class="swt ${fpOn() ? "on" : ""}"></span></div>
      <div class="srow" style="cursor:default">${ic("info")}<div class="st"><small style="margin:0">Bir not defterini veya notu kilitlemek için ⋯ menüsünden "Kilitle"yi seçin. Kilitli içerik listede gizlenir, açmak için şifre sorulur.</small></div></div>
      <div class="setg">Uygulama</div>
+     <div class="srow" data-act="dbgSheet">${ic("info")}<div class="st">Tanı kaydı<small>Uygulama açılmama / kapanma sorunlarını incelemek için</small></div></div>
      <div class="srow" data-act="whatsNew">${ic("megaphone")}<div class="st">Yeni neler</div></div>
      <div class="srow" data-act="help">${ic("help")}<div class="st">Yardım</div></div>
      ${canInstall() ? `<div class="srow" data-act="install">${ic("download")}<div class="st">Uygulamayı yükle<small>Ana ekrana ekle, tam ekran çalıştır</small></div></div>` : ""}
@@ -2593,6 +2625,13 @@ function profileMenu(anchor) {
 function moreMenu() {
   showMenu(NAVOPT.filter(o => !navSet.includes(o[0])).map(([p, i, t]) => ({ i, t: p === "notes" ? "Tüm Notlar" : t, f: () => go(p) })), { dock: true });
 }
+function dbgSheet() {
+  const l = (window.__dbg ? window.__dbg.get() : []).slice().reverse(), bytes = notes.reduce((a, n) => a + (n.content || "").length, 0);
+  openSheet(`${shHead("Tanı kaydı")}<div class="sh-p">Not sayısı: <b>${notes.length}</b> · toplam içerik: <b>${(bytes / 1048576).toFixed(1)} MB</b>${performance.memory ? " · bellek: <b>" + Math.round(performance.memory.usedJSHeapSize / 1048576) + " MB</b>" : ""}</div>
+    ${l.length ? l.map(x => `<div class="sh-p" style="margin:4px 0"><small style="color:var(--muted)">${fmtDT(x.t)}</small><br>${esc(x.m)}</div>`).join("") : `<div class="sh-p">Kayıt yok.</div>`}
+    <div class="brow"><button class="btn sec" id="dbgClr">Temizle</button><button class="btn" id="dbgCp">Kopyala</button></div>`);
+  $("sheet").onclick = e => { if (e.target.closest("[data-act=closeSheet]")) return closeAll(); if (e.target.closest("#dbgClr")) { try { localStorage.removeItem("dnote-dbg"); } catch (x) { } return dbgSheet(); } if (e.target.closest("#dbgCp")) { const t = l.map(x => new Date(x.t).toLocaleString("tr-TR") + " " + x.m).join("\n"); (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast("Kopyalandı."), () => toast("Kopyalanamadı.")); } };
+}
 function whatsNew() {
   openSheet(`${shHead("Yeni Neler")}<div class="sh-p"><b>Yeni (v21)</b> – ses ekleme/kayıt, dikte sözlüğü, tablo, [[not bağlantıları]] ve geri bağlantılar, Görsel not (çizim tahtası), parmak izi ile açma, ana ekran kısayolları ve "Paylaş → D-Note".<br><b>Ana Sayfa</b> – hızlı not, görev, etkinlik, kamera, kaydedici ve karalama defteri.<br><b>Zengin metin</b> – yazı tipi, boyut, renk, vurgu, hizalama, kod, alıntı, onay kutuları.<br><b>Görevler, Takvim, Hatırlatıcılar</b><br><b>Şablonlar, Kısayollar, Sabitleme</b><br><b>Paylaşım bağlantısı</b>, yazdırma, dışa aktarma<br><b>Evernote (.enex) içe aktarma</b><br><b>Çevrimdışı çalışma</b> ve otomatik bulut eşitleme</div>`);
   $("sheet").onclick = e => { if (e.target.closest("[data-act=closeSheet]")) closeAll(); };
@@ -2807,7 +2846,7 @@ const ACT = {
   stepNum: el => setNum(el.dataset.k, (+S[el.dataset.k] || 0) + (+el.dataset.d)),
   typoReset: () => { ["font", "tfont", "esize", "tsize", "eweight", "tweight", "elh", "pagew", "padx"].forEach(k => { try { localStorage.removeItem(skey(k)); } catch (e) { } }); loadTypo(); applySettings(); schedule(); toast("Yazı ayarları varsayılana döndü."); },
   setFabLong: el => { S.fabLong = el.dataset.v; store.set("dnote-fabLong", S.fabLong); schedule(); },
-  whatsNew: () => whatsNew(), help: () => helpSheet(),
+  dbgSheet: () => dbgSheet(), whatsNew: () => whatsNew(), help: () => helpSheet(),
   set: el => { const k = el.dataset.k; let v = el.dataset.v; if (k === "dense") { S.dense = v === "1"; store.set("dnote-dense", v); } else { S[k] = v; store.set(skey(k), v); } applySettings(); schedule(); },
   setFont: el => { S.font = el.dataset.v; store.set(skey("font"), S.font); applySettings(); schedule(); },
   notifPerm: () => { if (!("Notification" in window)) return toast("Bu tarayıcı bildirimleri desteklemiyor."); if (Notification.permission === "denied") return toast("Bildirimler tarayıcı ayarlarından engellenmiş."); Notification.requestPermission().then(() => schedule()); },
@@ -2956,7 +2995,7 @@ async function openViewer(id) {
 hydrate();
 if ("serviceWorker" in navigator) {
   const had = !!navigator.serviceWorker.controller; let reloaded = false;
-  navigator.serviceWorker.addEventListener("controllerchange", () => { if (had && !reloaded) { reloaded = true; location.reload(); } });
+  navigator.serviceWorker.addEventListener("controllerchange", () => { if (had && !reloaded) { reloaded = true; try { flushSave(); } catch (e) { } if (document.hidden) addEventListener("visibilitychange", () => location.reload(), { once: true }); else location.reload(); } });
   navigator.serviceWorker.register("sw.js").catch(() => {});
 }
 addEventListener("bip-ready", () => schedule()); addEventListener("appinstalled", () => { window.__bip = null; schedule(); });
