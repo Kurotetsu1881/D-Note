@@ -827,6 +827,7 @@ else onAuthStateChanged(auth, u => {
   uid = u.uid;
   if (sec.hash && sec.appLock && !isUnlocked()) showLockScreen();
   $("login").classList.remove("show"); $("app").classList.add("show"); hideSplash();
+  shellReady = false; setTimeout(() => { shellReady = true; schedule(); }, 4000);
   qsa("[data-av]").forEach(e => e.innerHTML = avatarInner()); $("sName").textContent = u.displayName || u.email || "";
   unsubs.push(onSnapshot(query(ucol("notebooks"), orderBy("createdAt")), s => { notebooks = s.docs.map(d => ({ id: d.id, ...d.data() })); schedule(); }, e => console.warn(e)));
   unsubs.push(onSnapshot(query(ucol("notes"), orderBy("updatedAt", "desc")), { includeMetadataChanges: true }, s => {
@@ -962,8 +963,9 @@ function renderSide() {
   $("sName").textContent = (user && (user.displayName || user.email)) || "";
   qsa("[data-av]").forEach(e => e.innerHTML = avatarInner());
 }
+let shellReady = false;   // ilk not verisi gelene kadar (en çok 4 sn) listeler çizilmez: "henüz not yok" / yarım liste titremesini önler
 function renderScreen() {
-  if (!uid) return;
+  if (!uid || (!ready.notes && !shellReady)) return;
   const f = { home: renderHome, notes: renderNotes, notebooks: renderNotebooks, tasks: renderTasks, calendar: renderCalendar, tags: renderTags, shared: renderShared, shortcuts: renderShortcuts, templates: renderTemplates, trash: renderTrash, settings: renderSettings, search: renderSearch }[route.p];
   if (f) f();
 }
