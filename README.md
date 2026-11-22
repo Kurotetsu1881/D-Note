@@ -99,3 +99,8 @@ Sekmedeki küçük simge hâlâ eskiyse sekmeyi kapatıp açın.
 - **Yazı tipi seçici** kendi fontuyla; fontlar yalnızca seçilince yüklenir (daha hızlı açılış).
 - **Ana ekran kısayolları** (ikona uzun bas: Yeni Not, Sesli Not, Görev Ekle, Görsel Not) ve **Paylaş → D-Note** (yüklü uygulamada, Android).
 - Dosyalar: index.html, sw.js, manifest.json'u GitHub'a yükleyin; uygulamayı bir kez kapatıp açın (önbellek dnote-v21).
+
+## v24
+- **Yedekle / geri yükle** (Ayarlar): Tam yedek (ek dosyalar dahil) ve hafif yedek; aynı ekrandan geri yükleme (.json / .enex).
+- **Dikte sözlüğü**: kelimeye dokununca düzenleme, "Toplu ekle" (her satıra `doğru = yanlış1, yanlış2`).
+- **Bağlantı grafiği**: profil menüsü veya Ayarlar → notlar arası [[bağlantılar]] harita olarak.

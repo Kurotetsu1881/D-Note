@@ -48,6 +48,7 @@ input,textarea,select{font:inherit;color:inherit}
 /* ---------- Giriş / paylaşım görüntüleyici ---------- */
 #lockscr{position:fixed;inset:0;z-index:300;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px}
 #lockscr[hidden]{display:none}
+#lockscr [hidden],.sheet [hidden]{display:none!important}
 #lockscr img{width:130px;margin-bottom:8px}
 #lockMsg{font-weight:600;font-size:15px}
 #lockscr input{width:100%;max-width:280px;border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:12px;text-align:center;font-size:18px;letter-spacing:3px;outline:0}
@@ -347,7 +348,7 @@ body[data-editor=open] #editorView{display:flex}
 .fbar{display:flex;align-items:center;gap:2px;overflow-x:auto;padding:5px 8px calc(5px + env(safe-area-inset-bottom));margin:0 10px 8px;background:var(--card);border:1px solid var(--line);border-radius:28px;box-shadow:var(--shadow);flex:none;scrollbar-width:none}
 .fbar::-webkit-scrollbar{display:none}
 .dn-nl{color:var(--acc);background:var(--accbg);border-radius:5px;padding:0 4px;cursor:pointer;text-decoration:none}
-#wlPop{position:fixed;z-index:56;min-width:220px;max-width:min(360px,calc(100vw - 16px));max-height:240px;overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:4px}
+#wlPop{position:fixed;z-index:56;min-width:220px;max-width:min(360px,calc(100vw - 16px));max-height:min(300px,45vh);overflow-y:scroll;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-width:thin;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:4px}
 #wlPop button{display:flex;gap:8px;align-items:center;width:100%;text-align:left;padding:9px 10px;border-radius:9px;font-size:13px}#wlPop button.on,#wlPop button:active{background:var(--sel)}#wlPop .ic{width:15px;height:15px;color:var(--muted);flex:none}
 #backlinks{margin:6px 0 40px;padding-top:10px;border-top:1px solid var(--line)}#backlinks h4{margin:0 0 6px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
 #backlinks button{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:8px 4px;font-size:13px;border-bottom:1px solid var(--line)}#backlinks .ic{width:15px;height:15px;color:var(--acc);flex:none}
@@ -860,6 +861,7 @@ function showRoute() {
 function goBack() { if ((history.state && history.state.d) > 0) history.back(); else { route = { p: "notes", a: {} }; showRoute(); } }
 addEventListener("popstate", e => {
   if (visOpen()) { visClose(true); return; }
+  if (graphOpen()) { closeGraph(true); return; }
   if (sheetOpen() || !$("menu").hidden) { closeAll(); history.go(1); return; } // geri tuşu önce açık pencereyi kapatır
   const st = e.state; if (!st) return;
   route = st.route || { p: "home", a: {} };
@@ -1018,6 +1020,8 @@ async function savePw(pw) {
 /* ---------- Parmak izi / cihaz kilidi (WebAuthn) — bu cihaza özel ---------- */
 const FPK = "dnote-fp";
 const fpOn = () => !!(sec.hash && store.get(FPK, ""));
+let fpFails = 0;
+const fpOnly = () => fpOn() && fpFails < 3;   // parmak izi açıkken yalnızca parmak izi sorulur; 3 hatadan sonra şifre
 const u8 = s => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));
 const b64u = a => b64(a).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 async function fpSupported() { try { return !!(window.PublicKeyCredential && PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable && await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()); } catch (e) { return false; } }
@@ -1029,8 +1033,8 @@ async function fpRegister() {
 }
 async function fpAuth() {
   const id = store.get(FPK, ""); if (!id) return false;
-  try { const a = await navigator.credentials.get({ publicKey: { challenge: crypto.getRandomValues(new Uint8Array(32)), rpId: location.hostname, allowCredentials: [{ type: "public-key", id: u8(id) }], userVerification: "required", timeout: 60000 } }); if (a) { setUnlocked(); return true; } } catch (e) { }
-  return false;
+  try { const a = await navigator.credentials.get({ publicKey: { challenge: crypto.getRandomValues(new Uint8Array(32)), rpId: location.hostname, allowCredentials: [{ type: "public-key", id: u8(id) }], userVerification: "required", timeout: 60000 } }); if (a) { fpFails = 0; setUnlocked(); return true; } } catch (e) { }
+  fpFails++; return false;
 }
 async function toggleFp() {
   if (!sec.hash) { toast("Önce bir şifre belirleyin."); return pwSheet(() => toggleFp()); }
@@ -1038,10 +1042,11 @@ async function toggleFp() {
   if (!(await fpSupported())) return toast("Bu cihaz/tarayıcı parmak izi (cihaz kilidi) doğrulamasını desteklemiyor.", 4500);
   askPassword(async () => { try { await fpRegister(); toast("Parmak izi ile açma bu cihazda etkinleştirildi."); schedule(); } catch (e) { toast("Parmak izi kaydedilemedi veya iptal edildi."); } }, "Parmak izini açmak için şifre");
 }
-$("lockFp").onclick = async () => { if (await fpAuth()) { $("lockscr").hidden = true; $("lockIn").value = ""; } else $("lockErr").textContent = "Parmak izi doğrulanamadı. Şifre girebilirsiniz."; };
+$("lockFp").onclick = async () => { if (await fpAuth()) { $("lockscr").hidden = true; $("lockIn").value = ""; $("lockErr").textContent = ""; } else { lockLayout(); $("lockErr").textContent = fpFails >= 3 ? "3 kez doğrulanamadı." : `Doğrulanamadı (${fpFails}/3). Tekrar deneyin.`; if (fpFails >= 3) setTimeout(() => $("lockIn").focus(), 80); } };
 async function clearPw() { store.set(FPK, ""); sec = { salt: null, hash: null, appLock: false }; secCache(); await setDoc(secRef(), sec, { merge: true }); schedule(); }
 function setAppLock(v) { sec.appLock = v; secCache(); setDoc(secRef(), { appLock: v }, { merge: true }); schedule(); }
-function showLockScreen(msg) { $("lockscr").hidden = false; $("lockFp").hidden = !fpOn(); if (fpOn()) setTimeout(() => $("lockFp").click(), 350); $("lockMsg").textContent = msg || "Şifrenizi girin"; $("lockIn").value = ""; $("lockErr").textContent = ""; setTimeout(() => $("lockIn").focus(), 80); }
+function lockLayout() { const fo = fpOnly(); $("lockIn").hidden = fo; $("lockOk").hidden = fo; $("lockForgot").hidden = fo; $("lockFp").hidden = !fpOn(); if (fo) $("lockMsg").textContent = "Parmak izinizi doğrulayın"; else if (fpOn()) $("lockMsg").textContent = "Parmak izi doğrulanamadı. Şifrenizi girin"; }
+function showLockScreen(msg) { $("lockscr").hidden = false; fpFails = 0; lockLayout(); if (fpOn()) setTimeout(() => $("lockFp").click(), 350); if (!fpOn()) $("lockMsg").textContent = msg || "Şifrenizi girin"; $("lockIn").value = ""; $("lockErr").textContent = ""; setTimeout(() => $("lockIn").focus(), 80); }
 async function lockSubmit() {
   const r = await tryPw($("lockIn").value);
   if (r.ok) { $("lockscr").hidden = true; $("lockIn").value = ""; } else { $("lockErr").textContent = r.msg; $("lockIn").value = ""; }
@@ -1058,9 +1063,12 @@ document.addEventListener("visibilitychange", () => {
   hiddenAt = 0;
 });
 function askPassword(cb, title = "Şifreyi girin") {
-  openSheet(`${shHead(title)}<input type="password" id="apIn" placeholder="Şifre" autocomplete="current-password"><div class="sh-p" id="apErr" style="color:var(--red);min-height:16px"></div><div class="brow">${fpOn() ? `<button class="btn sec" id="apFp">Parmak izi</button>` : ""}<button class="btn" id="apOk">Aç</button></div>`, { mount: () => setTimeout(() => $("apIn") && $("apIn").focus(), 80) });
-  const go1 = async () => { const r = await tryPw($("apIn").value); if (r.ok) { closeAll(); cb(); } else { $("apErr").textContent = r.msg; $("apIn").value = ""; } };
-  $("sheet").onclick = e => { if (e.target.closest("[data-act=closeSheet]")) return closeAll(); if (e.target.closest("#apOk")) go1(); if (e.target.closest("#apFp")) fpAuth().then(ok => { if (ok) { closeAll(); cb(); } else $("apErr").textContent = "Parmak izi doğrulanamadı."; }); };
+  fpFails = 0;
+  openSheet(`${shHead(title)}<div class="sh-p" id="apFpMsg" hidden>Parmak izinizi doğrulayın.</div><input type="password" id="apIn" placeholder="Şifre" autocomplete="current-password"><div class="sh-p" id="apErr" style="color:var(--red);min-height:16px"></div><div class="brow"><button class="btn sec" id="apFp" hidden>Parmak izi</button><button class="btn" id="apOk">Aç</button></div>`, { mount: () => { lay(); if (fpOnly()) setTimeout(tryFp, 250); else setTimeout(() => $("apIn") && $("apIn").focus(), 80); } });
+  function lay() { const fo = fpOnly(); $("apIn").hidden = fo; $("apOk").hidden = fo; $("apFp").hidden = !fpOn(); $("apFpMsg").hidden = !fo; }
+  async function go1() { const r = await tryPw($("apIn").value); if (r.ok) { closeAll(); cb(); } else { $("apErr").textContent = r.msg; $("apIn").value = ""; } }
+  async function tryFp() { if (!$("apFp")) return; const ok = await fpAuth(); if (ok) { closeAll(); cb(); } else { lay(); if (!$("apErr")) return; $("apErr").textContent = fpFails >= 3 ? "Parmak izi 3 kez doğrulanamadı. Şifrenizi girin." : `Doğrulanamadı (${fpFails}/3). Tekrar deneyin.`; if (fpFails >= 3) setTimeout(() => $("apIn") && $("apIn").focus(), 80); } }
+  $("sheet").onclick = e => { if (e.target.closest("[data-act=closeSheet]")) return closeAll(); if (e.target.closest("#apOk")) go1(); if (e.target.closest("#apFp")) tryFp(); };
   $("apIn").addEventListener("keydown", e => { if (e.key === "Enter") go1(); });
 }
 function pwSheet(after) {
@@ -1274,7 +1282,7 @@ function renderSettings() {
      <div class="setg">Güvenlik</div>
      <div class="srow" data-act="pwSheet">${ic("lock")}<div class="st">Şifre<small>${sec.hash ? "Belirlendi · değiştirmek veya kaldırmak için dokunun" : "Belirlenmedi · uygulama, defter ve notları kilitlemek için"}</small></div></div>
      <div class="srow" data-act="toggleAppLock">${ic("lock")}<div class="st">Uygulama girişinde şifre iste<small>Açılışta ve 1 dakikadan uzun arka planda kalınca</small></div><span class="swt ${sec.appLock && sec.hash ? "on" : ""}"></span></div>
-     <div class="srow" data-act="toggleFp">${ic("lock")}<div class="st">Parmak izi ile aç (bu cihaz)<small>Şifre yerine parmak izi / yüz / ekran kilidi ile açın · her cihazda ayrı etkinleştirilir</small></div><span class="swt ${fpOn() ? "on" : ""}"></span></div>
+     <div class="srow" data-act="toggleFp">${ic("lock")}<div class="st">Parmak izi ile aç (bu cihaz)<small>Açıkken yalnızca parmak izi sorulur, 3 hatada şifre istenir · her cihazda ayrı etkinleştirilir; kapatınca şifreyle açılır</small></div><span class="swt ${fpOn() ? "on" : ""}"></span></div>
      <div class="srow" style="cursor:default">${ic("info")}<div class="st"><small style="margin:0">Bir not defterini veya notu kilitlemek için ⋯ menüsünden "Kilitle"yi seçin. Kilitli içerik listede gizlenir, açmak için şifre sorulur.</small></div></div>
      <div class="setg">Uygulama</div>
      <div class="srow" data-act="whatsNew">${ic("megaphone")}<div class="st">Yeni neler</div></div>
@@ -1283,8 +1291,9 @@ function renderSettings() {
      <div class="srow" data-act="notifPerm">${ic("bell")}<div class="st">Hatırlatıcı bildirimleri<small>${nperm === "granted" ? "Açık" : nperm === "denied" ? "Tarayıcıdan engellenmiş" : nperm === "yok" ? "Bu tarayıcı desteklemiyor" : "Kapalı – açmak için dokunun"}</small></div></div>
      <div class="setg">Veri</div>
      <div class="srow" data-act="driveSheet">${ic("upload")}<div class="st">Google Drive otomatik yedek<small>${driveUrl ? (driveErr ? "Hata: " + esc(driveErr) : +store.get("dnote-lastbackup", 0) ? "Açık · son yedek: " + fmtDT(+store.get("dnote-lastbackup", 0)) : "Açık") : "Kapalı · notlar Drive'a kendiliğinden yedeklenir"}</small></div></div>
-     <div class="srow" data-act="exportAll">${ic("download")}<div class="st">Tüm notları yedekle (.json)<small>Notlar, defterler ve görevler tek dosyada</small></div></div>
-     <div class="srow" data-act="importAny">${ic("upload")}<div class="st">İçe aktar<small>Evernote (.enex) veya D-Note yedeği (.json)</small></div></div>
+     <div class="srow" data-act="graph">${ic("link")}<div class="st">Bağlantı grafiği<small>Notlar arası [[bağlantıları]] harita olarak görün</small></div></div>
+     <div class="srow" data-act="exportAll">${ic("download")}<div class="st">Yedekle / geri yükle<small>${+store.get("dnote-lastexport", 0) ? "Son yedek: " + fmtDate(+store.get("dnote-lastexport", 0)) : "Tüm notlar ve ek dosyalar tek dosyada"}</small></div></div>
+     <div class="srow" data-act="importAny">${ic("upload")}<div class="st">İçe aktar<small>D-Note yedeği (.json) veya Evernote (.enex)</small></div></div>
      <div class="setg">Hakkında</div><div class="srow" style="cursor:default"><div class="st">D-Note<small>Bulut senkron · çevrimdışı çalışır · Firebase</small></div></div>
      <div class="srow" data-act="logout" style="color:var(--red)">${ic("logout")}<div class="st">Oturumu kapat</div></div>`;
 }
@@ -1669,12 +1678,12 @@ async function downloadEmbed(el) {
   const hide = () => { pop.hidden = true; st = null; };
   const cands = q => {
     const ql = q.trim().toLocaleLowerCase("tr"), l = notes.filter(n => !n.trashed && n.id !== curId && (n.title || "Başlıksız").toLocaleLowerCase("tr").includes(ql))
-      .sort((a, b) => ((b.title || "").toLocaleLowerCase("tr").startsWith(ql) ? 1 : 0) - ((a.title || "").toLocaleLowerCase("tr").startsWith(ql) ? 1 : 0) || (b.updatedAt || 0) - (a.updatedAt || 0)).slice(0, 6);
+      .sort((a, b) => ((b.title || "").toLocaleLowerCase("tr").startsWith(ql) ? 1 : 0) - ((a.title || "").toLocaleLowerCase("tr").startsWith(ql) ? 1 : 0) || (b.updatedAt || 0) - (a.updatedAt || 0));
     const items = l.map(n => ({ id: n.id, t: n.title || "Başlıksız" }));
-    if (q.trim() && !notes.some(n => !n.trashed && (n.title || "").toLocaleLowerCase("tr") === ql)) items.push({ id: null, t: q.trim(), isNew: true });
+    if (q.trim() && !notes.some(n => !n.trashed && (n.title || "").toLocaleLowerCase("tr") === ql)) items.unshift({ id: null, t: q.trim(), isNew: true });
     return items;
   };
-  const draw = () => { pop.innerHTML = st.items.map((it, i) => `<button data-i="${i}" class="${i === st.sel ? "on" : ""}">${ic(it.isNew ? "plus" : "notes")}<span>${it.isNew ? "Yeni not oluştur: " : ""}${esc(it.t)}</span></button>`).join(""); };
+  const draw = () => { const keep = pop.scrollTop; pop.innerHTML = st.items.map((it, i) => `<button data-i="${i}" class="${i === st.sel ? "on" : ""}">${ic(it.isNew ? "plus" : "notes")}<span>${it.isNew ? "Yeni not oluştur: " : ""}${esc(it.t)}</span></button>`).join(""); const on = pop.querySelector("button.on"); if (on) { const t = on.offsetTop, h = on.offsetHeight; if (t < keep) pop.scrollTop = t; else if (t + h > keep + pop.clientHeight) pop.scrollTop = t + h - pop.clientHeight; else pop.scrollTop = keep; } };
   const place = idx => {
     const b = quill.getBounds(idx), c = quill.container.getBoundingClientRect(); pop.hidden = false;
     const w = pop.offsetWidth, h = pop.offsetHeight; let x = c.left + b.left, y = c.top + b.top + b.height + 6;
@@ -1692,11 +1701,11 @@ async function downloadEmbed(el) {
     if (done) { const q = done[1].trim().toLocaleLowerCase("tr"), n = notes.find(x => !x.trashed && x.id !== curId && (x.title || "").toLocaleLowerCase("tr") === q); if (n) { st = { start: r.index - done[0].length, end: r.index }; return apply({ id: n.id, t: n.title }); } }
     const m = /\[\[([^\[\]\n]{0,60})$/.exec(txt); if (!m) return hide();
     const items = cands(m[1]); if (!items.length) return hide();
-    st = { start: r.index - m[0].length, end: r.index, q: m[1], items, sel: 0 }; draw(); place(r.index);
+    st = { start: r.index - m[0].length, end: r.index, q: m[1], items, sel: items.length > 1 && items[0].isNew ? 1 : 0 }; draw(); place(r.index);
   };
   quill.on("text-change", (d, o, src) => { if (src === "user") check(); });
   quill.on("selection-change", r => { if (!r) setTimeout(() => { if (!pop.matches(":hover")) hide(); }, 150); });
-  pop.addEventListener("mousedown", e => e.preventDefault()); pop.addEventListener("touchstart", e => { e.preventDefault(); const b = e.target.closest("button"); if (b && st) apply(st.items[+b.dataset.i]); }, { passive: false });
+  pop.addEventListener("mousedown", e => e.preventDefault()); 
   pop.addEventListener("click", e => { const b = e.target.closest("button"); if (b && st) apply(st.items[+b.dataset.i]); });
   quill.root.addEventListener("keydown", e => {
     if (!st || pop.hidden) return;
@@ -1986,6 +1995,114 @@ document.addEventListener("keydown", e => {
   else if ((k === "delete" || k === "backspace") && VIS.sel) { e.preventDefault(); document.querySelector('#vis [data-v="del"]') && document.querySelector('#vis [data-v="del"]').click(); }
 });
 
+/* ---------- Not bağlantı grafiği ---------- */
+const GR = { nodes: [], edges: [], map: new Map(), view: { x: 0, y: 0, z: 1 }, all: false, sel: null, alpha: 1, raf: 0, ptr: new Map(), drag: null, gest: null, pos: new Map(), q: "" };
+const graphOpen = () => { const e = $("graph"); return !!e && !e.hidden; };
+(() => {
+  const st = document.createElement("style");
+  st.textContent = `#graph{position:fixed;left:0;top:0;width:100%;height:var(--vh,100%);z-index:45;background:var(--bg);display:flex;flex-direction:column}#graph[hidden]{display:none}
+#graph .gtop{display:flex;align-items:center;gap:4px;padding:6px 8px;border-bottom:1px solid var(--line)}#graph .gtop h3{margin:0;font-size:15px;flex:1}
+#graph .gb{height:34px;min-width:34px;padding:0 8px;border-radius:9px;display:flex;align-items:center;justify-content:center;color:var(--text);font-size:12px;gap:4px}#graph .gb:active{background:var(--sel)}#graph .gb.on{color:var(--acc);background:var(--sel)}
+#gCan{flex:1;position:relative;overflow:hidden;touch-action:none}#gCv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#gInfo{position:absolute;left:10px;right:10px;bottom:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:10px 12px;display:flex;align-items:center;gap:10px}#gInfo[hidden]{display:none}#gInfo b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}#gInfo small{color:var(--muted);font-size:11px;display:block;font-weight:400}#gInfo button{padding:7px 14px;border-radius:9px;background:var(--acc);color:#fff;font-size:13px;flex:none}
+#gHelp{position:absolute;left:10px;top:8px;font-size:11px;color:var(--muted);pointer-events:none}`;
+  document.head.appendChild(st);
+  const el = document.createElement("div"); el.id = "graph"; el.hidden = true;
+  el.innerHTML = `<div class="gtop"><button class="gb" data-g="close" title="Kapat">${vsvg("back")}</button><h3>Bağlantı grafiği</h3><button class="gb" data-g="all" id="gAll">Tüm notlar</button><button class="gb" data-g="fit" title="Sığdır">${vsvg("home")}</button></div><div id="gCan"><canvas id="gCv"></canvas><div id="gHelp"></div><div id="gInfo" hidden></div></div>`;
+  document.body.appendChild(el);
+})();
+function graphBuild() {
+  const live = notes.filter(n => !n.trashed), byId = new Map(live.map(n => [n.id, n])), set = new Set(), edges = [], deg = {};
+  live.forEach(n => { for (const m of String(n.content || "").matchAll(/data-nid="([^"]+)"/g)) { const t = m[1]; if (t !== n.id && byId.has(t)) { const k = n.id + ">" + t; if (!set.has(k)) { set.add(k); edges.push([n.id, t]); deg[n.id] = (deg[n.id] || 0) + 1; deg[t] = (deg[t] || 0) + 1; } } } });
+  const keep = live.filter(n => GR.all || deg[n.id]);
+  GR.nodes = keep.map((n, i) => { let p = GR.pos.get(n.id); if (!p) { const a = Math.random() * 6.283, r = 40 + Math.random() * 160; p = { x: Math.cos(a) * r, y: Math.sin(a) * r }; GR.pos.set(n.id, p); } return { id: n.id, t: lockedNow(n) ? "Kilitli not" : (n.title || "Başlıksız"), d: deg[n.id] || 0, x: p.x, y: p.y, vx: 0, vy: 0, visual: n.kind === "visual", fixed: false }; });
+  GR.map = new Map(GR.nodes.map(n => [n.id, n])); GR.edges = edges.filter(([a, b]) => GR.map.has(a) && GR.map.has(b)).map(([a, b]) => [GR.map.get(a), GR.map.get(b)]); GR.total = edges.length; GR.alpha = 1;
+}
+function graphTick() {
+  const N = GR.nodes, a = GR.alpha; if (a < .02) return false;
+  for (let i = 0; i < N.length; i++) for (let j = i + 1; j < N.length; j++) { const p = N[i], q = N[j]; let dx = p.x - q.x, dy = p.y - q.y, d2 = dx * dx + dy * dy; if (d2 > 90000) continue; if (d2 < 1) { dx = Math.random() - .5; dy = Math.random() - .5; d2 = 1; } const f = 2600 / d2 * a, d = Math.sqrt(d2); dx = dx / d * f; dy = dy / d * f; p.vx += dx; p.vy += dy; q.vx -= dx; q.vy -= dy; }
+  for (const [p, q] of GR.edges) { const dx = q.x - p.x, dy = q.y - p.y, d = Math.sqrt(dx * dx + dy * dy) || 1, f = (d - 90) * .02 * a, fx = dx / d * f, fy = dy / d * f; p.vx += fx; p.vy += fy; q.vx -= fx; q.vy -= fy; }
+  for (const n of N) { n.vx -= n.x * .004 * a; n.vy -= n.y * .004 * a; n.vx *= .82; n.vy *= .82; if (!n.fixed) { n.x += n.vx; n.y += n.vy; } GR.pos.set(n.id, { x: n.x, y: n.y }); }
+  GR.alpha *= .985; return true;
+}
+function graphLoop() { if (GR.raf) return; const step = () => { GR.raf = 0; if (!graphOpen()) return; const run = graphTick(); graphDraw(); if (run || GR.drag) GR.raf = requestAnimationFrame(step); }; GR.raf = requestAnimationFrame(step); }
+function graphDraw() {
+  const cv = $("gCv"), ctx = cv.getContext("2d"), dpr = devicePixelRatio || 1, W = cv.clientWidth, H = cv.clientHeight; if (!W) return;
+  if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+  const css = getComputedStyle(document.documentElement), col = k => css.getPropertyValue(k).trim() || "#888", txt = col("--text"), acc = col("--acc"), mut = col("--muted"), line = col("--line"), v = GR.view;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+  ctx.setTransform(dpr * v.z, 0, 0, dpr * v.z, dpr * (v.x + W / 2), dpr * (v.y + H / 2));
+  const sel = GR.sel && GR.map.get(GR.sel), nb = new Set(); if (sel) { nb.add(sel.id); GR.edges.forEach(([p, q]) => { if (p === sel) nb.add(q.id); if (q === sel) nb.add(p.id); }); }
+  ctx.lineWidth = 1.2 / v.z;
+  for (const [p, q] of GR.edges) {
+    const hi = sel && (p === sel || q === sel); ctx.globalAlpha = sel ? (hi ? 1 : .12) : .7; ctx.strokeStyle = hi ? acc : mut; ctx.lineWidth = (hi ? 2 : 1.2) / v.z;
+    ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke();
+    const a = Math.atan2(q.y - p.y, q.x - p.x), rq = 6 + 3 * Math.sqrt(q.d), ax = q.x - Math.cos(a) * (rq + 2), ay = q.y - Math.sin(a) * (rq + 2), L = 7; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(ax - L * Math.cos(a - .4), ay - L * Math.sin(a - .4)); ctx.lineTo(ax - L * Math.cos(a + .4), ay - L * Math.sin(a + .4)); ctx.closePath(); ctx.fillStyle = ctx.strokeStyle; ctx.fill();
+  }
+  const fs = 12 / v.z; ctx.font = `${fs}px Inter, system-ui, sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "top";
+  for (const n of GR.nodes) {
+    const r = 6 + 3 * Math.sqrt(n.d), on = !sel || nb.has(n.id); ctx.globalAlpha = on ? 1 : .15;
+    ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, 6.283); ctx.fillStyle = n.id === GR.sel ? "#3b82f6" : n.id === curId ? "#f59e0b" : n.d ? acc : mut; ctx.fill();
+    if (n.id === GR.sel) { ctx.lineWidth = 2 / v.z; ctx.strokeStyle = "#3b82f6"; ctx.stroke(); }
+    if (on && (v.z > .55 || n.d >= 2 || n.id === GR.sel)) { ctx.fillStyle = txt; const t = n.t.length > 24 ? n.t.slice(0, 23) + "…" : n.t; ctx.fillText(t, n.x, n.y + r + 3 / v.z); }
+  }
+  ctx.globalAlpha = 1;
+}
+const g2w = (x, y) => { const cv = $("gCv"), v = GR.view; return [(x - cv.clientWidth / 2 - v.x) / v.z, (y - cv.clientHeight / 2 - v.y) / v.z]; };
+function graphHit(x, y) { const [wx, wy] = g2w(x, y); let best = null, bd = 1e9; for (const n of GR.nodes) { const r = 6 + 3 * Math.sqrt(n.d) + 10 / GR.view.z, d = Math.hypot(n.x - wx, n.y - wy); if (d < r && d < bd) { bd = d; best = n; } } return best; }
+function graphInfo() {
+  const el = $("gInfo"), n = GR.sel && GR.map.get(GR.sel); if (!n) { el.hidden = true; return; }
+  const out = GR.edges.filter(([p]) => p === n).length, inn = GR.edges.filter(([, q]) => q === n).length;
+  el.hidden = false; el.innerHTML = `<b>${esc(n.t)}<small>${out} bağlantı verir · ${inn} bağlantı alır</small></b><button data-g="open">Notu aç</button>`;
+}
+function graphFit() {
+  if (!GR.nodes.length) { GR.view = { x: 0, y: 0, z: 1 }; return graphDraw(); } let a = 1e9, b = 1e9, c = -1e9, d = -1e9; GR.nodes.forEach(n => { a = Math.min(a, n.x); b = Math.min(b, n.y); c = Math.max(c, n.x); d = Math.max(d, n.y); });
+  const cv = $("gCv"), W = cv.clientWidth, H = cv.clientHeight, z = Math.max(.25, Math.min(1.1, Math.min((W - 80) / Math.max(60, c - a), (H - 120) / Math.max(60, d - b)))); GR.view = { z, x: -((a + c) / 2) * z, y: -((b + d) / 2) * z }; graphDraw();
+}
+function graphRefresh(fit) {
+  graphBuild(); $("gAll").classList.toggle("on", GR.all);
+  $("gHelp").textContent = GR.nodes.length ? `${GR.nodes.length} not · ${GR.edges.length} bağlantı` : "";
+  if (!GR.nodes.length) { const cv = $("gCv"), ctx = cv.getContext("2d"); graphDraw(); $("gHelp").innerHTML = ""; $("gInfo").hidden = false; $("gInfo").innerHTML = `<b>Henüz bağlantı yok<small>Bir notta [[ yazıp başka bir notu seçince burada görünür. "Tüm notlar" ile bağlantısızları da görebilirsiniz.</small></b>`; return; }
+  graphInfo(); if (fit) { for (let i = 0; i < 120; i++) graphTick(); GR.alpha = Math.max(GR.alpha, .35); graphFit(); } graphLoop();
+}
+function openGraph() {
+  closeAll(); if (visOpen()) visClose(); if (curId) { flushSave(); }
+  $("graph").hidden = false; document.body.dataset.graph = "1"; history.pushState({ ...(history.state || {}), graph: 1 }, ""); GR.sel = curId && notes.some(n => n.id === curId) ? curId : null; GR.all = false;
+  graphBuild(); if (!GR.edges.length) { GR.all = true; }
+  graphRefresh(true); if (GR.sel && !GR.map.has(GR.sel)) GR.sel = null; graphInfo();
+}
+function closeGraph(fromPop) { if (!graphOpen()) return; $("graph").hidden = true; delete document.body.dataset.graph; if (!fromPop && history.state && history.state.graph) history.back(); }
+(() => {
+  const cv = $("gCv"), pos = e => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+  cv.addEventListener("pointerdown", e => {
+    cv.setPointerCapture(e.pointerId); GR.ptr.set(e.pointerId, pos(e));
+    if (GR.ptr.size === 2) { GR.drag = null; const [p, q] = [...GR.ptr.values()], mid = [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2]; GR.gest = { d0: Math.hypot(p[0] - q[0], p[1] - q[1]) || 1, z0: GR.view.z, w: g2w(mid[0], mid[1]) }; return; }
+    const [x, y] = pos(e), n = graphHit(x, y); GR.drag = n ? { k: "node", n, sx: x, sy: y, moved: false } : { k: "pan", sx: x, sy: y, vx: GR.view.x, vy: GR.view.y, moved: false };
+  });
+  cv.addEventListener("pointermove", e => {
+    if (!GR.ptr.has(e.pointerId)) return; GR.ptr.set(e.pointerId, pos(e));
+    if (GR.gest && GR.ptr.size >= 2) { const [p, q] = [...GR.ptr.values()], d = Math.hypot(p[0] - q[0], p[1] - q[1]) || 1, mid = [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2], z = Math.max(.2, Math.min(4, GR.gest.z0 * d / GR.gest.d0)), W = cv.clientWidth, H = cv.clientHeight; GR.view.z = z; GR.view.x = mid[0] - W / 2 - GR.gest.w[0] * z; GR.view.y = mid[1] - H / 2 - GR.gest.w[1] * z; return graphDraw(); }
+    const d = GR.drag; if (!d) return; const [x, y] = pos(e); if (Math.hypot(x - d.sx, y - d.sy) > 5) d.moved = true;
+    if (d.k === "pan") { GR.view.x = d.vx + x - d.sx; GR.view.y = d.vy + y - d.sy; graphDraw(); }
+    else if (d.moved) { const [wx, wy] = g2w(x, y); d.n.x = wx; d.n.y = wy; d.n.vx = d.n.vy = 0; d.n.fixed = true; GR.alpha = Math.max(GR.alpha, .3); graphLoop(); }
+  });
+  const up = e => {
+    if (!GR.ptr.has(e.pointerId)) return; GR.ptr.delete(e.pointerId); if (GR.gest) { if (GR.ptr.size < 2) GR.gest = null; if (!GR.ptr.size) GR.drag = null; return; }
+    const d = GR.drag; GR.drag = null; if (!d) return;
+    if (d.k === "node") { d.n.fixed = false; if (!d.moved) { GR.sel = GR.sel === d.n.id ? null : d.n.id; graphInfo(); graphDraw(); } }
+    else if (!d.moved) { GR.sel = null; graphInfo(); graphDraw(); }
+  };
+  cv.addEventListener("pointerup", up); cv.addEventListener("pointercancel", up);
+  cv.addEventListener("dblclick", e => { const n = graphHit(...pos(e)); if (n) { closeGraph(); setTimeout(() => openNote(n.id), 60); } });
+  cv.addEventListener("wheel", e => { e.preventDefault(); const [sx, sy] = pos(e), w = g2w(sx, sy), z = Math.max(.2, Math.min(4, GR.view.z * (e.deltaY < 0 ? 1.12 : 1 / 1.12))); GR.view.z = z; GR.view.x = sx - cv.clientWidth / 2 - w[0] * z; GR.view.y = sy - cv.clientHeight / 2 - w[1] * z; graphDraw(); }, { passive: false });
+  $("graph").addEventListener("click", e => {
+    const b = e.target.closest("[data-g]"); if (!b) return; const a = b.dataset.g;
+    if (a === "close") closeGraph(); else if (a === "fit") graphFit(); else if (a === "all") { GR.all = !GR.all; graphRefresh(true); }
+    else if (a === "open" && GR.sel) { const id = GR.sel; if (history.state && history.state.graph) { closeGraph(); setTimeout(() => openNote(id), 80); } else { closeGraph(true); openNote(id); } }
+  });
+  addEventListener("resize", () => graphOpen() && graphDraw());
+})();
+
 /* ---------- Tablo ---------- */
 function tableSheet() {
   let r = 3, c = 3;
@@ -2114,21 +2231,36 @@ function dictFixNote() {
   toast(fixes.length + " kelime düzeltildi.");
 }
 function dictSheet() {
+  let ed = -1, bulk = false;
   const draw = () => {
+    const it0 = ed >= 0 ? DICT.items[ed] : null;
     openSheet(`${shHead("Dikte sözlüğü")}<div class="sh-p">Sesle yazarken yanlış duyulan yabancı veya teknik kelimeleri düzeltir. "Doğru yazım" kelimesine yakın okunan sözcükler otomatik düzeltilir; ayrıca sık yapılan hataları elle ekleyebilirsiniz.</div>
       <div class="setl">Dikte dili</div>${["tr-TR", "en-US", "en-GB"].map(l => `<button class="arow" data-lang="${l}"><span class="st">${{ "tr-TR": "Türkçe", "en-US": "İngilizce (ABD)", "en-GB": "İngilizce (İngiltere)" }[l]}</span>${DICT.lang === l ? ic("check") : ""}</button>`).join("")}
       <button class="arow" data-fz="1"><span class="st">Akıllı düzeltme (benzer okunuşlu kelimeler)</span><span class="swt ${DICT.fuzzy ? "on" : ""}"></span></button>
-      <div class="setl">Kelimeler</div>
-      ${DICT.items.map((it, i) => `<div class="arow" style="cursor:default"><span class="st"><b>${esc(it.r)}</b><small style="display:block;color:var(--muted)">${esc((it.w || []).join(", ")) || "yalnızca benzer okunuş"}</small></span><button class="tbtn sm" data-del="${i}">${ic("trash")}</button></div>`).join("") || `<div class="sh-p">Henüz kelime yok.</div>`}
-      <input type="text" id="dcR" placeholder="Doğru yazım (örn: lavatory)" autocomplete="off"><input type="text" id="dcW" placeholder="Yanlış duyulanlar, virgülle (örn: lovatory, lavatri) — isteğe bağlı" autocomplete="off">
-      <div class="brow"><button class="btn" id="dcAdd">Ekle</button></div>`, { full: true });
+      <div class="setl">Kelimeler (${DICT.items.length}) · düzenlemek için dokunun</div>
+      ${DICT.items.map((it, i) => `<div class="arow" data-ed="${i}" style="${i === ed ? "background:var(--sel)" : ""}"><span class="st"><b>${esc(it.r)}</b><small style="display:block;color:var(--muted)">${esc((it.w || []).join(", ")) || "yalnızca benzer okunuş"}</small></span><button class="tbtn sm" data-del="${i}">${ic("trash")}</button></div>`).join("") || `<div class="sh-p">Henüz kelime yok.</div>`}
+      <div class="setl">${it0 ? "Kelimeyi düzenle" : bulk ? "Toplu ekle" : "Yeni kelime"}</div>
+      ${bulk && !it0 ? `<div class="sh-p">Her satıra bir kelime yazın. Yanlış okunuşları <b>=</b> işaretinden sonra virgülle ekleyebilirsiniz.<br><i>lavatory = lovatory, lavatri<br>galley<br>ceiling = seeling</i></div><textarea id="dcBulk" rows="6" placeholder="lavatory = lovatory, lavatri&#10;galley&#10;ceiling = seeling" style="width:100%;box-sizing:border-box;font:inherit;border:1px solid var(--line);background:var(--bg);color:var(--text);border-radius:12px;padding:10px"></textarea>
+        <div class="brow"><button class="btn sec" id="dcMode">Tek tek ekle</button><button class="btn" id="dcBulkAdd">Hepsini ekle</button></div>`
+      : `<input type="text" id="dcR" placeholder="Doğru yazım (örn: lavatory)" autocomplete="off" value="${it0 ? esc(it0.r) : ""}"><input type="text" id="dcW" placeholder="Yanlış duyulanlar, virgülle (örn: lovatory, lavatri) — isteğe bağlı" autocomplete="off" value="${it0 ? esc((it0.w || []).join(", ")) : ""}">
+        <div class="brow">${it0 ? `<button class="btn sec" id="dcCancel">Vazgeç</button>` : `<button class="btn sec" id="dcMode">Toplu ekle</button>`}<button class="btn" id="dcAdd">${it0 ? "Kaydet" : "Ekle"}</button></div>`}`, { full: true });
     $("sheet").onclick = e => {
       if (e.target.closest("[data-act=closeSheet]")) return closeAll();
       const l = e.target.closest("[data-lang]"); if (l) { DICT.lang = l.dataset.lang; dictSave(); return draw(); }
       if (e.target.closest("[data-fz]")) { DICT.fuzzy = !DICT.fuzzy; dictSave(); return draw(); }
-      const d = e.target.closest("[data-del]"); if (d) { DICT.items.splice(+d.dataset.del, 1); dictSave(); return draw(); }
+      const d = e.target.closest("[data-del]"); if (d) { e.stopPropagation(); DICT.items.splice(+d.dataset.del, 1); ed = -1; dictSave(); return draw(); }
+      const edb = e.target.closest("[data-ed]"); if (edb) { ed = +edb.dataset.ed; bulk = false; draw(); const el = $("dcR"); if (el) { el.scrollIntoView({ block: "center" }); } return; }
+      if (e.target.closest("#dcMode")) { bulk = !bulk; return draw(); }
+      if (e.target.closest("#dcCancel")) { ed = -1; return draw(); }
+      if (e.target.closest("#dcBulkAdd")) {
+        let add = 0, upd = 0; $("dcBulk").value.split(/\n/).forEach(line => { line = line.trim(); if (!line) return; const [r0, w0 = ""] = line.split("="); const r = r0.trim(); if (!r) return; const w = w0.split(",").map(x => x.trim()).filter(Boolean);
+          const ex = DICT.items.find(x => x.r.toLowerCase() === r.toLowerCase()); if (ex) { ex.w = [...new Set([...(ex.w || []), ...w])]; upd++; } else { DICT.items.push({ r, w }); add++; } });
+        if (!add && !upd) return toast("Eklenecek kelime bulunamadı."); dictSave(); toast(`${add} kelime eklendi` + (upd ? `, ${upd} güncellendi` : "") + "."); bulk = false; return draw();
+      }
       if (e.target.closest("#dcAdd")) { const r = $("dcR").value.trim(); if (!r) return toast("Doğru yazımı girin."); const w = $("dcW").value.split(",").map(x => x.trim()).filter(Boolean);
-        const ex = DICT.items.find(x => x.r.toLowerCase() === r.toLowerCase()); if (ex) ex.w = [...new Set([...(ex.w || []), ...w])]; else DICT.items.push({ r, w }); dictSave(); draw(); }
+        if (ed >= 0) { DICT.items[ed] = { r, w }; ed = -1; toast("Kelime güncellendi."); }
+        else { const ex = DICT.items.find(x => x.r.toLowerCase() === r.toLowerCase()); if (ex) ex.w = [...new Set([...(ex.w || []), ...w])]; else DICT.items.push({ r, w }); }
+        dictSave(); draw(); }
     };
   };
   draw();
@@ -2365,10 +2497,41 @@ function driveSheet() {
     catch (e) { $("drSt").textContent = "Bağlanılamadı: " + String(e.message || e).slice(0, 120); }
   };
 }
+const mediaIds = () => { const m = new Map(); notes.forEach(n => { for (const x of String(n.content || "").matchAll(/<div[^>]*data-mid="([^"]+)"[^>]*>/g)) { const t = x[0], g = k => { const r = new RegExp(k + '="([^"]*)"').exec(t); return r ? r[1] : ""; }; m.set(x[1], { name: g("data-name"), mime: g("data-mime") }); } }); return m; };
 function exportAll() {
-  const strip = x => { const { id, ...r } = x; return { id, ...r }; };
-  download("d-note-yedek-" + dayKey(Date.now()) + ".json", "application/json", JSON.stringify({ app: "D-Note", version: 2, exportedAt: Date.now(), notebooks: notebooks.map(strip), notes: notes.map(strip), tasks: tasks.map(strip) }));
-  toast("Yedek indirildi.");
+  const mi = mediaIds(), nMed = mi.size, last = +store.get("dnote-lastexport", 0);
+  openSheet(`${shHead("Yedekle / Geri yükle")}
+    <div class="sh-p">${last ? "Son yedek: <b>" + fmtDT(last) + "</b>" : "Henüz yedek almadınız."} · ${notes.length} not, ${notebooks.length} defter, ${tasks.length} görev, ${nMed} dosya/görsel/ses</div>
+    <div class="arow" data-bk="full"><span class="st"><b>Tam yedek</b><small style="display:block;color:var(--muted)">Notlar + defterler + görevler + sözlük + <b>tüm ek dosyalar</b> (görsel, ses, PDF…). Dosya büyük olabilir.</small></span>${ic("download")}</div>
+    <div class="arow" data-bk="light"><span class="st"><b>Hafif yedek</b><small style="display:block;color:var(--muted)">Yalnızca yazılar (ek dosyalar dahil değil). Küçük ve hızlı.</small></span>${ic("download")}</div>
+    <div class="arow" data-bk="restore"><span class="st"><b>Yedekten geri yükle</b><small style="display:block;color:var(--muted)">D-Note yedeği (.json) veya Evernote (.enex). Var olan notların üzerine yazmaz; aynı kimlikli notlar yedekteki haliyle güncellenir.</small></span>${ic("upload")}</div>
+    <div class="sh-p" id="bkSt" style="min-height:18px"></div>`);
+  $("sheet").onclick = async e => {
+    if (e.target.closest("[data-act=closeSheet]")) return closeAll(); const b = e.target.closest("[data-bk]"); if (!b) return;
+    if (b.dataset.bk === "restore") { closeAll(); return $("fileImport").click(); }
+    const st = t => { const el = $("bkSt"); if (el) el.textContent = t; };
+    try { await buildBackup(b.dataset.bk === "full", st); store.set("dnote-lastexport", String(Date.now())); st("Yedek indirildi ✓"); toast("Yedek indirildi."); }
+    catch (er) { console.warn(er); st("Yedek alınamadı: " + (er.message || er)); }
+  };
+}
+let bkBusy = false;
+async function buildBackup(withMedia, st) {
+  if (bkBusy) return; bkBusy = true;
+  try {
+    const strip = x => ({ ...x }); const head = { app: "D-Note", version: 3, exportedAt: Date.now(), withMedia, notebooks: notebooks.map(strip), notes: notes.map(strip), tasks: tasks.map(strip), dict: DICT };
+    const parts = [JSON.stringify(head).slice(0, -1) + ',"media":{']; let first = true, miss = 0;
+    if (withMedia) {
+      const mi = [...mediaIds()]; let i = 0;
+      for (const [mid, m] of mi) {
+        st(`Ek dosyalar hazırlanıyor… ${++i}/${mi.length}`);
+        try { const bl = await getMediaBlob(mid, m.mime), b64d = (await readDataURL(bl)).split(",")[1]; parts.push((first ? "" : ",") + JSON.stringify(mid) + ':{"name":' + JSON.stringify(m.name) + ',"mime":' + JSON.stringify(bl.type || m.mime) + ',"size":' + bl.size + ',"data":"' + b64d + '"}'); first = false; }
+        catch (e) { miss++; }
+      }
+    }
+    parts.push("}}"); st("Dosya oluşturuluyor…");
+    const blob = new Blob(parts, { type: "application/json" }), a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "d-note-" + (withMedia ? "tam" : "hafif") + "-yedek-" + dayKey(Date.now()) + ".json"; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+    if (miss) toast(miss + " ek dosya yedeğe alınamadı (henüz yüklenmemiş olabilir).", 4500);
+  } finally { bkBusy = false; }
 }
 const tmpHost = document.createElement("div"); tmpHost.style.cssText = "position:fixed;left:-9999px;top:0;width:600px"; document.body.appendChild(tmpHost);
 let tmpQuill = null;
@@ -2380,7 +2543,19 @@ async function importAny(file) {
 async function importJSON(text) {
   const d = JSON.parse(text); if (!d.notes) throw new Error("bad");
   const ops = []; (d.notebooks || []).forEach(b => { const { id, ...r } = b; ops.push([nbRef(id), r]); }); (d.notes || []).forEach(n => { const { id, ...r } = n; ops.push([noteRef(id), { ...r, shareId: null }]); }); (d.tasks || []).forEach(t => { const { id, ...r } = t; ops.push([taskRef(id), r]); });
-  await batchSet(ops); toast(`${(d.notes || []).length} not, ${(d.notebooks || []).length} defter, ${(d.tasks || []).length} görev içe aktarıldı.`);
+  await batchSet(ops);
+  if (d.dict && Array.isArray(d.dict.items)) { d.dict.items.forEach(it => { const ex = DICT.items.find(x => x.r.toLowerCase() === String(it.r).toLowerCase()); if (ex) ex.w = [...new Set([...(ex.w || []), ...(it.w || [])])]; else DICT.items.push({ r: it.r, w: it.w || [] }); }); dictSave(); }
+  let mOk = 0, mSkip = 0, mFail = 0; const ml = d.media ? Object.entries(d.media) : [];
+  for (let i = 0; i < ml.length; i++) {
+    const [mid, m] = ml[i]; toast(`Ek dosyalar yükleniyor… ${i + 1}/${ml.length}`, 1500);
+    try {
+      const ex = await getDoc(doc(db, "users", uid, "media", mid)); if (ex.exists()) { mSkip++; continue; }
+      const bin = atob(m.data), u = new Uint8Array(bin.length); for (let k = 0; k < bin.length; k++) u[k] = bin.charCodeAt(k);
+      const bl = new Blob([u], { type: m.mime || "application/octet-stream" }); try { (await caches.open("dnote-media")).put("/__media/" + mid, new Response(bl, { headers: { "content-type": bl.type } })); } catch (e) { }
+      (await uploadMedia(mid, bl, { name: m.name, mime: m.mime, size: bl.size })) ? mOk++ : mFail++;
+    } catch (e) { mFail++; }
+  }
+  toast(`${(d.notes || []).length} not, ${(d.notebooks || []).length} defter, ${(d.tasks || []).length} görev` + (ml.length ? `, ${mOk} dosya` + (mSkip ? ` (${mSkip} zaten vardı)` : "") + (mFail ? `, ${mFail} dosya yüklenemedi` : "") : "") + " geri yüklendi.", 5000);
 }
 const enexDate = s => { const m = /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/.exec((s || "").trim()); return m ? Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6]) : Date.now(); };
 async function importENEX(text) {
@@ -2412,7 +2587,7 @@ $("fileImport").onchange = e => { importAny(e.target.files[0]); e.target.value =
 /* ================= Tıklama yöneticisi ================= */
 function profileMenu(anchor) {
   showMenu([{ user: 1, t: (user && (user.displayName || user.email)) || "", s: (user && user.email) || "", f: () => go("settings") }, { sep: 1 },
-    { i: "megaphone", t: "Yeni Neler", f: whatsNew }, { i: "trash", t: "Çöp Kutusu", f: () => go("trash") }, { i: "gear", t: "Ayarlar", f: () => go("settings") }, { i: "help", t: "Yardım", f: helpSheet },
+    { i: "link", t: "Bağlantı grafiği", f: openGraph }, { i: "megaphone", t: "Yeni Neler", f: whatsNew }, { i: "trash", t: "Çöp Kutusu", f: () => go("trash") }, { i: "gear", t: "Ayarlar", f: () => go("settings") }, { i: "help", t: "Yardım", f: helpSheet },
     ...(canInstall() ? [{ i: "download", t: "Uygulamayı yükle", f: () => ACT.install() }] : []), { i: "logout", t: "Oturumu kapat", red: 1, f: logout }], { anchor, right: false });
 }
 function moreMenu() {
@@ -2627,6 +2802,7 @@ const ACT = {
   emptyTrash: () => { const t = notes.filter(n => n.trashed); if (t.length && confirm(`Çöp kutusundaki ${t.length} not kalıcı olarak silinsin mi?`)) { t.forEach(n => purgeMedia(n.content)); batchDelete(t.map(n => noteRef(n.id))); } },
   pwSheet: () => pwSheet(),
   toggleFp: () => toggleFp(),
+  graph: () => openGraph(),
   toggleAppLock: () => { if (!sec.hash) { toast("Önce bir şifre belirleyin."); return pwSheet(() => setAppLock(true)); } if (sec.appLock) return askPassword(() => setAppLock(false), "Uygulama kilidini kapat"); setAppLock(true); toast("Uygulama girişinde şifre istenecek."); },
   stepNum: el => setNum(el.dataset.k, (+S[el.dataset.k] || 0) + (+el.dataset.d)),
   typoReset: () => { ["font", "tfont", "esize", "tsize", "eweight", "tweight", "elh", "pagew", "padx"].forEach(k => { try { localStorage.removeItem(skey(k)); } catch (e) { } }); loadTypo(); applySettings(); schedule(); toast("Yazı ayarları varsayılana döndü."); },
