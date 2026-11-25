@@ -526,7 +526,10 @@ body[data-editor=open] #editorView{display:flex}
 <input type="file" id="fileCam" accept="image/*" capture="environment" hidden>
 <input type="file" id="fileImport" accept=".json,.enex,.xml" hidden>
 
-<script>try{if(localStorage.getItem("dnote-wasin")==="1"&&!/[?&]s=/.test(location.search))document.getElementById("app").classList.add("show");}catch(e){}</script>
+<script>try{if(localStorage.getItem("dnote-wasin")==="1"&&!/[?&]s=/.test(location.search)){document.getElementById("app").classList.add("show");
+  var h=JSON.parse(localStorage.getItem("dnote-home")||"null");  // son çizilen ana sayfa: JS yüklenmeden anında göster
+  if(h&&typeof h.nb==="string"){document.getElementById("homeNb").innerHTML=h.nb;document.getElementById("homeNotes").innerHTML=h.notes||"";}
+  document.getElementById("homeDate").textContent=new Date().toLocaleDateString("tr-TR",{day:"numeric",month:"long",year:"numeric",weekday:"long"});}}catch(e){}</script>
 <script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js" crossorigin="anonymous" defer></script>
 <script>
 /* Açılış bekçisi + tanı kaydı: uygulama açılamazsa sessiz beyaz ekran yerine kurtarma ekranı gösterir */
@@ -826,7 +829,7 @@ window.__booted = true;
 window.hideSplash = () => { const e = document.getElementById("splash"); if (e) { e.style.opacity = "0"; setTimeout(() => e.remove(), 200); } };
 if (SHARE_ID) openViewer(SHARE_ID);
 else onAuthStateChanged(auth, u => {
-  window.__booted = true; store.set("dnote-wasin", u ? "1" : "0");
+  window.__booted = true; store.set("dnote-wasin", u ? "1" : "0"); if (!u) { try { localStorage.removeItem("dnote-home"); } catch (e) { } }
   unsubs.forEach(f => f()); unsubs = [];
   user = u;
   if (!u) { uid = null; secInit = false; $("lockscr").hidden = true; notes = []; notebooks = []; tasks = []; curId = null; loadedId = null; ready.notes = false; $("app").classList.remove("show"); $("login").classList.add("show"); hideSplash(); return; }
@@ -1024,6 +1027,17 @@ function nbCard(b) {
     <div class="nbname">${b.locked && sec.hash ? ic("lock") : ""}<span style="overflow:hidden;text-overflow:ellipsis">${esc(b.name)}</span></div><span class="nbcnt">${ic("notes")}${cnt}</span>
     <button class="tbtn sm nbmore" data-act="nbMenu" data-v="${b.id}">${ic("dots")}</button></div>`;
 }
+let hcT = 0; const homeCacheSoon = () => { clearTimeout(hcT); hcT = setTimeout(homeCacheSave, 2000); };
+function homeCacheSave() {   // ana sayfanın HTML'ini bir sonraki açılışta anında göstermek için sakla (kilitli içerik gizli hâliyle; uygulama kilidi açıksa saklanmaz)
+  try {
+    if (!uid) return; if (sec.appLock) return localStorage.removeItem("dnote-home"); if (window.__sorting) return;
+    const u = unlockUntil; let nb = "", nt = ""; unlockUntil = 0;
+    try { nb = nbList().map(nbCard).join(""); nt = orderItems(live().filter(n => nbKey(n) === null), "homeOrd").sort((a, b) => (b.homePinned ? 1 : 0) - (a.homePinned ? 1 : 0)).map(n => noteRow(n).replace('<div class="nwrap"', `<div class="nwrap" data-sk="${n.id}"`)).join(""); } finally { unlockUntil = u; }
+    const big = /src="data:[^"]{20000,}"/g; nb = nb.replace(big, 'src=""'); nt = nt.replace(big, 'src=""');
+    if (nb.length + nt.length > 400000) return localStorage.removeItem("dnote-home");
+    localStorage.setItem("dnote-home", JSON.stringify({ nb, notes: nt, t: Date.now() }));
+  } catch (e) { }
+}
 function renderHome() {
   if (window.__sorting) return;
   $("homeDate").textContent = new Date().toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric", weekday: "long" });
@@ -1032,7 +1046,7 @@ function renderHome() {
   const free = orderItems(live().filter(n => nbKey(n) === null), "homeOrd").sort((a, b) => (b.homePinned ? 1 : 0) - (a.homePinned ? 1 : 0));
   $("homeNotes").innerHTML = free.map(n => noteRow(n).replace('<div class="nwrap"', `<div class="nwrap" data-sk="${n.id}"`)).join("");
   $("homeEmpty").innerHTML = !nbs.length && !free.length ? emptyHTML("notes", "Burada henüz not yok.<br>Yeni bir not oluşturmak için + düğmesine dokunun.") : "";
-  $("orbInstall").hidden = !canInstall();
+  $("orbInstall").hidden = !canInstall(); homeCacheSoon();
 }
 
 /* ---------- Şifre / kilit ---------- */
@@ -1088,7 +1102,7 @@ async function toggleFp() {
 }
 $("lockFp").onclick = async () => { if (await fpAuth()) { $("lockscr").hidden = true; $("lockIn").value = ""; $("lockErr").textContent = ""; } else { lockLayout(); $("lockErr").textContent = fpFails >= 3 ? "3 kez doğrulanamadı." : `Doğrulanamadı (${fpFails}/3). Tekrar deneyin.`; if (fpFails >= 3) setTimeout(() => $("lockIn").focus(), 80); } };
 async function clearPw() { store.set(FPK, ""); sec = { salt: null, hash: null, appLock: false }; secCache(); await setDoc(secRef(), sec, { merge: true }); schedule(); }
-function setAppLock(v) { sec.appLock = v; secCache(); setDoc(secRef(), { appLock: v }, { merge: true }); schedule(); }
+function setAppLock(v) { if (v) { try { localStorage.removeItem("dnote-home"); } catch (e) { } } sec.appLock = v; secCache(); setDoc(secRef(), { appLock: v }, { merge: true }); schedule(); }
 function lockLayout() { const fo = fpOnly(); $("lockIn").hidden = fo; $("lockOk").hidden = fo; $("lockForgot").hidden = fo; $("lockFp").hidden = !fpOn(); if (fo) $("lockMsg").textContent = "Parmak izinizi doğrulayın"; else if (fpOn()) $("lockMsg").textContent = "Parmak izi doğrulanamadı. Şifrenizi girin"; }
 function showLockScreen(msg) { $("lockscr").hidden = false; fpFails = 0; lockLayout(); if (fpOn()) setTimeout(() => { if (document.visibilityState === "visible") $("lockFp").click(); }, 700); if (!fpOn()) $("lockMsg").textContent = msg || "Şifrenizi girin"; $("lockIn").value = ""; $("lockErr").textContent = ""; setTimeout(() => $("lockIn").focus(), 80); }
 async function lockSubmit() {
@@ -1340,7 +1354,7 @@ function renderSettings() {
      <div class="srow" data-act="exportAll">${ic("download")}<div class="st">Yedekle / geri yükle<small>${+store.get("dnote-lastexport", 0) ? "Son yedek: " + fmtDate(+store.get("dnote-lastexport", 0)) : "Tüm notlar ve ek dosyalar tek dosyada"}</small></div></div>
      <div class="srow" data-act="optImgs">${ic("image")}<div class="st">Resimleri küçült<small>Notlardaki büyük gömülü resimleri hafifletir, uygulamayı hızlandırır</small></div></div>
      <div class="srow" data-act="importAny">${ic("upload")}<div class="st">İçe aktar<small>D-Note yedeği (.json) veya Evernote (.enex)</small></div></div>
-     <div class="setg">Hakkında</div><div class="srow" style="cursor:default"><div class="st">D-Note<small>Sürüm 33 · Bulut senkron · çevrimdışı çalışır · Firebase</small></div></div>
+     <div class="setg">Hakkında</div><div class="srow" style="cursor:default"><div class="st">D-Note<small>Sürüm 34 · Bulut senkron · çevrimdışı çalışır · Firebase</small></div></div>
      <div class="srow" data-act="logout" style="color:var(--red)">${ic("logout")}<div class="st">Oturumu kapat</div></div>`;
 }
 
