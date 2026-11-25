@@ -1,0 +1,85 @@
+// D-Note – Google Drive otomatik yedek köprüsü (Google Apps Script)
+// Bu kod SİZİN Google hesabınızda çalışır ve yalnızca D-Note'a giriş yapmış olan SİZİN isteklerinizi kabul eder.
+
+const FIREBASE_API_KEY = "AIzaSyBaXikosGTvNvfyRasnaHBOwsD4OKmsW_A";
+const REFERER = "https://kurotetsu1881.github.io/";
+const P = PropertiesService.getScriptProperties();
+
+function doGet() { return out_({ ok: true, app: "D-Note Drive köprüsü çalışıyor" }); }
+
+function doPost(e) {
+  const lock = LockService.getScriptLock();
+  try {
+    const b = JSON.parse(e.postData.contents);
+    verify_(b.token);
+    lock.waitLock(25000);
+    return out_(handle_(b));
+  } catch (err) {
+    return out_({ ok: false, error: String((err && err.message) || err) });
+  } finally {
+    try { lock.releaseLock(); } catch (x) { }
+  }
+}
+
+function out_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
+
+// İstek gerçekten bu betiğin sahibinden mi geliyor? (Firebase giriş belirteci kontrolü)
+function verify_(token) {
+  if (!token) throw new Error("Giriş belirteci yok");
+  const cache = CacheService.getScriptCache();
+  const key = "t" + Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, token)).slice(0, 40);
+  if (cache.get(key) === "1") return;
+  const r = UrlFetchApp.fetch("https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=" + FIREBASE_API_KEY, {
+    method: "post", contentType: "application/json", payload: JSON.stringify({ idToken: token }),
+    muteHttpExceptions: true, headers: { Referer: REFERER }
+  });
+  const j = JSON.parse(r.getContentText());
+  const u = j.users && j.users[0];
+  if (!u || !u.email || u.email.toLowerCase() !== Session.getEffectiveUser().getEmail().toLowerCase()) throw new Error("Yetkisiz");
+  cache.put(key, "1", 300);
+}
+
+function root_() {
+  const id = P.getProperty("root");
+  if (id) { try { return DriveApp.getFolderById(id); } catch (e) { } }
+  const it = DriveApp.getFoldersByName("D-Note");
+  const f = it.hasNext() ? it.next() : DriveApp.createFolder("D-Note");
+  P.setProperty("root", f.getId());
+  return f;
+}
+function sub_(name) { const r = root_(), it = r.getFoldersByName(name); return it.hasNext() ? it.next() : r.createFolder(name); }
+function fileBy_(key) {
+  const id = P.getProperty(key); if (!id) return null;
+  try { return DriveApp.getFileById(id); } catch (e) { P.deleteProperty(key); return null; }
+}
+function safe_(s) { return String(s || "Başlıksız").replace(/[\\\/:*?"<>|]+/g, "_").slice(0, 60); }
+
+function handle_(b) {
+  switch (b.action) {
+    case "ping":
+      return { ok: true, folder: root_().getUrl() };
+    case "putNote": {
+      const name = safe_(b.title) + " [" + String(b.id).slice(0, 6) + "].html", old = fileBy_("n:" + b.id);
+      if (old) { old.setContent(b.html); old.setName(name); old.setTrashed(false); }
+      else P.setProperty("n:" + b.id, sub_("Notlar").createFile(name, b.html, MimeType.HTML).getId());
+      return { ok: true };
+    }
+    case "delNote": {
+      const old = fileBy_("n:" + b.id); if (old) old.setTrashed(true);
+      return { ok: true };
+    }
+    case "putMedia": {
+      if (fileBy_("m:" + b.mid)) return { ok: true, skipped: true };
+      const blob = Utilities.newBlob(Utilities.base64Decode(b.b64), b.mime || "application/octet-stream", b.name || "dosya");
+      P.setProperty("m:" + b.mid, sub_("Ekler").createFile(blob).getId());
+      return { ok: true };
+    }
+    case "putJson": {
+      const old = fileBy_("json");
+      if (old) old.setContent(b.json);
+      else P.setProperty("json", root_().createFile("d-note-yedek.json", b.json, MimeType.PLAIN_TEXT).getId());
+      return { ok: true };
+    }
+  }
+  throw new Error("Bilinmeyen işlem");
+}
