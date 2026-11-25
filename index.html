@@ -294,6 +294,7 @@ body[data-p=search] #nav,body[data-p=search] .fab,body[data-editor=open] #nav,bo
 .pal{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;padding:10px}
 .pal button{width:100%;aspect-ratio:1;border-radius:50%;border:2px solid var(--line)}
 .palx{display:flex;align-items:center;gap:10px;padding:8px 14px 12px;color:var(--muted);font-size:13px;width:100%}
+#bars{position:fixed;left:0;right:0;top:env(safe-area-inset-top);z-index:150;display:flex;flex-direction:column;align-items:center;gap:6px;padding:6px 10px;pointer-events:none}#bars .bar{pointer-events:auto;display:flex;align-items:center;gap:10px;max-width:520px;width:100%;box-sizing:border-box;background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:8px 10px;font-size:12.5px}#bars .bar.warn{background:#fff4e5;border-color:#f5c27a;color:#7a4a00}#bars .bar.err{background:#fdecec;border-color:#f0a3a3;color:#8a1f1f}#bars .bar span{flex:1;min-width:0}#bars .bar button{padding:5px 10px;border-radius:8px;font-size:12px;border:1px solid var(--line);background:var(--bg);color:var(--text);flex:none}#bars .bar button.pri{background:var(--acc);border-color:var(--acc);color:#fff}
 #toasts{position:fixed;left:0;right:0;bottom:calc(100px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:8px;z-index:200;pointer-events:none}
 .toast{background:#222;color:#fff;border-radius:22px;padding:9px 18px;font-size:12px;max-width:90%;box-shadow:var(--shadow);animation:tin .2s}
 @keyframes tin{from{opacity:0;transform:translateY(8px)}}
@@ -514,6 +515,7 @@ body[data-editor=open] #editorView{display:flex}
 <div id="scrim" hidden></div>
 <div class="sheet" id="sheet" hidden></div>
 <div id="menu" hidden></div>
+<div id="bars"></div>
 <div id="toasts"></div>
 <div id="printArea"></div>
 <input type="file" id="fileNb" accept="image/*" hidden>
@@ -531,11 +533,11 @@ body[data-editor=open] #editorView{display:flex}
 (function () {
   var K = "dnote-dbg";
   function get() { try { return JSON.parse(localStorage.getItem(K) || "[]"); } catch (e) { return []; } }
-  function add(m) { try { var a = get(); a.push({ t: Date.now(), m: String(m).slice(0, 300) }); localStorage.setItem(K, JSON.stringify(a.slice(-40))); } catch (e) { } }
+  function add(m, k) { try { var a = get(); a.push({ t: Date.now(), m: String(m).slice(0, 300), k: k || "e" }); localStorage.setItem(K, JSON.stringify(a.slice(-60))); } catch (e) { } }
   window.__dbg = { get: get, add: add };
   try {
     var prev = localStorage.getItem("dnote-alive"), h = JSON.parse(localStorage.getItem("dnote-hid") || "null");
-    if (prev === "1" && h) add("Önceki oturum arka plandayken sonlandırıldı (" + Math.round((Date.now() - h.t) / 60000) + " dk önce gizlenmişti" + (h.heap ? ", bellek " + h.heap + " MB" : "") + ")");
+    if (prev === "1" && h) add("Önceki oturum kapanmadan bitti (normal olabilir): " + Math.round((Date.now() - h.t) / 60000) + " dk önce gizlenmişti" + (h.heap ? ", bellek " + h.heap + " MB" : ""), "s");
     localStorage.setItem("dnote-alive", "1");
   } catch (e) { }
   function heap() { try { return performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1048576) : 0; } catch (e) { return 0; } }
@@ -837,11 +839,12 @@ else onAuthStateChanged(auth, u => {
   unsubs.push(onSnapshot(query(ucol("notes"), orderBy("updatedAt", "desc")), { includeMetadataChanges: true }, s => {
     pending = s.metadata.hasPendingWrites;
     notes = s.docs.map(d => ({ id: d.id, ...d.data() }));
+    if (curId) { const cd = s.docs.find(d => d.id === curId); if (cd && !(cd.metadata && cd.metadata.hasPendingWrites)) { const x = cd.data(); remoteSeen.set(curId, { t: x.updatedAt || 0, content: x.content || "", title: x.title || "" }); } }
     { const last = +store.get("dnote-cnt", 0);   // daha önce notu olan hesapta boş ilk yanıt (önbellek/ağ gecikmesi) gerçek sayılmaz
       if (!dataReady && (s.docs.length || (!s.metadata.fromCache && !last))) dataReady = true;
       if (s.docs.length || !s.metadata.fromCache) store.set("dnote-cnt", String(s.docs.length)); }
     if (curId && !getNote(curId) && !s.metadata.fromCache) { curId = null; loadedId = null; }
-    if (!ready.notes) { ready.notes = true; launch(); setTimeout(resumeUploads, 2500); }
+    if (!ready.notes) { ready.notes = true; launch(); setTimeout(resumeUploads, 2500); setTimeout(backupNudge, 6000); }
     schedule(); updateStatus();
   }, e => console.warn(e)));
   unsubs.push(onSnapshot(query(ucol("tasks"), orderBy("createdAt")), s => { tasks = s.docs.map(d => ({ id: d.id, ...d.data() })); schedule(); }, e => console.warn(e)));
@@ -1335,8 +1338,9 @@ function renderSettings() {
      <div class="srow" data-act="driveSheet">${ic("upload")}<div class="st">Google Drive otomatik yedek<small>${driveUrl ? (driveErr ? "Hata: " + esc(driveErr) : +store.get("dnote-lastbackup", 0) ? "Açık · son yedek: " + fmtDT(+store.get("dnote-lastbackup", 0)) : "Açık") : "Kapalı · notlar Drive'a kendiliğinden yedeklenir"}</small></div></div>
      <div class="srow" data-act="graph">${ic("link")}<div class="st">Bağlantı grafiği<small>Notlar arası [[bağlantıları]] harita olarak görün</small></div></div>
      <div class="srow" data-act="exportAll">${ic("download")}<div class="st">Yedekle / geri yükle<small>${+store.get("dnote-lastexport", 0) ? "Son yedek: " + fmtDate(+store.get("dnote-lastexport", 0)) : "Tüm notlar ve ek dosyalar tek dosyada"}</small></div></div>
+     <div class="srow" data-act="optImgs">${ic("image")}<div class="st">Resimleri küçült<small>Notlardaki büyük gömülü resimleri hafifletir, uygulamayı hızlandırır</small></div></div>
      <div class="srow" data-act="importAny">${ic("upload")}<div class="st">İçe aktar<small>D-Note yedeği (.json) veya Evernote (.enex)</small></div></div>
-     <div class="setg">Hakkında</div><div class="srow" style="cursor:default"><div class="st">D-Note<small>Sürüm 32 · Bulut senkron · çevrimdışı çalışır · Firebase</small></div></div>
+     <div class="setg">Hakkında</div><div class="srow" style="cursor:default"><div class="st">D-Note<small>Sürüm 33 · Bulut senkron · çevrimdışı çalışır · Firebase</small></div></div>
      <div class="srow" data-act="logout" style="color:var(--red)">${ic("logout")}<div class="st">Oturumu kapat</div></div>`;
 }
 
@@ -1399,7 +1403,7 @@ function syncEditor() {
   $("eBody").hidden = !n;
   if (!n) { if (!curId) loadedId = null; return; }
   if (loadedId !== n.id) {
-    loadedId = n.id; $("eTitle").value = n.title || ""; autoGrow();
+    loadedId = n.id; baseMap.set(n.id, { t: n.updatedAt || 0, content: n.content || "" }); $("eTitle").value = n.title || ""; autoGrow();
     loadFontsIn(n.content); quill.setContents(quill.clipboard.convert(n.content || ""), "silent"); quill.history.clear(); lastRange = null; closeFind(); $("eScroll").scrollTop = 0;
     if (afterLoad) { const f = afterLoad; afterLoad = null; setTimeout(f, 60); }
   }
@@ -1410,7 +1414,7 @@ function syncEditor() {
   if (n.trashed) b += `<div class="banner">${ic("trash")}<b>Bu not çöp kutusunda.</b><button data-act="restoreNote">Geri yükle</button></div>`;
   if (n.reminder && !n.trashed) b += `<div class="banner">${ic("bell")}<b>Hatırlatıcı: ${fmtDT(n.reminder)}</b><button data-act="eRemind">Değiştir</button></div>`;
   if (n.shareId && !n.trashed) b += `<div class="banner">${ic("users")}<b>Bağlantıyla paylaşılıyor</b><button data-act="eShare">Yönet</button></div>`;
-  $("eBanner").innerHTML = b;
+  $("eBanner").innerHTML = b; if (saveErr) setSaveErr(saveErr);
   renderBacklinks();
   updateStatus();
 }
@@ -1429,11 +1433,17 @@ function saveNow() {
   if (!uid || !curId || loadedId !== curId) return;
   const n = getNote(curId); if (!n || n.trashed) return;
   const content = cleanHTML();
-  if (content.length > 950000) { if (!warned) { warned = true; toast("Bu not 1 MB sınırına ulaştı (Firestore sınırı). Kaydedilmedi; bazı görselleri silin."); } updateStatus("Not çok büyük – kaydedilmedi"); return; }
-  warned = false;
+  if (content.length > 950000) { if (!warned) { warned = true; toast("Bu not 1 MB sınırına ulaştı (Firestore sınırı). Kaydedilmedi; bazı görselleri silin."); } setSaveErr("Bu not 1 MB sınırına ulaştı: son değişiklikler KAYDEDİLMİYOR. Bazı görselleri silin ya da notu bölün."); updateStatus("Not çok büyük – kaydedilmedi"); return; }
+  warned = false; if (saveErr) setSaveErr(null);
   const data = { title: $("eTitle").value, content, plain: (quill.getText().trim() + " " + [...quill.root.querySelectorAll(".dn-table td")].map(c => c.textContent).join(" ")).trim(), updatedAt: Date.now() };
+  { // çakışma koruması + sürüm geçmişi (kaydetmeden ÖNCE)
+    const rs = remoteSeen.get(n.id), bs = baseMap.get(n.id);
+    if (rs && bs && rs.t > bs.t && rs.content && rs.content !== bs.content && rs.content !== content) { verWrite(n.id, { title: rs.title, content: rs.content }, "Başka cihazdaki sürüm"); toast("Bu not başka bir cihazda da değişmişti. O sürüm 'Sürüm geçmişi'ne kaydedildi.", 6500); }
+    else if (n.content && n.content !== content && Date.now() - (verLast.get(n.id) || 0) > 600000) verWrite(n.id, { title: n.title, content: n.content }, "");
+    baseMap.set(n.id, { t: data.updatedAt, content });
+  }
   Object.assign(n, data);
-  setDoc(noteRef(curId), data, { merge: true });
+  setDoc(noteRef(curId), data, { merge: true }).catch(e => { console.warn(e); setSaveErr("Kaydedilemedi: " + (e.code || e.message || e) + ". Notun kopyasını alın."); });
   if (n.shareId) { const sid = n.shareId; inlineHTML(900000).then(c => setDoc(doc(db, "shared", sid), { ownerUid: uid, noteId: n.id, title: data.title, content: c, updatedAt: data.updatedAt }, { merge: true })).catch(() => {}); }
 }
 addEventListener("pagehide", flushSave);
@@ -2145,6 +2155,96 @@ function closeGraph(fromPop) { if (!graphOpen()) return; $("graph").hidden = tru
   addEventListener("resize", () => graphOpen() && graphDraw());
 })();
 
+
+/* ================= Kararlılık paketi: uyarı çubukları, sürüm geçmişi, çakışma, yedek hatırlatma ================= */
+function showBar(id, html, cls = "") {
+  let b = document.getElementById("bar-" + id); if (!b) { b = document.createElement("div"); b.id = "bar-" + id; $("bars").appendChild(b); }
+  b.className = "bar " + cls; b.innerHTML = html; return b;
+}
+const hideBar = id => { const b = document.getElementById("bar-" + id); if (b) b.remove(); };
+// Çevrimdışı göstergesi
+function offBar() { if (!navigator.onLine) showBar("off", `<span>Çevrimdışısınız. Yazdıklarınız cihazda saklanır, internet gelince eşitlenir.</span>`, "warn"); else hideBar("off"); }
+addEventListener("online", offBar); addEventListener("offline", offBar); offBar();
+// Yeni sürüm: kullanıcı onayıyla yenile
+function updateBar() {
+  const b = showBar("upd", `<span><b>Yeni sürüm hazır.</b> Yenilemek için dokunun.</span><button data-bar="later">Sonra</button><button class="pri" data-bar="reload">Yenile</button>`);
+  b.onclick = e => { const x = e.target.closest("[data-bar]"); if (!x) return; if (x.dataset.bar === "reload") { try { flushSave(); } catch (er) { } location.reload(); } else hideBar("upd"); };
+}
+
+// ---- Not sürüm geçmişi ----
+const verCol = id => collection(db, "users", uid, "notes", id, "versions");
+const verLast = new Map(), remoteSeen = new Map(), baseMap = new Map();
+async function verWrite(id, n, why) {
+  const c = n && n.content || ""; if (!uid || !c || c.length > 900000) return false; const at = Date.now();
+  try { await setDoc(doc(verCol(id), String(at)), { title: n.title || "", content: c, at, why: why || "" }); verLast.set(id, at); if (Math.random() < .15) verPrune(id); return true; } catch (e) { console.warn(e); return false; }
+}
+async function verList(id) { const sn = await getDocs(query(verCol(id), orderBy("at", "desc"))); return sn.docs.map(d => ({ ref: d.ref, ...d.data() })); }
+async function verPrune(id, keep = 25) { try { const l = await verList(id); l.slice(keep).forEach(v => deleteDoc(v.ref).catch(() => { })); } catch (e) { } }
+const stripTags = h => String(h || "").replace(/<(style|script)[\s\S]*?<\/\1>/gi, "").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
+async function verSheet() {
+  const n = getNote(curId); if (!n) return; const id = n.id; flushSave();
+  openSheet(`${shHead("Sürüm geçmişi")}<div class="sh-p">Yükleniyor…</div>`, { full: true });
+  let l = []; try { l = await verList(id); } catch (e) { return openSheet(`${shHead("Sürüm geçmişi")}<div class="sh-p">Geçmiş yüklenemedi (internet gerekir).</div>`); }
+  const draw = (sel = -1) => {
+    const v = sel >= 0 ? l[sel] : null;
+    openSheet(`${shHead("Sürüm geçmişi")}${v ? `<div class="sh-p"><b>${esc(v.title) || "Başlıksız"}</b><br><small style="color:var(--muted)">${fmtDT(v.at)}${v.why ? " · " + esc(v.why) : ""}</small></div><div class="sh-p" style="max-height:38vh;overflow:auto;white-space:pre-wrap;border:1px solid var(--line);border-radius:10px;padding:8px">${esc(stripTags(v.content).slice(0, 1500)) || "(metin yok)"}</div><div class="brow"><button class="btn sec" id="vBack">Listeye dön</button><button class="btn" id="vRestore">Bu sürüme dön</button></div>`
+      : l.length ? `<div class="sh-p">Notun önceki hâlleri otomatik saklanır (en çok 25). Dokunup önizleyin.</div>` + l.map((x, i) => `<button class="arow" data-v="${i}"><span class="st"><b>${fmtDT(x.at)}</b>${x.why ? ` <small>· ${esc(x.why)}</small>` : ""}<small style="display:block;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(stripTags(x.content).slice(0, 90)) || "(boş)"}</small></span>${ic("chev")}</button>`).join("") : `<div class="sh-p">Henüz kayıtlı eski sürüm yok. Notu düzenledikçe oluşur.</div>`}`, { full: true });
+    $("sheet").onclick = async e => {
+      if (e.target.closest("[data-act=closeSheet]")) return closeAll(); const r = e.target.closest("[data-v]"); if (r) return draw(+r.dataset.v);
+      if (e.target.closest("#vBack")) return draw(-1);
+      if (e.target.closest("#vRestore")) {
+        const cur = getNote(id); if (!cur || !confirm("Not bu sürüme döndürülsün mü? Şimdiki hâli de geçmişe kaydedilir.")) return;
+        await verWrite(id, { title: cur.title, content: cur.content }, "Geri yüklemeden önce");
+        const plain = stripTags(v.content), d = { title: v.title || "", content: v.content, plain, updatedAt: Date.now() };
+        Object.assign(cur, d); await setDoc(noteRef(id), d, { merge: true }).catch(() => { }); baseMap.set(id, { t: d.updatedAt, content: d.content }); loadedId = null; closeAll(); syncEditor(); toast("Sürüm geri yüklendi.");
+      }
+    };
+  };
+  draw(-1);
+}
+
+// ---- Yedek hatırlatma ----
+function backupNudge() {
+  try {
+    if (!notes.length || notes.length < 3) return; const last = Math.max(+store.get("dnote-lastexport", 0), +store.get("dnote-lastbackup", 0)), snooze = +store.get("dnote-nudge", 0), day = 864e5;
+    if (last && Date.now() - last < 14 * day) return; if (snooze && Date.now() - snooze < 3 * day) return;
+    const msg = last ? `Son yedeğiniz <b>${Math.floor((Date.now() - last) / day)} gün</b> önce alındı.` : `Henüz <b>yedek almadınız</b>.`;
+    const b = showBar("bk", `<span>${msg} Notlarınızı indirip saklamanızı öneririz.</span><button data-bar="later">Sonra</button><button class="pri" data-bar="go">Yedekle</button>`);
+    b.onclick = e => { const x = e.target.closest("[data-bar]"); if (!x) return; hideBar("bk"); if (x.dataset.bar === "later") store.set("dnote-nudge", String(Date.now())); else exportAll(); };
+  } catch (e) { }
+}
+
+// ---- Kayıt hatası bandı ----
+let saveErr = null;
+function setSaveErr(m) { saveErr = m; const el = $("eBanner"); if (!el) return; const old = document.getElementById("saveErrBar"); if (old) old.remove(); if (m) el.insertAdjacentHTML("afterbegin", `<div class="banner" id="saveErrBar" style="background:#fdecec;color:#8a1f1f">${ic("info")}<b>${esc(m)}</b></div>`); }
+
+// ---- Büyük gömülü resimleri küçültme ----
+function imgScan() {
+  let notesN = 0, imgs = 0, bytes = 0; notes.filter(n => !n.trashed).forEach(n => { let hit = false; for (const m of String(n.content || "").matchAll(/<img[^>]+src="(data:image\/[^"]+)"/g)) if (m[1].length > 150000) { imgs++; bytes += m[1].length; hit = true; } if (hit) notesN++; });
+  return { notesN, imgs, bytes };
+}
+function optImgSheet() {
+  const sc = imgScan();
+  openSheet(`${shHead("Resimleri küçült")}<div class="sh-p">Notların içine doğrudan gömülmüş büyük resimler uygulamayı yavaşlatır ve belleği doldurur. Bunları kaliteyi gözle görülür bozmadan küçültebilirim. Her notun eski hâli <b>Sürüm geçmişi</b>'ne kaydedilir.</div>
+    <div class="sh-p"><b>${sc.imgs}</b> büyük resim · <b>${sc.notesN}</b> not · toplam <b>${fmtBytes(sc.bytes)}</b></div><div class="sh-p" id="oiSt" style="min-height:18px"></div>
+    <div class="brow"><button class="btn sec" data-act="closeSheet">Kapat</button>${sc.imgs ? `<button class="btn" id="oiGo">Küçült</button>` : ""}</div>`);
+  $("sheet").onclick = async e => {
+    if (e.target.closest("[data-act=closeSheet]")) return closeAll(); if (!e.target.closest("#oiGo")) return;
+    if (!confirm("Önce yedek almanız önerilir. Devam edilsin mi?")) return; $("oiGo").disabled = true; let saved = 0, done = 0, skip = 0;
+    const list = notes.filter(n => !n.trashed && /<img[^>]+src="data:image\//.test(n.content || ""));
+    for (const n of list) {
+      if (n.id === curId) { skip++; continue; } let html = n.content, changed = false;
+      for (const m of [...html.matchAll(/<img[^>]+src="(data:image\/[^"]+)"/g)]) {
+        const src = m[1]; if (src.length < 150000) continue;
+        try { const out = await compressImage(src, 1000, .62); if (out.length < src.length * .85) { html = html.split(src).join(out); saved += src.length - out.length; changed = true; } } catch (er) { }
+      }
+      if (changed) { await verWrite(n.id, { title: n.title, content: n.content }, "Resim küçültmeden önce"); const nc = html; try { await updateDoc(noteRef(n.id), { content: nc }); n.content = nc; done++; } catch (er) { } }
+      $("oiSt") && ($("oiSt").textContent = `İşleniyor… ${done} not güncellendi, ${fmtBytes(saved)} kazanıldı`); await new Promise(r => setTimeout(r, 0));
+    }
+    $("oiSt") && ($("oiSt").textContent = `Bitti: ${done} not güncellendi, ${fmtBytes(saved)} kazanıldı.` + (skip ? " (Açık not atlandı.)" : "")); toast("Resimler küçültüldü.");
+  };
+}
+
 /* ---------- Tablo ---------- */
 function tableSheet() {
   let r = 3, c = 3;
@@ -2349,7 +2449,7 @@ function actionsSheet() {
     <div class="asep"></div>
     ${row("tag", "tagplus", "Etiket ekle", { chev: 1 })}${row("remind", "bellplus", n.reminder ? "Hatırlatıcı: " + fmtDT(n.reminder) : "Hatırlatıcı ekle", { chev: 1 })}
     <div class="asep"></div>
-    ${row("detail", "info", "Not detayı")}${row("lock", "lock", n.locked ? "Kilidi kaldır" : "Kilitle")}${row("shortcut", n.shortcut ? "star" : "starplus", n.shortcut ? "Kısayollardan kaldır" : "Kısayollara ekle")}${row("pin", "pin", n.pinned ? "Not defterinden sabitlemeyi kaldır" : "Not defterine sabitle")}${row("homepin", "pin", n.homePinned ? "Giriş sayfasından kaldır" : "Giriş sayfasına sabitle")}
+    ${row("history", "restore", "Sürüm geçmişi", { chev: 1 })}${row("detail", "info", "Not detayı")}${row("lock", "lock", n.locked ? "Kilidi kaldır" : "Kilitle")}${row("shortcut", n.shortcut ? "star" : "starplus", n.shortcut ? "Kısayollardan kaldır" : "Kısayollara ekle")}${row("pin", "pin", n.pinned ? "Not defterinden sabitlemeyi kaldır" : "Not defterine sabitle")}${row("homepin", "pin", n.homePinned ? "Giriş sayfasından kaldır" : "Giriş sayfasına sabitle")}
     <div class="asep"></div>
     ${row("offline", "download", "Çevrimdışı kullanılabilir", { sw: true })}
     <div class="asep"></div>
@@ -2369,6 +2469,7 @@ function noteAction(k) {
     case "suggest": { closeAll(); const t = suggestTitle(); if (!t) return toast("Önerilecek yeterli metin yok."); $("eTitle").value = t; autoGrow(); scheduleSave(); return toast("Başlık eklendi: " + t); }
     case "tag": return tagSheet();
     case "remind": return remindSheet();
+    case "history": return verSheet();
     case "detail": closeAll(); return noteDetail(n.id);
     case "lock": { closeAll(); return toggleLock(n, v => patchNote(n.id, { locked: v })); }
     case "shortcut": patchNote(n.id, { shortcut: !n.shortcut }); closeAll(); return toast(n.shortcut ? "Kısayollara eklendi." : "Kısayollardan kaldırıldı.");
@@ -2636,11 +2737,13 @@ function moreMenu() {
   showMenu(NAVOPT.filter(o => !navSet.includes(o[0])).map(([p, i, t]) => ({ i, t: p === "notes" ? "Tüm Notlar" : t, f: () => go(p) })), { dock: true });
 }
 function dbgSheet() {
-  const l = (window.__dbg ? window.__dbg.get() : []).slice().reverse(), bytes = notes.reduce((a, n) => a + (n.content || "").length, 0);
+  const all = (window.__dbg ? window.__dbg.get() : []).slice().reverse(), isErr = x => x.k ? x.k === "e" : /^(hata|söz hatası|Açılış)/.test(x.m), errs = all.filter(isErr), ses = all.filter(x => !isErr(x));
+  const bytes = notes.reduce((a, n) => a + (n.content || "").length, 0), row = x => `<div class="sh-p" style="margin:4px 0"><small style="color:var(--muted)">${fmtDT(x.t)}</small><br>${esc(x.m)}</div>`;
   openSheet(`${shHead("Tanı kaydı")}<div class="sh-p">Not sayısı: <b>${notes.length}</b> · toplam içerik: <b>${(bytes / 1048576).toFixed(1)} MB</b>${performance.memory ? " · bellek: <b>" + Math.round(performance.memory.usedJSHeapSize / 1048576) + " MB</b>" : ""}</div>
-    ${l.length ? l.map(x => `<div class="sh-p" style="margin:4px 0"><small style="color:var(--muted)">${fmtDT(x.t)}</small><br>${esc(x.m)}</div>`).join("") : `<div class="sh-p">Kayıt yok.</div>`}
-    <div class="brow"><button class="btn sec" id="dbgClr">Temizle</button><button class="btn" id="dbgCp">Kopyala</button></div>`);
-  $("sheet").onclick = e => { if (e.target.closest("[data-act=closeSheet]")) return closeAll(); if (e.target.closest("#dbgClr")) { try { localStorage.removeItem("dnote-dbg"); } catch (x) { } return dbgSheet(); } if (e.target.closest("#dbgCp")) { const t = l.map(x => new Date(x.t).toLocaleString("tr-TR") + " " + x.m).join("\n"); (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast("Kopyalandı."), () => toast("Kopyalanamadı.")); } };
+    <div class="setl">Hatalar (${errs.length})</div>${errs.length ? errs.slice(0, 15).map(row).join("") : `<div class="sh-p">Hata kaydı yok ✓</div>`}
+    <div class="setl">Oturumlar (${ses.length}) · uygulamanın kapanıp yeniden açılma kayıtları, çoğu normaldir</div>${ses.slice(0, 5).map(row).join("") || `<div class="sh-p">Kayıt yok.</div>`}
+    <div class="brow"><button class="btn sec" id="dbgClr">Temizle</button><button class="btn" id="dbgCp">Kopyala</button></div>`, { full: true });
+  $("sheet").onclick = e => { if (e.target.closest("[data-act=closeSheet]")) return closeAll(); if (e.target.closest("#dbgClr")) { try { localStorage.removeItem("dnote-dbg"); } catch (x) { } return dbgSheet(); } if (e.target.closest("#dbgCp")) { const t = all.map(x => new Date(x.t).toLocaleString("tr-TR") + " " + x.m).join("\n"); (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast("Kopyalandı."), () => toast("Kopyalanamadı.")); } };
 }
 function whatsNew() {
   openSheet(`${shHead("Yeni Neler")}<div class="sh-p"><b>Yeni (v21)</b> – ses ekleme/kayıt, dikte sözlüğü, tablo, [[not bağlantıları]] ve geri bağlantılar, Görsel not (çizim tahtası), parmak izi ile açma, ana ekran kısayolları ve "Paylaş → D-Note".<br><b>Ana Sayfa</b> – hızlı not, görev, etkinlik, kamera, kaydedici ve karalama defteri.<br><b>Zengin metin</b> – yazı tipi, boyut, renk, vurgu, hizalama, kod, alıntı, onay kutuları.<br><b>Görevler, Takvim, Hatırlatıcılar</b><br><b>Şablonlar, Kısayollar, Sabitleme</b><br><b>Paylaşım bağlantısı</b>, yazdırma, dışa aktarma<br><b>Evernote (.enex) içe aktarma</b><br><b>Çevrimdışı çalışma</b> ve otomatik bulut eşitleme</div>`);
@@ -2856,7 +2959,7 @@ const ACT = {
   stepNum: el => setNum(el.dataset.k, (+S[el.dataset.k] || 0) + (+el.dataset.d)),
   typoReset: () => { ["font", "tfont", "esize", "tsize", "eweight", "tweight", "elh", "pagew", "padx"].forEach(k => { try { localStorage.removeItem(skey(k)); } catch (e) { } }); loadTypo(); applySettings(); schedule(); toast("Yazı ayarları varsayılana döndü."); },
   setFabLong: el => { S.fabLong = el.dataset.v; store.set("dnote-fabLong", S.fabLong); schedule(); },
-  dbgSheet: () => dbgSheet(), whatsNew: () => whatsNew(), help: () => helpSheet(),
+  dbgSheet: () => dbgSheet(), optImgs: () => optImgSheet(), whatsNew: () => whatsNew(), help: () => helpSheet(),
   set: el => { const k = el.dataset.k; let v = el.dataset.v; if (k === "dense") { S.dense = v === "1"; store.set("dnote-dense", v); } else { S[k] = v; store.set(skey(k), v); } applySettings(); schedule(); },
   setFont: el => { S.font = el.dataset.v; store.set(skey("font"), S.font); applySettings(); schedule(); },
   notifPerm: () => { if (!("Notification" in window)) return toast("Bu tarayıcı bildirimleri desteklemiyor."); if (Notification.permission === "denied") return toast("Bildirimler tarayıcı ayarlarından engellenmiş."); Notification.requestPermission().then(() => schedule()); },
@@ -3005,7 +3108,7 @@ async function openViewer(id) {
 hydrate();
 if ("serviceWorker" in navigator) {
   const had = !!navigator.serviceWorker.controller; let reloaded = false;
-  navigator.serviceWorker.addEventListener("controllerchange", () => { if (had && !reloaded) { reloaded = true; try { flushSave(); } catch (e) { } if (document.hidden) addEventListener("visibilitychange", () => location.reload(), { once: true }); else location.reload(); } });
+  navigator.serviceWorker.addEventListener("controllerchange", () => { if (had && !reloaded) { reloaded = true; updateBar(); } });
   navigator.serviceWorker.register("sw.js").catch(() => {});
 }
 addEventListener("bip-ready", () => schedule()); addEventListener("appinstalled", () => { window.__bip = null; schedule(); });

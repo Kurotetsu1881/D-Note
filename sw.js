@@ -1,5 +1,5 @@
 // D-Note service worker: uygulamanın internetsiz açılmasını sağlar ve "Uygulamayı yükle" şartını karşılar
-const CACHE = "dnote-v32";
+const CACHE = "dnote-v33";
 const FONTS_CSS = "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap";
 const LOCAL = [
   "./", "index.html", "manifest.json",

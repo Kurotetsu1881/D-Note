@@ -104,3 +104,8 @@ Sekmedeki küçük simge hâlâ eskiyse sekmeyi kapatıp açın.
 - **Yedekle / geri yükle** (Ayarlar): Tam yedek (ek dosyalar dahil) ve hafif yedek; aynı ekrandan geri yükleme (.json / .enex).
 - **Dikte sözlüğü**: kelimeye dokununca düzenleme, "Toplu ekle" (her satıra `doğru = yanlış1, yanlış2`).
 - **Bağlantı grafiği**: profil menüsü veya Ayarlar → notlar arası [[bağlantılar]] harita olarak.
+
+## v33 (kararlılık)
+- Yedek hatırlatma (14 günde bir), Not sürüm geçmişi (not ⋯ → Sürüm geçmişi), kayıt hatası bandı, çakışma koruması (başka cihazdaki sürüm geçmişe kaydedilir),
+  çevrimdışı çubuğu, "yeni sürüm hazır" onayı, düzenlenmiş tanı kaydı, Ayarlar → Resimleri küçült.
+- firestore.rules değişmedi (sürümler notun alt koleksiyonunda, mevcut kural kapsıyor).
