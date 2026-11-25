@@ -564,7 +564,7 @@ body[data-editor=open] #editorView{display:flex}
 <script type="module">
 const __mk = (k, v) => { const m = window.__m; if (m && m[k] == null) m[k] = Math.round(performance.now()) + (v || ""); }; __mk("mod");
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, reauthenticateWithPopup, onAuthStateChanged, signOut }
+import { initializeAuth, indexedDBLocalPersistence, browserLocalPersistence, browserPopupRedirectResolver, getRedirectResult, GoogleAuthProvider, signInWithPopup, signInWithRedirect, reauthenticateWithPopup, onAuthStateChanged, signOut }
   from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, doc, setDoc, getDoc,
   updateDoc, deleteDoc, onSnapshot, query, orderBy, where, writeBatch, getDocs } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
@@ -579,7 +579,10 @@ const firebaseConfig = {
   appId: "1:858098284296:web:19f2c95a03fa586fc8debd"
 };
 const fbApp = initializeApp(firebaseConfig);
-const auth = getAuth(fbApp);
+// Hızlı açılış: yönlendirme çözücüsü başlangıçta yüklenmez (getAuth bunu yapıp ~3 sn bekletiyordu); giriş anında verilir
+const auth = initializeAuth(fbApp, { persistence: [indexedDBLocalPersistence, browserLocalPersistence] });
+let __rd = false; try { __rd = localStorage.getItem("dnote-redir") === "1"; localStorage.removeItem("dnote-redir"); } catch (e) {}
+if (__rd) { getRedirectResult(auth, browserPopupRedirectResolver).catch(e => console.warn(e)); }
 // Çevrimdışı mod: veriler cihazdaki yerel veritabanında saklanır, internet gelince otomatik eşitlenir
 const db = initializeFirestore(fbApp, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }), experimentalAutoDetectLongPolling: true });
 
@@ -819,9 +822,9 @@ async function batchDelete(refs) { for (let i = 0; i < refs.length; i += 300) { 
 $("btnLogin").onclick = async () => {
   $("loginErr").textContent = "";
   const p = new GoogleAuthProvider();
-  try { await signInWithPopup(auth, p); }
+  try { await signInWithPopup(auth, p, browserPopupRedirectResolver); }
   catch (e) {
-    if (["auth/popup-blocked", "auth/operation-not-supported-in-this-environment"].includes(e.code)) signInWithRedirect(auth, p);
+    if (["auth/popup-blocked", "auth/operation-not-supported-in-this-environment"].includes(e.code)) { store.set("dnote-redir", "1"); signInWithRedirect(auth, p, browserPopupRedirectResolver); }
     else if (!["auth/popup-closed-by-user", "auth/cancelled-popup-request"].includes(e.code)) $("loginErr").textContent = "Giriş hatası: " + e.code;
   }
 };
@@ -1115,7 +1118,7 @@ async function lockSubmit() {
 $("lockOk").onclick = lockSubmit; $("lockIn").addEventListener("keydown", e => { if (e.key === "Enter") lockSubmit(); });
 $("lockForgot").onclick = async () => {
   if (!confirm("Google hesabınızla yeniden giriş yapılarak şifre kaldırılacak. Devam edilsin mi?")) return;
-  try { await reauthenticateWithPopup(auth.currentUser, new GoogleAuthProvider()); await clearPw(); $("lockscr").hidden = true; toast("Şifre kaldırıldı. Ayarlar'dan yenisini belirleyebilirsiniz.", 4500); }
+  try { await reauthenticateWithPopup(auth.currentUser, new GoogleAuthProvider(), browserPopupRedirectResolver); await clearPw(); $("lockscr").hidden = true; toast("Şifre kaldırıldı. Ayarlar'dan yenisini belirleyebilirsiniz.", 4500); }
   catch (e) { $("lockErr").textContent = "Doğrulama yapılamadı."; }
 };
 document.addEventListener("visibilitychange", () => {
@@ -1357,7 +1360,7 @@ function renderSettings() {
      <div class="srow" data-act="exportAll">${ic("download")}<div class="st">Yedekle / geri yükle<small>${+store.get("dnote-lastexport", 0) ? "Son yedek: " + fmtDate(+store.get("dnote-lastexport", 0)) : "Tüm notlar ve ek dosyalar tek dosyada"}</small></div></div>
      <div class="srow" data-act="optImgs">${ic("image")}<div class="st">Resimleri küçült<small>Notlardaki büyük gömülü resimleri hafifletir, uygulamayı hızlandırır</small></div></div>
      <div class="srow" data-act="importAny">${ic("upload")}<div class="st">İçe aktar<small>D-Note yedeği (.json) veya Evernote (.enex)</small></div></div>
-     <div class="setg">Hakkında</div><div class="srow" style="cursor:default"><div class="st">D-Note<small>Sürüm 35 · Bulut senkron · çevrimdışı çalışır · Firebase</small></div></div>
+     <div class="setg">Hakkında</div><div class="srow" style="cursor:default"><div class="st">D-Note<small>Sürüm 36 · Bulut senkron · çevrimdışı çalışır · Firebase</small></div></div>
      <div class="srow" data-act="logout" style="color:var(--red)">${ic("logout")}<div class="st">Oturumu kapat</div></div>`;
 }
 
